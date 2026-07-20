@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: agente-inmo
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Secretos y URLs de infraestructura: se cargan a mano en el dashboard
+      # de Render la primera vez (sync: false = Render los pide, no los fija acá).
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      - key: META_VERIFY_TOKEN
+        sync: false
+      - key: APP_ENCRYPTION_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: ADMIN_MASTER_KEY
+        sync: false
+      - key: PUBLIC_BASE_URL
+        sync: false
+      # Config sin secretos: valores por default de .env.example.
+      - key: LLM_MODEL
+        value: gpt-4o-mini
+      - key: STT_PROVIDER
+        value: groq
+      - key: DEBOUNCE_SECONDS
+        value: "6"
+      - key: WA_SANDBOX_AR_RECIPIENT
+        value: "false"

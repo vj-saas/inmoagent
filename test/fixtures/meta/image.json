@@ -1,0 +1,40 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "TEST_WABA_ID",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "15550001111",
+              "phone_number_id": "TEST_PHONE_NUMBER_ID"
+            },
+            "contacts": [
+              {
+                "profile": { "name": "Juan Pérez" },
+                "wa_id": "5491122334455"
+              }
+            ],
+            "messages": [
+              {
+                "from": "5491122334455",
+                "id": "wamid.TEST_IMAGE_MESSAGE_ID",
+                "timestamp": "1706000010",
+                "type": "image",
+                "image": {
+                  "id": "TEST_MEDIA_ID_IMAGE",
+                  "mime_type": "image/jpeg",
+                  "sha256": "test-sha256",
+                  "caption": "esta es la fachada"
+                }
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "object": "whatsapp_business_account",
+  "entry": [
+    {
+      "id": "TEST_WABA_ID",
+      "changes": [
+        {
+          "value": {
+            "messaging_product": "whatsapp",
+            "metadata": {
+              "display_phone_number": "15550001111",
+              "phone_number_id": "TEST_PHONE_NUMBER_ID"
+            },
+            "statuses": [
+              {
+                "id": "wamid.TEST_TEXT_MESSAGE_ID",
+                "status": "delivered",
+                "timestamp": "1706000020",
+                "recipient_id": "5491122334455",
+                "conversation": {
+                  "id": "TEST_CONVERSATION_ID",
+                  "origin": { "type": "service" }
+                },
+                "pricing": {
+                  "billable": true,
+                  "pricing_model": "CBP",
+                  "category": "service"
+                }
+              }
+            ]
+          },
+          "field": "messages"
+        }
+      ]
+    }
+  ]
+}
