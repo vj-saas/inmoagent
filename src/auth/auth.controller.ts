@@ -1,4 +1,5 @@
-import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, UseGuards } from '@nestjs/common';
+import type { PersonRole } from '@prisma/client';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { PersonSessionGuard } from './guards/person-session.guard';
@@ -42,5 +43,27 @@ export class AuthController {
     const token = authHeader.slice('Bearer '.length).trim();
     await this.authService.logout(token);
     return { ok: true };
+  }
+
+  /**
+   * Devuelve la identidad de la persona autenticada según la sesión vigente. No
+   * recibe ningún parámetro de tenant en la URL: el tenant se resuelve desde la
+   * sesión que `PersonSessionGuard` ya validó y adjuntó a `request.person`, por
+   * lo que no hay riesgo de cruce de tenant ni una segunda consulta a la DB.
+   * Expone únicamente `id`, `role`, `tenantId` y `email` — nunca el hash de la
+   * contraseña ni el token de sesión. Sin sesión válida, el guard responde 401
+   * antes de llegar al handler.
+   */
+  @Get('me')
+  @HttpCode(200)
+  @UseGuards(PersonSessionGuard)
+  me(@Req() req: AuthenticatedPersonRequest): {
+    id: string;
+    role: PersonRole;
+    tenantId: string;
+    email: string;
+  } {
+    const { id, role, tenantId, email } = req.person;
+    return { id, role, tenantId, email };
   }
 }

@@ -15,13 +15,13 @@ import { ConversationState, type Prisma } from '@prisma/client';
 import { TenantThrottlerGuard } from '../../common/tenant-throttler.guard';
 import { DebounceBufferService } from '../../pipeline/debounce-buffer.service';
 import { PrismaService } from '../../prisma/prisma.service';
-import { TenantApiKeyGuard } from '../guards/tenant-api-key.guard';
+import { PersonOrApiKeyGuard } from '../guards/person-or-api-key.guard';
 import { ListLeadsQueryDto } from './list-leads-query.dto';
 
 const PAGE_SIZE = 20;
 
 @Controller('admin/tenants/:tenantId/leads')
-@UseGuards(TenantThrottlerGuard, TenantApiKeyGuard)
+@UseGuards(TenantThrottlerGuard, PersonOrApiKeyGuard)
 @Throttle({ default: { limit: 120, ttl: 60_000 } })
 export class AdminLeadsController {
   constructor(

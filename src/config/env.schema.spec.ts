@@ -24,6 +24,9 @@ describe('validateEnv', () => {
     expect(config.LLM_MODEL).toBe('gpt-4o-mini');
     expect(config.STT_PROVIDER).toBe('groq');
     expect(config.DEBOUNCE_SECONDS).toBe(6);
+    expect(config.SESSION_TTL_HOURS).toBe(12);
+    expect(config.LOGIN_MAX_FAILED_ATTEMPTS).toBe(10);
+    expect(config.LOGIN_WINDOW_MINUTES).toBe(15);
   });
 
   it('respeta valores explícitos por sobre los defaults', () => {
@@ -32,12 +35,18 @@ describe('validateEnv', () => {
         DEBOUNCE_SECONDS: '10',
         STT_PROVIDER: 'openai',
         PORT: '4000',
+        SESSION_TTL_HOURS: '24',
+        LOGIN_MAX_FAILED_ATTEMPTS: '5',
+        LOGIN_WINDOW_MINUTES: '30',
       }),
     );
 
     expect(config.DEBOUNCE_SECONDS).toBe(10);
     expect(config.STT_PROVIDER).toBe('openai');
     expect(config.PORT).toBe(4000);
+    expect(config.SESSION_TTL_HOURS).toBe(24);
+    expect(config.LOGIN_MAX_FAILED_ATTEMPTS).toBe(5);
+    expect(config.LOGIN_WINDOW_MINUTES).toBe(30);
   });
 
   it.each([

@@ -32,5 +32,8 @@ import { TenantScopeGuard } from './guards/tenant-scope.guard';
     // NestJS resuelve providers por módulo, no de forma global.
     MasterKeyGuard,
   ],
+  // Se exportan para que AdminModule pueda inyectarlos en PersonOrApiKeyGuard
+  // (guard compuesto OR) sin reimplementar su lógica de sesión/scope.
+  exports: [PersonSessionGuard, TenantScopeGuard],
 })
 export class AuthModule {}

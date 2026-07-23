@@ -41,6 +41,15 @@ export const envSchema = z.object({
   // montos mostrados al lead. Ajustar según la cotización vigente.
   USD_ARS_RATE: z.coerce.number().positive().default(1500),
 
+  // Duración de una sesión de persona autenticada (en horas)
+  SESSION_TTL_HOURS: z.coerce.number().int().positive().default(12),
+
+  // Máximo número de intentos de login fallidos permitidos
+  LOGIN_MAX_FAILED_ATTEMPTS: z.coerce.number().int().positive().default(10),
+
+  // Ventana de tiempo (en minutos) para contar los intentos de login fallidos
+  LOGIN_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
+
   ADMIN_MASTER_KEY: z.string().min(1, 'ADMIN_MASTER_KEY es requerido'),
   PUBLIC_BASE_URL: z
     .string()
@@ -54,6 +63,12 @@ export const envSchema = z.object({
     .enum(['true', 'false'])
     .default('false')
     .transform((value) => value === 'true'),
+
+  // Orígenes permitidos para CORS (separados por coma). Default: localhost:5173 (Vite dev).
+  CORS_ORIGINS: z
+    .string()
+    .default('http://localhost:5173')
+    .transform((value) => value.split(',').map((origin) => origin.trim())),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

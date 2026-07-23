@@ -17,7 +17,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import type { Property } from '@prisma/client';
 import { TenantThrottlerGuard } from '../../common/tenant-throttler.guard';
-import { TenantApiKeyGuard } from '../guards/tenant-api-key.guard';
+import { PersonOrApiKeyGuard } from '../guards/person-or-api-key.guard';
 import { CreatePropertyDto } from './create-property.dto';
 import { CsvImportResult, CsvImportService } from './csv-import.service';
 import { ListPropertiesQueryDto } from './list-properties-query.dto';
@@ -28,7 +28,7 @@ import { UpdatePropertyDto } from './update-property.dto';
 const MAX_CSV_BYTES = 5 * 1024 * 1024;
 
 @Controller('admin/tenants/:tenantId/properties')
-@UseGuards(TenantThrottlerGuard, TenantApiKeyGuard)
+@UseGuards(TenantThrottlerGuard, PersonOrApiKeyGuard)
 @Throttle({ default: { limit: 120, ttl: 60_000 } })
 export class AdminPropertiesController {
   constructor(
