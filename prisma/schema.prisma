@@ -45,9 +45,51 @@ model Tenant {
   leads        Lead[]
   messages     Message[]
   appointments Appointment[]
+  people       Person[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─────────────────────────────────────────────
+// PERSONAS (usuarios humanos del panel) Y SESIONES
+// ─────────────────────────────────────────────
+
+enum PersonRole {
+  OWNER
+  AGENT
+}
+
+model Person {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  email        String     @unique // único GLOBAL (no compuesto con tenantId), normalizado a minúsculas
+  passwordHash String // argon2
+  role         PersonRole
+  active       Boolean    @default(true)
+
+  sessions Session[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tenantId])
+  @@index([tenantId, role, active]) // chequeo "último owner activo" (AC-21) y listado (AC-19)
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique // sha256 hex del token opaco; el token en claro nunca se persiste
+  personId  String
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+
+  createdAt DateTime @default(now())
+
+  @@index([personId]) // revocación masiva por persona (AC-20/22/23)
+  @@index([expiresAt]) // purga de sesiones vencidas (follow-up)
 }
 
 // ─────────────────────────────────────────────
