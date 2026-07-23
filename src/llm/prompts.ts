@@ -84,7 +84,10 @@ REGLAS ESPECÍFICAS DE ARGENTINA:
    notas que el lead no dijo.
 
 4. BARRIOS: extraé el nombre tal como lo dice el lead (el sistema los
-   normaliza después). Si menciona varios, incluilos todos.
+   normaliza después). Si menciona varios, incluilos todos. IMPORTANTE: solo
+   los que nombra en ESTE mensaje, aunque haya mencionado otros barrios antes
+   en la charla (incluso si ya los descartó o el sistema le dijo que no había
+   stock ahí) — no los repitas si no los vuelve a nombrar ahora.
 
 EJEMPLOS:
 

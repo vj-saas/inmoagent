@@ -139,7 +139,9 @@ describe('ConversationEngine (e2e) — casos de docs/03-CONVERSACION.md §7', ()
     expect(updated.state).toBe(ConversationState.GREETING);
   });
 
-  // 2. Primer mensaje con toda la info -> extrae todo y salta a SEARCH_MATCH en un turno.
+  // 2. Primer mensaje con toda la info -> extrae todo y salta a SEARCH_MATCH en un turno,
+  // SIN perderse el saludo + aviso Ley 25.326 (bug real: ese salto se comía el saludo
+  // porque GreetingHandler solo lo mandaba si todavía faltaba la operación).
   it('2. mensaje con operación + 3 filtros en GREETING salta a SEARCH_MATCH en el mismo turno', async () => {
     const tenant = await createTenant();
     const lead = await createLead(tenant.id, {
@@ -183,6 +185,14 @@ describe('ConversationEngine (e2e) — casos de docs/03-CONVERSACION.md §7', ()
     expect(updated.state).toBe(ConversationState.SEARCH_MATCH);
     expect(updated.lastSearchIds.length).toBeGreaterThan(0);
     expect(messaging.sendImage).toHaveBeenCalled();
+
+    // El saludo + aviso Ley 25.326 va primero, aunque el turno ya haya
+    // saltado directo a mostrar resultados.
+    expect(messaging.sendText.mock.calls.length).toBeGreaterThan(0);
+    const [, , firstText] = messaging.sendText.mock.calls[0];
+    expect(firstText).toContain(tenant.name);
+    expect(firstText.toLowerCase()).toContain('baja');
+    expect(updated.greetedAt).not.toBeNull();
   });
 
   // 5. Pregunta off-topic -> redirección amable, estado no cambia.

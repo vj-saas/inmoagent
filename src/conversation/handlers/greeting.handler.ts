@@ -25,14 +25,16 @@ export class GreetingHandler {
     ctx: HandlerContext,
     filters: LeadFilters,
   ): Promise<HandlerResult> {
+    // El saludo completo (con el aviso de Ley 25.326) solo se manda una vez, en el
+    // primerísimo turno. Se usa `greetedAt` en vez de `recentMessages` porque el
+    // mensaje OUT se persiste recién cuando el worker de la cola de salida
+    // efectivamente lo envía, no en este mismo turno.
+    const alreadyGreeted = ctx.lead.greetedAt !== null;
+
     if (!filters.fOperation) {
-      // El saludo completo (con el aviso de Ley 25.326) solo se manda una vez, en el
-      // primerísimo turno. Si el lead ya lo recibió y todavía no dijo si compra o
-      // alquila, repetir el saludo entero es lo que generaba el bug de "me repite
-      // el mensaje inicial": en vez de eso, se repregunta corto. Se usa `greetedAt`
-      // en vez de `recentMessages` porque el mensaje OUT se persiste recién cuando
-      // el worker de la cola de salida efectivamente lo envía, no en este mismo turno.
-      const alreadyGreeted = ctx.lead.greetedAt !== null;
+      // Si el lead ya lo recibió y todavía no dijo si compra o alquila, repetir
+      // el saludo entero es lo que generaba el bug de "me repite el mensaje
+      // inicial": en vez de eso, se repregunta corto.
 
       // Si desde el primer mensaje menciona una zona sin stock, se lo decimos ya
       // (con el saludo/aviso de datos si es la primera vez), sugiriendo aledañas
@@ -77,7 +79,22 @@ export class GreetingHandler {
 
     // El primer mensaje ya trae info ("hola busco depto en caballito para alquilar"): se extrae
     // todo y se puede saltar directo a QUALIFICATION o incluso SEARCH_MATCH en el mismo turno.
-    return this.qualification.handle(ctx, filters);
+    const result = await this.qualification.handle(ctx, filters);
+    if (alreadyGreeted) {
+      return result;
+    }
+    // Bug real: si el primer mensaje ya traía la operación, este salto se
+    // comía el saludo con el aviso Ley 25.326 (regla de negocio innegociable:
+    // va en el primer mensaje al lead, sin excepción aunque haya escrito todo
+    // junto). Se antepone sin perder la búsqueda/pregunta de este mismo turno.
+    return {
+      ...result,
+      actions: [
+        { kind: 'text', text: buildGreetingMessage(ctx.tenant) },
+        ...result.actions,
+      ],
+      markGreeted: true,
+    };
   }
 
   private async askForOperation(

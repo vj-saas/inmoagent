@@ -78,12 +78,17 @@ describe('buildNoResultsMessage', () => {
     );
   });
 
-  it('rooms/price dicen honestamente que "amplié un poco" ese criterio', () => {
-    expect(buildNoResultsMessage('rooms', ['palermo'])).toBe(
-      'En Palermo no había nada exacto con esos filtros, así que amplié un poco los ambientes y encontré esto:',
-    );
+  it('price dice honestamente que "amplié un poco" ese criterio', () => {
     expect(buildNoResultsMessage('price', ['palermo'])).toContain(
       'amplié un poco el presupuesto',
+    );
+  });
+
+  it('rooms NUNCA dice "amplié un poco": el filtro se elimina del todo, no se relaja', () => {
+    const text = buildNoResultsMessage('rooms', ['palermo']);
+    expect(text).not.toContain('amplié un poco');
+    expect(text).toBe(
+      'En Palermo no tengo nada con esos ambientes, así que te muestro lo más parecido que encontré:',
     );
   });
 

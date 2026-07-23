@@ -46,13 +46,13 @@ export class OpenAiLlmProvider implements LlmProvider {
 
     const first = await attempt();
     if (first && first.success) {
-      return sanitizeExtraction(first.data);
+      return sanitizeExtraction(first.data, input.turnText);
     }
 
     this.logger.warn('Extracción con schema inválido, reintentando una vez');
     const second = await attempt();
     if (second && second.success) {
-      return sanitizeExtraction(second.data);
+      return sanitizeExtraction(second.data, input.turnText);
     }
 
     this.logger.error(

@@ -159,7 +159,7 @@ const ALIASES: Readonly<Record<string, string>> = {
 };
 
 /** minúsculas, sin tildes/diacríticos, espacios colapsados y recortados. */
-function normalizeText(input: string): string {
+export function normalizeText(input: string): string {
   return input
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
@@ -181,4 +181,53 @@ export function normalizeNeighborhood(raw: string): string {
 
 export function isKnownNeighborhood(raw: string): boolean {
   return KNOWN_NEIGHBORHOODS.has(normalizeNeighborhood(raw));
+}
+
+function levenshtein(a: string, b: string): number {
+  const dp: number[][] = Array.from({ length: a.length + 1 }, (_, i) =>
+    Array.from({ length: b.length + 1 }, (_, j) =>
+      i === 0 ? j : j === 0 ? i : 0,
+    ),
+  );
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] =
+        a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+/** Cuántos errores de tipeo tolerar según el largo de la palabra. */
+function maxTypoDistance(word: string): number {
+  return word.length <= 5 ? 1 : 2;
+}
+
+/**
+ * ¿El barrio (tal como lo devolvió el LLM, sin resolver alias) está
+ * realmente mencionado en el texto de este turno? Tolera errores de tipeo
+ * palabra por palabra ("caballto" ~ "caballito"): el LLM suele corregir la
+ * ortografía al extraer, así que un match exacto de substring rechaza
+ * menciones legítimas mal escritas. Para nombres de varias palabras
+ * ("villa urquiza") exige que TODAS matcheen, para no aceptar por una sola
+ * palabra genérica compartida ("villa") con un barrio distinto.
+ */
+export function textMentionsNeighborhood(
+  turnText: string,
+  neighborhood: string,
+): boolean {
+  const turnNormalized = normalizeText(turnText);
+  const target = normalizeText(neighborhood);
+  if (turnNormalized.includes(target)) {
+    return true;
+  }
+  const turnWords = turnNormalized.split(/[^a-z0-9]+/).filter(Boolean);
+  const targetWords = target.split(' ').filter(Boolean);
+  return targetWords.every((targetWord) =>
+    turnWords.some(
+      (word) => levenshtein(word, targetWord) <= maxTypoDistance(targetWord),
+    ),
+  );
 }

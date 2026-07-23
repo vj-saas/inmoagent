@@ -48,6 +48,7 @@ describe('sanitizeExtraction', () => {
   it('normaliza barrios conocidos', () => {
     const result = sanitizeExtraction(
       raw({ neighborhoods: ['Palermo Soho', 'CABALLITO'] }),
+      'busco en Palermo Soho o Caballito',
     );
     expect(result.neighborhoods).toEqual(['palermo', 'caballito']);
   });
@@ -55,18 +56,19 @@ describe('sanitizeExtraction', () => {
   it('descarta precio <= 0 sin invalidar el resto de la extracción', () => {
     const result = sanitizeExtraction(
       raw({ operation: 'SALE', maxPrice: -100 }),
+      'quiero comprar',
     );
     expect(result.maxPrice).toBeNull();
     expect(result.operation).toBe('SALE');
   });
 
   it('descarta rooms > 10', () => {
-    const result = sanitizeExtraction(raw({ minRooms: 15 }));
+    const result = sanitizeExtraction(raw({ minRooms: 15 }), 'quince ambientes');
     expect(result.minRooms).toBeNull();
   });
 
   it('mantiene rooms válidos', () => {
-    const result = sanitizeExtraction(raw({ minRooms: 3 }));
+    const result = sanitizeExtraction(raw({ minRooms: 3 }), '3 ambientes');
     expect(result.minRooms).toBe(3);
   });
 
@@ -76,6 +78,7 @@ describe('sanitizeExtraction', () => {
         neighborhoods: ['Monte Grande'],
         extraRequirements: 'con patio',
       }),
+      'busco en Monte Grande, con patio',
     );
     // La zona se toma como filtro (aunque no esté en el diccionario); si no hay
     // stock, el flujo avisa (empty_zone). No se mezcla con extraRequirements.
@@ -84,7 +87,28 @@ describe('sanitizeExtraction', () => {
   });
 
   it('resuelve alias de barrio conocido (Palermo Soho -> palermo)', () => {
-    const result = sanitizeExtraction(raw({ neighborhoods: ['Palermo Soho'] }));
+    const result = sanitizeExtraction(
+      raw({ neighborhoods: ['Palermo Soho'] }),
+      'depto en Palermo Soho',
+    );
     expect(result.neighborhoods).toEqual(['palermo']);
+  });
+
+  it('descarta barrios que el LLM re-listó del historial pero NO se mencionan en este turno (bug real: zonas descartadas resucitaban)', () => {
+    const result = sanitizeExtraction(
+      raw({ neighborhoods: ['monte grande', 'guillon', 'recoleta'] }),
+      // El lead solo preguntó por Recoleta en ESTE turno; "monte grande" y
+      // "guillon" son resaca de turnos previos que el LLM re-extrajo.
+      'Y en Recoleta tienen alguno?',
+    );
+    expect(result.neighborhoods).toEqual(['recoleta']);
+  });
+
+  it('si ningún barrio devuelto aparece en el turno, neighborhoods queda vacío (el merge conserva lo previo)', () => {
+    const result = sanitizeExtraction(
+      raw({ neighborhoods: ['monte grande'] }),
+      'mas baratos no hay?',
+    );
+    expect(result.neighborhoods).toEqual([]);
   });
 });

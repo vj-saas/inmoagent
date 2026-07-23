@@ -130,11 +130,12 @@ function money(value: number, currency: string): string {
 
 async function main(): Promise<void> {
   const config = {
-    get: () => process.env.DATABASE_URL,
+    get: (key: string) =>
+      key === 'USD_ARS_RATE' ? 1500 : process.env.DATABASE_URL,
   } as unknown as ConfigService<EnvConfig, true>;
   const prisma = new PrismaService(config);
   await prisma.onModuleInit();
-  const service = new PropertySearchService(prisma);
+  const service = new PropertySearchService(prisma, config);
 
   const tenant = await prisma.tenant.findUniqueOrThrow({
     where: { slug: 'inmobiliaria-demo' },

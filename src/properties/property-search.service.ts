@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   OperationType,
   Prisma,
@@ -6,6 +7,7 @@ import {
   type Property,
   type PropertyPhoto,
 } from '@prisma/client';
+import type { EnvConfig } from '../config/env.schema';
 import { PrismaService } from '../prisma/prisma.service';
 
 export interface SearchFilters {
@@ -40,6 +42,8 @@ export interface SearchOutcome {
 const RESULT_LIMIT = 3;
 const PRICE_TOLERANCE = 1.1; // +10% silencioso (sin avisar)
 const PRICE_RELAX_CAP = 1.25; // +25% máximo cuando se avisa "amplié el presupuesto"
+/** Universo acotado para ordenar en memoria cuando hay que comparar precio sin moneda de referencia. */
+const CANDIDATE_LIMIT = 100;
 
 interface RelaxOptions {
   /** Multiplicador sobre maxPrice, o null para no filtrar por precio. */
@@ -57,7 +61,24 @@ interface RelaxOptions {
  */
 @Injectable()
 export class PropertySearchService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly config: ConfigService<EnvConfig, true>,
+  ) {}
+
+  /**
+   * Precio comparable en ARS. Solo para ORDENAR cuando hay stock en USD y ARS
+   * mezclado y no hay moneda de referencia (sin `maxPrice` no se puede saber
+   * contra qué moneda comparar): sin esto, "más baratos" comparaba 450 (USD)
+   * contra 650.000 (ARS) como números pelados y el USD ganaba siempre por
+   * magnitud, no por valor real. Nunca se usa para filtrar ni se muestra al lead.
+   */
+  private toComparableArs(price: Prisma.Decimal, currency: string): number {
+    const amount = price.toNumber();
+    return currency === 'USD'
+      ? amount * this.config.get('USD_ARS_RATE', { infer: true })
+      : amount;
+  }
 
   async search(
     tenantId: string,
@@ -229,11 +250,18 @@ export class PropertySearchService {
         operation,
         neighborhood: { in: neighborhoods },
       },
-      orderBy: { price: 'asc' },
       include: { photos: { orderBy: { position: 'asc' } } },
     });
+    // Sin presupuesto (recién arranca la búsqueda): puede haber USD y ARS
+    // mezclado, se ordena por valor normalizado (ver `toComparableArs`), no
+    // por precio crudo.
+    const sorted = [...all].sort(
+      (a, b) =>
+        this.toComparableArs(a.price, a.currency) -
+        this.toComparableArs(b.price, b.currency),
+    );
 
-    const properties = this.pickPriceRange(all, RESULT_LIMIT);
+    const properties = this.pickPriceRange(sorted, RESULT_LIMIT);
     await this.prisma.lead.update({
       where: { id: leadId },
       data: { lastSearchIds: properties.map((p) => p.id) },
@@ -255,7 +283,7 @@ export class PropertySearchService {
     return [cheapest, middle, mostExpensive];
   }
 
-  private query(
+  private async query(
     tenantId: string,
     filters: SearchFilters,
     opts: RelaxOptions,
@@ -282,7 +310,14 @@ export class PropertySearchService {
       }
     }
     if (opts.includeRooms && filters.minRooms) {
-      where.rooms = { gte: filters.minRooms };
+      // "Monoambiente" (1 ambiente) es la unidad más chica que existe: pedirlo
+      // como piso ("rooms >= 1") no filtra nada, porque CUALQUIER propiedad
+      // cumple "1 o más" (bug real observado: pedir monoambiente devolvía un 3
+      // ambientes). Es el único valor de `minRooms` donde el lead quiere
+      // exactamente eso, no "esto para arriba" — para 2+ ambientes sí tiene
+      // sentido el piso ("2 ambientes" admite que aparezca un 3).
+      where.rooms =
+        filters.minRooms === 1 ? { equals: 1 } : { gte: filters.minRooms };
     }
     // Cochera/mascotas no se relajan (no forman parte del algoritmo de relajación
     // progresiva documentado en 02-DATOS.md §2): si el lead las pidió, son un filtro duro.
@@ -293,11 +328,51 @@ export class PropertySearchService {
       where.petsAllowed = true;
     }
 
-    return this.prisma.property.findMany({
+    const currencyPinned = Boolean(filters.maxPrice && filters.currency);
+    // Este intento relajó ambientes (no aplicó `where.rooms`) habiendo pedido
+    // un target: mostrar lo más CERCANO a ese target, no lo más barato sin
+    // más. Distancia absoluta (no "más ambientes primero"): para un pedido de
+    // 5 ambientes lo restante siempre queda por debajo (más cerca = más
+    // ambientes), pero para "monoambiente" (target=1, filtro exacto) lo
+    // restante queda por ARRIBA (más cerca = MENOS ambientes) — la distancia
+    // absoluta cubre ambos casos sin asumir de qué lado cae lo relajado.
+    const sortByRoomsProximity = !opts.includeRooms && filters.minRooms !== null;
+    const roomsTarget = filters.minRooms;
+
+    // Camino rápido: moneda de referencia fijada (stock de una sola moneda) y
+    // sin relajación de ambientes -> ordenar por precio crudo en la DB.
+    if (currencyPinned && !sortByRoomsProximity) {
+      return this.prisma.property.findMany({
+        where,
+        orderBy: { price: 'asc' },
+        take: RESULT_LIMIT,
+        include: { photos: { orderBy: { position: 'asc' } } },
+      });
+    }
+
+    // En cualquier otro caso hace falta ordenar en memoria: por precio
+    // normalizado cuando el stock puede mezclar USD/ARS (`toComparableArs`),
+    // y/o por cercanía de ambientes cuando se relajó ese filtro.
+    const candidates = await this.prisma.property.findMany({
       where,
-      orderBy: { price: 'asc' },
-      take: RESULT_LIMIT,
+      take: CANDIDATE_LIMIT,
       include: { photos: { orderBy: { position: 'asc' } } },
     });
+    return candidates
+      .sort((a, b) => {
+        if (sortByRoomsProximity && roomsTarget !== null) {
+          const distA = Math.abs((a.rooms ?? 0) - roomsTarget);
+          const distB = Math.abs((b.rooms ?? 0) - roomsTarget);
+          if (distA !== distB) return distA - distB;
+        }
+        const priceA = currencyPinned
+          ? a.price.toNumber()
+          : this.toComparableArs(a.price, a.currency);
+        const priceB = currencyPinned
+          ? b.price.toNumber()
+          : this.toComparableArs(b.price, b.currency);
+        return priceA - priceB;
+      })
+      .slice(0, RESULT_LIMIT);
   }
 }

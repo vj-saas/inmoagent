@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { normalizeNeighborhood } from '../properties/neighborhoods';
+import {
+  normalizeNeighborhood,
+  textMentionsNeighborhood,
+} from '../properties/neighborhoods';
 
 /** Forma cruda que le pedimos al LLM, ver docs/03-CONVERSACION.md §4.1. */
 export const rawExtractionSchema = z.object({
@@ -53,9 +56,22 @@ const MAX_ROOMS = 10;
  * confía en el LLM para reconocer la zona. Si la zona no tiene stock, el flujo
  * lo maneja avisando al lead (ver PropertySearchService: 'empty_zone'), en vez
  * de rechazar la zona de entrada.
+ *
+ * Guardrail contra un bug real observado en producción: pese a que el prompt
+ * pide extraer solo lo dicho en ESTE turno, el LLM a veces re-lista barrios
+ * de turnos anteriores (incluso ya descartados por falta de stock), haciendo
+ * que resuciten al mezclarse con los filtros vigentes. Un barrio solo se
+ * acepta si aparece mencionado (tal cual lo devolvió el LLM, antes de
+ * resolver alias, tolerando typos vía `textMentionsNeighborhood`) en el TEXTO
+ * de este turno; si no, se descarta silenciosamente (el sistema ya tiene
+ * guardado el barrio si de verdad seguía vigente).
  */
-export function sanitizeExtraction(raw: RawExtraction): ExtractionResult {
+export function sanitizeExtraction(
+  raw: RawExtraction,
+  turnText: string,
+): ExtractionResult {
   const neighborhoods = raw.neighborhoods
+    .filter((neighborhood) => textMentionsNeighborhood(turnText, neighborhood))
     .map((neighborhood) => normalizeNeighborhood(neighborhood))
     .filter((neighborhood) => neighborhood.length > 0);
 

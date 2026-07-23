@@ -193,11 +193,14 @@ export function buildNoResultsMessage(
     // Honesto: no fingir que "se amplió un poco" cuando está claramente arriba.
     return `Te lo digo sin vueltas: lo que tengo hoy en ${zone} está por encima de tu presupuesto 😕 Te muestro lo más cercano por si te interesa igual:`;
   }
-  const relaxedLabel: Record<'rooms' | 'price', string> = {
-    rooms: 'los ambientes',
-    price: 'el presupuesto',
-  };
-  return `En ${zone} no había nada exacto con esos filtros, así que amplié un poco ${relaxedLabel[relaxed]} y encontré esto:`;
+  if (relaxed === 'rooms') {
+    // Honesto: el algoritmo no "amplía un poco" el mínimo de ambientes, lo
+    // saca del todo y muestra lo más parecido que encuentra (ver
+    // PropertySearchService: sortByRoomsProximity). Decir "amplié un poco"
+    // acá sería mentir, igual que con 'over_budget'.
+    return `En ${zone} no tengo nada con esos ambientes, así que te muestro lo más parecido que encontré:`;
+  }
+  return `En ${zone} no había nada exacto con esos filtros, así que amplié un poco el presupuesto y encontré esto:`;
 }
 
 export const NO_RESULTS_EVEN_RELAXED =

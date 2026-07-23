@@ -15,11 +15,12 @@ describe('PropertySearchService (e2e, Postgres real)', () => {
 
   beforeAll(async () => {
     const config = {
-      get: () => process.env.DATABASE_URL,
+      get: (key: string) =>
+        key === 'USD_ARS_RATE' ? 1500 : process.env.DATABASE_URL,
     } as unknown as ConfigService<EnvConfig, true>;
     prisma = new PrismaService(config);
     await prisma.onModuleInit();
-    service = new PropertySearchService(prisma);
+    service = new PropertySearchService(prisma, config);
 
     const tenant = await prisma.tenant.create({
       data: {
@@ -118,6 +119,40 @@ describe('PropertySearchService (e2e, Postgres real)', () => {
           rooms: 2,
           garage: true,
           petsAllowed: true,
+        },
+        // Para el bug real de "monoambiente" (minRooms=1 como piso traía
+        // propiedades de 2+ ambientes, ya que TODO cumple "1 o más").
+        {
+          tenantId,
+          externalRef: 'h',
+          title: 'H (monoambiente en Flores)',
+          operation: OperationType.RENT,
+          propertyType: 'departamento',
+          price: 80000,
+          neighborhood: 'flores',
+          rooms: 1,
+        },
+        {
+          tenantId,
+          externalRef: 'i',
+          title: 'I (2 ambientes en Flores)',
+          operation: OperationType.RENT,
+          propertyType: 'departamento',
+          price: 85000,
+          neighborhood: 'flores',
+          rooms: 2,
+        },
+        // Belgrano: única propiedad de la zona, y NO es monoambiente (para
+        // probar la relajación cuando ni siquiera hay algo exacto).
+        {
+          tenantId,
+          externalRef: 'j',
+          title: 'J (3 ambientes, único en Belgrano)',
+          operation: OperationType.RENT,
+          propertyType: 'departamento',
+          price: 95000,
+          neighborhood: 'belgrano',
+          rooms: 3,
         },
       ],
     });
@@ -341,5 +376,56 @@ describe('PropertySearchService (e2e, Postgres real)', () => {
     expect(updatedLead.lastSearchIds.sort()).toEqual(
       withResults.properties.map((p) => p.id).sort(),
     );
+  });
+
+  it('"monoambiente" (minRooms=1) es EXACTO, no un piso: no trae propiedades de 2+ ambientes', async () => {
+    // Bug real observado en producción: pedir monoambiente devolvía una de 3
+    // ambientes, porque "rooms >= 1" lo cumple CUALQUIER propiedad.
+    const outcome = await service.search(tenantId, {
+      operation: OperationType.RENT,
+      neighborhoods: ['flores'],
+      maxPrice: null,
+      currency: null,
+      minRooms: 1,
+      garage: null,
+      petsAllowed: null,
+    });
+
+    expect(outcome.relaxed).toBeNull();
+    expect(outcome.properties.map((p) => p.externalRef)).toEqual(['h']);
+  });
+
+  it('"monoambiente" sin stock exacto relaja mostrando lo más chico disponible (no lo primero que aparezca)', async () => {
+    // Belgrano solo tiene una propiedad de 3 ambientes: no hay monoambiente,
+    // así que debe relajar (no fingir un match) y mostrar la más cercana.
+    const outcome = await service.search(tenantId, {
+      operation: OperationType.RENT,
+      neighborhoods: ['belgrano'],
+      maxPrice: null,
+      currency: null,
+      minRooms: 1,
+      garage: null,
+      petsAllowed: null,
+    });
+
+    expect(outcome.relaxed).toBe('rooms');
+    expect(outcome.properties.map((p) => p.externalRef)).toEqual(['j']);
+  });
+
+  it('2+ ambientes siguen siendo un PISO (no exacto): "2 ambientes" acepta que aparezca una de 3', async () => {
+    // Confirma que el fix de "monoambiente" no rompió el comportamiento
+    // deliberado para el resto de los valores (ver docs: es un mínimo).
+    const outcome = await service.search(tenantId, {
+      operation: OperationType.RENT,
+      neighborhoods: ['flores'],
+      maxPrice: null,
+      currency: null,
+      minRooms: 2,
+      garage: null,
+      petsAllowed: null,
+    });
+
+    expect(outcome.relaxed).toBeNull();
+    expect(outcome.properties.map((p) => p.externalRef)).toEqual(['i']);
   });
 });

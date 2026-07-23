@@ -64,7 +64,7 @@ describe('OpenAiLlmProvider', () => {
     const result = await provider.extractIntent({
       tenant: TENANT,
       lead: LEAD,
-      turnText: 'busco depto',
+      turnText: 'busco depto en caballito',
       recentMessages: [],
     });
 

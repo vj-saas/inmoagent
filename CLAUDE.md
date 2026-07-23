@@ -106,3 +106,47 @@ docker compose up -d       # Postgres + Redis locales
 `APP_ENCRYPTION_KEY`, `OPENAI_API_KEY`, `GROQ_API_KEY`, `LLM_MODEL`,
 `STT_PROVIDER` (groq|openai), `DEBOUNCE_SECONDS` (default 6),
 `ADMIN_MASTER_KEY`, `PUBLIC_BASE_URL`.
+
+---
+
+<!-- ===== Ciclo SDD (agregado por /bootstrap-sdd) ===== -->
+
+## Qué es low / medium / high en este proyecto
+
+Estos criterios los usa `task-splitter` para etiquetar cada tarea y `task-router`
+para elegir el implementer. Ante la duda entre dos niveles, elegí el más alto.
+
+- **low** — sin lógica de negocio ni riesgo. Copy y mensajes en español al lead,
+  ajustes de config, documentación (`docs/`, `README.md`), logs, formato/estilo,
+  fixes de una línea.
+- **medium** — features acotadas con lógica de negocio estándar que NO tocan la
+  superficie crítica: CRUD y DTOs (`class-validator`) de `properties`, `leads`,
+  `appointments`, `admin`; endpoints de lectura filtrados por `tenantId`;
+  refactors locales; métricas.
+- **high** — lógica compleja o de riesgo: FSM y guardrails de `conversation`;
+  `webhook` (firma, idempotencia, respuesta <1s); debounce/orquestación de
+  `pipeline`; tools y prompts del `llm` (búsqueda de propiedades vía tool
+  calling); cifrado AES-256-GCM de tokens Meta; auth admin (argon2) y manejo de
+  secretos; `media`/STT (FFmpeg, transcripción); colas BullMQ; **migraciones
+  Prisma / cambios de schema**; cualquier query que cruce o resuelva `tenantId`.
+
+## Qué se considera crítico en este proyecto
+
+Lo que caiga acá dispara el pipeline SDD completo con **aprobación humana
+obligatoria en cada fase** (lo lee `triage`).
+
+- **Aislamiento multi-tenant.** Cualquier query o lógica que resuelva el tenant
+  (por `phoneNumberId`) o que pueda filtrar datos entre tenants. Toda query a DB
+  debe ir filtrada por `tenantId`; una query cross-tenant fuera de los módulos
+  internos explícitamente marcados es crítica por definición.
+- **Guardrails del LLM y la FSM.** Que el LLM nunca sea fuente de verdad: la FSM
+  en código controla el flujo; el backend valida que todo ID de propiedad
+  mencionado exista en el resultado de `search_properties` antes de enviar.
+  Incluye la idempotencia del webhook (`wa_message_id` una sola vez), el debounce
+  de 6s, el opt-out inmediato (BAJA/STOP), el aviso Ley 25.326 en el primer
+  mensaje, y el handoff a humano.
+
+> Nota: el cifrado de credenciales (tokens Meta, `APP_ENCRYPTION_KEY`, auth
+> admin) y las migraciones de Prisma están clasificados como **high** en
+> dificultad pero NO como críticos. Si querés que también exijan aprobación
+> humana en cada fase, movelos a esta sección.

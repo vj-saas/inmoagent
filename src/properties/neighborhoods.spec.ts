@@ -1,4 +1,8 @@
-import { isKnownNeighborhood, normalizeNeighborhood } from './neighborhoods';
+import {
+  isKnownNeighborhood,
+  normalizeNeighborhood,
+  textMentionsNeighborhood,
+} from './neighborhoods';
 
 describe('normalizeNeighborhood', () => {
   it('normaliza una sub-zona coloquial a su barrio canónico', () => {
@@ -33,5 +37,39 @@ describe('isKnownNeighborhood', () => {
 
   it('no reconoce barrios fuera del diccionario', () => {
     expect(isKnownNeighborhood('Un Barrio Inventado')).toBe(false);
+  });
+});
+
+describe('textMentionsNeighborhood', () => {
+  it('acepta match exacto', () => {
+    expect(textMentionsNeighborhood('busco en Recoleta', 'Recoleta')).toBe(
+      true,
+    );
+  });
+
+  it('tolera un typo chico (el LLM corrige la ortografía al extraer)', () => {
+    // Bug real: "caballto" (falta la "i") -> el LLM devuelve "Caballito"
+    // corregido, y un match exacto de substring lo rechazaba.
+    expect(
+      textMentionsNeighborhood('busco depa x caballto pa alkilar', 'Caballito'),
+    ).toBe(true);
+  });
+
+  it('rechaza un barrio que no aparece para nada en el texto', () => {
+    expect(
+      textMentionsNeighborhood('Y en Recoleta tienen alguno?', 'Monte Grande'),
+    ).toBe(false);
+    expect(
+      textMentionsNeighborhood('mas baratos no hay?', 'Monte Grande'),
+    ).toBe(false);
+  });
+
+  it('en barrios de varias palabras exige que TODAS matcheen (no acepta por una palabra genérica compartida)', () => {
+    expect(
+      textMentionsNeighborhood('quiero en villa devoto', 'Villa Urquiza'),
+    ).toBe(false);
+    expect(
+      textMentionsNeighborhood('quiero en villa urquiza', 'Villa Urquiza'),
+    ).toBe(true);
   });
 });

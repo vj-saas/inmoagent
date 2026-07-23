@@ -35,6 +35,12 @@ export const envSchema = z.object({
   STT_PROVIDER: z.enum(['groq', 'openai']).default('groq'),
   DEBOUNCE_SECONDS: z.coerce.number().int().positive().default(6),
 
+  // Cotización APROXIMADA usada solo para poder ORDENAR resultados de precio
+  // cuando hay stock en USD y ARS mezclado y el lead no dio presupuesto (no
+  // hay moneda de referencia). Nunca se usa para filtrar ni para convertir
+  // montos mostrados al lead. Ajustar según la cotización vigente.
+  USD_ARS_RATE: z.coerce.number().positive().default(1500),
+
   ADMIN_MASTER_KEY: z.string().min(1, 'ADMIN_MASTER_KEY es requerido'),
   PUBLIC_BASE_URL: z
     .string()
