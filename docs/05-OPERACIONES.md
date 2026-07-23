@@ -91,33 +91,34 @@ siguen siendo gratis). Templates a crear en el WABA de cada cliente:
 
 ## 6. Deploy
 
-El **paso a paso concreto del deploy gratuito** (Render + Supabase + Upstash,
-para testing con WhatsApp real) vive en `06-DEPLOY.md`. Acá quedan las
-consideraciones agnósticas de proveedor para cuando se pase a **producción**:
+El **paso a paso concreto del deploy** (Railway, backend + Postgres + Redis
+como plugins del mismo proyecto) vive en `06-DEPLOY.md`. Acá quedan las
+consideraciones generales para cuando se pase a **producción**:
 
 - **Un solo proceso:** el backend atiende el webhook y consume las colas BullMQ
   en el mismo contenedor (`Dockerfile`: `node:20-slim` + FFmpeg, corre
   `prisma migrate deploy` al bootear). No hace falta un worker separado.
-- **Healthcheck** en `/health` (chequea DB + Redis). Restart on-failure.
-- **Dominio público estable** para el webhook de Meta (el `*.onrender.com` sirve;
-  un dominio custom evita rehacer la config de Meta si cambia el proveedor).
-- **Backups:** agendar dump diario de Postgres (Supabase tiene backups
-  automáticos en planes pagos; en free, dump manual con `pg_dump`).
+- **Healthcheck** en `/health` (chequea DB + Redis). Restart on-failure
+  (`railway.toml`).
+- **Dominio público estable** para el webhook de Meta (el `*.up.railway.app`
+  sirve; un dominio custom evita rehacer la config de Meta si cambia el
+  proveedor).
+- **Backups:** agendar dump periódico de Postgres (`pg_dump`) además de lo que
+  ofrezca el plan de Railway.
 - **Staging:** un entorno separado apuntado al número de prueba de Meta.
-- **Producción real:** el plan free de Render duerme el servicio (cold start) —
-  ver `06-DEPLOY.md` §6. Para SLA, plan pago de Render o VM (Fly.io / Oracle
-  Cloud).
+- **Producción real:** verificar el plan/tarifa vigente de Railway para el
+  volumen esperado antes de comprometerse (ver `06-DEPLOY.md` §7).
 
 ## 7. Costos operativos estimados (por mes)
 
-> El testing actual corre **gratis** (Render + Supabase + Upstash free, ver
-> `06-DEPLOY.md`). Esta tabla estima el costo de **producción** con infra paga
-> (Render/Railway/Fly), donde una instancia sirve N tenants.
+> El paso a paso de infraestructura (Railway: backend + Postgres + Redis) vive
+> en `06-DEPLOY.md`. Esta tabla estima el costo de **producción**, donde una
+> instancia sirve N tenants.
 
 | Ítem | Costo | Nota |
 |---|---|---|
-| Backend + Redis (Render/Railway pago) | ~7-10 USD | una instancia sirve N tenants |
-| Postgres gestionado (Supabase/Railway pago) | ~5-10 USD | compartido entre tenants |
+| Backend + Redis (Railway) | ~7-10 USD | una instancia sirve N tenants |
+| Postgres gestionado (Railway) | ~5-10 USD | compartido entre tenants |
 | STT (Groq) | ≈ 0 - 2 USD / cliente | audios de leads; Groq es de los más baratos |
 | LLM | ≈ 2-8 USD / cliente | depende de volumen; modelo económico |
 | Mensajería Meta | **0 USD** en flujo reactivo | conversaciones iniciadas por el usuario: gratis. Templates (alertas/re-engagement): por mensaje según tarifa AR vigente — verificar rate card de Meta antes de activarlos |

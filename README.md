@@ -132,26 +132,21 @@ El motor conversacional del bot, en `src/conversation/`:
 - **Purga diaria** (`src/maintenance/`): job repeatable de BullMQ (cron
   `0 3 * * *`) que borra `WebhookEvent` de más de 30 días.
 
-## Deploy (Render + Supabase + Upstash)
+## Deploy (Railway)
 
-Setup gratuito con tres servicios (ver el paso a paso completo en
-`docs/06-DEPLOY.md`):
+Setup con un solo proveedor (ver el paso a paso completo en `docs/06-DEPLOY.md`):
 
-- **Supabase** → Postgres gestionado (`DATABASE_URL`).
-- **Upstash** → Redis para BullMQ (`REDIS_URL`, endpoint `rediss://` con TLS).
-- **Render** → corre el backend (webhook + workers BullMQ + FFmpeg, todo en el
-  mismo proceso Docker). `render.yaml` en la raíz es el blueprint; el
-  `Dockerfile` (`node:20-slim` + `ffmpeg`) corre `prisma migrate deploy`
-  automáticamente al bootear.
+- **Railway — Postgres** (plugin) → `DATABASE_URL`.
+- **Railway — Redis** (plugin) → `REDIS_URL`.
+- **Railway — backend** → corre el proceso (webhook + workers BullMQ + FFmpeg,
+  todo en el mismo contenedor Docker). `railway.toml` en la raíz define el
+  builder (`Dockerfile`, `node:20-slim` + `ffmpeg`) y el healthcheck; el
+  `Dockerfile` corre `prisma migrate deploy` automáticamente al bootear.
 
-Los secretos y URLs se cargan en el dashboard de Render (`render.yaml` los
-declara con `sync: false` para que Render los pida). `PUBLIC_BASE_URL` es la URL
-`*.onrender.com` que asigna Render; el webhook de Meta apunta a
+Los secretos y URLs se cargan a mano en la pestaña **Variables** del servicio
+en Railway. `PUBLIC_BASE_URL` es la URL `*.up.railway.app` que se genera en
+**Settings → Networking → Generate Domain**; el webhook de Meta apunta a
 `PUBLIC_BASE_URL/webhook/whatsapp`.
-
-> Nota: el plan free de Render duerme el servicio tras ~15 min sin tráfico
-> (cold start de ~30-60s en el próximo mensaje) y Supabase pausa el proyecto
-> tras ~1 semana inactivo. Aceptable para testing; ver `docs/06-DEPLOY.md`
 > para las implicancias.
 
 ## Variables de entorno

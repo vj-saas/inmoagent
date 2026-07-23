@@ -24,7 +24,8 @@ agendarla** (la cita se crea pero nunca se confirma ni se sigue).
 - **STT:** Groq (`whisper-large-v3-turbo`) con **fallback automático** a OpenAI Whisper.
 - **LLM:** OpenAI (`gpt-4o-mini` por default) detrás de la interfaz `LlmProvider`.
 - **Audio:** FFmpeg del sistema (`.ogg` → formato para STT).
-- **Deploy:** Render (Docker) + Supabase + Upstash. `render.yaml` es el blueprint.
+- **Deploy:** Railway (Docker, backend + Postgres + Redis como plugins).
+  `railway.toml` define el build y el healthcheck.
 - **Config:** validada con **zod** al arranque (`src/config/env.schema.ts`); si falta
   una variable, el proceso no levanta.
 

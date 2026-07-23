@@ -25,9 +25,9 @@ backend le entrega vía tool calling desde la DB.
 - **STT:** Groq API (whisper-large-v3-turbo) con fallback a OpenAI Whisper
 - **LLM:** OpenAI (modelo económico configurable por env) detrás de una interfaz `LlmProvider`
 - **Audio:** FFmpeg (binario del sistema) para conversión .ogg → .wav/.mp3
-- **Deploy:** Render (Docker: webhook + workers + FFmpeg en un solo proceso) +
-  Supabase (Postgres) + Upstash (Redis). Ver `docs/06-DEPLOY.md`. `render.yaml`
-  en la raíz es el blueprint.
+- **Deploy:** Railway (Docker: webhook + workers + FFmpeg en un solo proceso,
+  más plugins de Postgres y Redis). Ver `docs/06-DEPLOY.md`. `railway.toml` en
+  la raíz define el build y el healthcheck.
 
 ## Estructura de módulos NestJS
 
@@ -86,7 +86,7 @@ src/
 | `docs/03-CONVERSACION.md` | FSM, prompts, tools del LLM, guardrails |
 | `docs/04-PLAN-FASES.md` | Plan de implementación por fases con criterios de aceptación |
 | `docs/05-OPERACIONES.md` | Setup Meta, onboarding de tenants, costos |
-| `docs/06-DEPLOY.md` | Deploy gratis en Render + Supabase + Upstash (paso a paso) |
+| `docs/06-DEPLOY.md` | Deploy en Railway (paso a paso) |
 
 ## Comandos
 
