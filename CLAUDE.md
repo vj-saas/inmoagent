@@ -19,8 +19,8 @@ backend le entrega vía tool calling desde la DB.
 
 - **Backend:** NestJS 10+ (TypeScript, strict mode)
 - **ORM:** Prisma
-- **DB:** PostgreSQL (Supabase en deploy; docker-compose local)
-- **Cola/cache:** Redis + BullMQ (Upstash en deploy; docker-compose local)
+- **DB:** PostgreSQL (plugin de Railway en deploy; docker-compose local)
+- **Cola/cache:** Redis + BullMQ (plugin de Railway en deploy; docker-compose local)
 - **Mensajería:** Meta WhatsApp Cloud API (oficial, sin BSPs de terceros)
 - **STT:** Groq API (whisper-large-v3-turbo) con fallback a OpenAI Whisper
 - **LLM:** OpenAI (modelo económico configurable por env) detrás de una interfaz `LlmProvider`
