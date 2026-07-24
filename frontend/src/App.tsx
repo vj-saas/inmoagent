@@ -24,6 +24,7 @@ import { LeadDetailPage } from './routes/LeadDetailPage';
 import { PeoplePage } from './routes/PeoplePage';
 import { DashboardPage } from './routes/DashboardPage';
 import { AgendaPage } from './routes/AgendaPage';
+import { CallQueuePage } from './routes/CallQueuePage';
 
 export function AppRoutes(): JSX.Element {
   return (
@@ -42,6 +43,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="leads/:leadId" element={<LeadDetailPage />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="agenda" element={<AgendaPage />} />
+        <Route path="llamar-hoy" element={<CallQueuePage />} />
         <Route path="people" element={<PeoplePage />} />
       </Route>
     </Routes>

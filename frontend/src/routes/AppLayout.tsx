@@ -33,6 +33,7 @@ export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
           <Link to="/leads">Leads</Link>
           <Link to="/dashboard">Panel</Link>
           <Link to="/agenda">Agenda</Link>
+          <Link to="/llamar-hoy">Llamar hoy</Link>
           {person?.role === 'OWNER' && <Link to="/people">Gestión de personas</Link>}
         </nav>
         <button type="button" onClick={handleLogout}>
