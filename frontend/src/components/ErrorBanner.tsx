@@ -5,19 +5,12 @@ export interface ErrorBannerProps {
 }
 
 export const ErrorBanner: React.FC<ErrorBannerProps> = ({ message }) => {
-  const bannerStyles: React.CSSProperties = {
-    backgroundColor: '#fee',
-    borderLeft: '4px solid #c33',
-    color: '#900',
-    padding: '12px 16px',
-    marginBottom: '16px',
-    borderRadius: '4px',
-    fontSize: '14px',
-    lineHeight: '1.5',
-  };
-
   return (
-    <div style={bannerStyles} data-testid="error-banner" role="alert">
+    <div
+      className="mb-4 rounded-sm border-l-4 border-danger bg-danger/10 px-4 py-3 text-sm leading-normal text-danger"
+      data-testid="error-banner"
+      role="alert"
+    >
       {message}
     </div>
   );

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Button } from './ui';
 
 export interface PaginationProps {
   total: number;
@@ -18,36 +19,6 @@ export const Pagination: React.FC<PaginationProps> = ({
   const isLastPage = page === totalPages;
   const noPagesOrSinglePage = totalPages === 0 || totalPages === 1;
 
-  const buttonStyles: React.CSSProperties = {
-    padding: '8px 16px',
-    marginRight: '8px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    backgroundColor: '#fff',
-    cursor: 'pointer',
-    fontSize: '14px',
-    fontFamily: 'inherit',
-  };
-
-  const disabledButtonStyles: React.CSSProperties = {
-    ...buttonStyles,
-    opacity: 0.5,
-    cursor: 'not-allowed',
-    backgroundColor: '#f5f5f5',
-  };
-
-  const containerStyles: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '16px',
-    padding: '16px 0',
-  };
-
-  const textStyles: React.CSSProperties = {
-    fontSize: '14px',
-    color: '#666',
-  };
-
   const handlePrevious = () => {
     if (!isFirstPage && !noPagesOrSinglePage) {
       onPageChange(page - 1);
@@ -64,26 +35,31 @@ export const Pagination: React.FC<PaginationProps> = ({
   const isNextDisabled = isLastPage || noPagesOrSinglePage;
 
   return (
-    <div style={containerStyles} data-testid="pagination">
-      <button
+    <div className="flex items-center gap-4 py-4" data-testid="pagination">
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={handlePrevious}
         disabled={isPreviousDisabled}
-        style={isPreviousDisabled ? disabledButtonStyles : buttonStyles}
         data-testid="pagination-previous-btn"
       >
         Anterior
-      </button>
-      <span style={textStyles} data-testid="pagination-text">
+      </Button>
+      <span
+        className="text-sm text-text-muted"
+        data-testid="pagination-text"
+      >
         Página {page} de {totalPages}
       </span>
-      <button
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={handleNext}
         disabled={isNextDisabled}
-        style={isNextDisabled ? disabledButtonStyles : buttonStyles}
         data-testid="pagination-next-btn"
       >
         Siguiente
-      </button>
+      </Button>
     </div>
   );
 };

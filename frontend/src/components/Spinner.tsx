@@ -5,34 +5,15 @@ export interface SpinnerProps {
 }
 
 export const Spinner: React.FC<SpinnerProps> = ({ text = 'Cargando...' }) => {
-  const spinnerStyles: React.CSSProperties = {
-    display: 'inline-block',
-    width: '24px',
-    height: '24px',
-    border: '3px solid rgba(0, 0, 0, 0.1)',
-    borderRadius: '50%',
-    borderTopColor: '#333',
-    animation: 'spin 1s linear infinite',
-  };
-
-  const containerStyles: React.CSSProperties = {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '12px',
-    padding: '16px',
-  };
-
   return (
-    <div style={containerStyles} data-testid="spinner">
-      <style>{`
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
-      <div style={spinnerStyles} />
+    <div
+      className="flex items-center justify-center gap-3 p-4"
+      data-testid="spinner"
+    >
+      <div
+        className="h-6 w-6 animate-spin rounded-full border-[3px] border-border border-t-text"
+        aria-hidden="true"
+      />
       <span>{text}</span>
     </div>
   );
