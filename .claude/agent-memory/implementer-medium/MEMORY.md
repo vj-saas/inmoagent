@@ -22,3 +22,6 @@
 - [T15: AssignmentControl PATCH parcial con flags touched](assignmentcontrol-partial-patch-pattern.md) — sentinela __unassigned__, no diffear valores
 - [T18: patrón de tareas de integración final/verificación](t18-integration-verification-pattern.md) — ensamblado ya suele estar hecho, agregar tests de integración escritura→pantalla en el orquestador
 - [DateRangePicker: estado inválido vía data-valid](daterangepicker-invalid-state-exposure.md) — no callback onInvalid; si T4 lo necesita en JS, considerar onValidityChange
+- [AppointmentActionForm: props finales T4 (B2-vista-agenda)](appointmentactionform-t4-props.md) — mode confirm/reschedule, "Confirmar cita"/"Reprogramar cita", botón "Volver" no "Cancelar"
+- [AppointmentRow: props finales T5 (B2-vista-agenda)](appointmentrow-t5-props.md) — desmonta/monta AppointmentActionForm condicionalmente, onUpdated con Appointment del backend
+- [AgendaPage T7: DateRangePicker emite onChange en el mount](agendapage-t7-daterangepicker-mount-emit.md) — no dupliques carga inicial con useEffect propio; rango 7 días = +6, no +7

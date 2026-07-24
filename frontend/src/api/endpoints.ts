@@ -501,3 +501,146 @@ export function removeProperty(
     token,
   });
 }
+
+// ---------------------------------------------------------------------------
+// admin/tenants/:tenantId/appointments (src/appointments — spec B.2)
+// ---------------------------------------------------------------------------
+
+export type AppointmentStatus = 'PROPOSED' | 'CONFIRMED' | 'DONE' | 'CANCELLED' | 'NO_SHOW';
+
+export interface Appointment {
+  id: string;
+  tenantId: string;
+  leadId: string;
+  status: AppointmentStatus;
+  scheduledAt: string | null;
+  notes: string | null;
+  outcome: string | null;
+  assignedUserId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ListAppointmentsQuery {
+  from?: string;
+  to?: string;
+  status?: AppointmentStatus[];
+}
+
+export interface ListAppointmentsResponse {
+  appointments: Appointment[];
+}
+
+export function listAppointments(
+  tenantId: string,
+  query: ListAppointmentsQuery,
+  token: string,
+): Promise<ListAppointmentsResponse> {
+  const params = new URLSearchParams();
+  if (query.from) params.set('from', query.from);
+  if (query.to) params.set('to', query.to);
+  if (query.status) {
+    for (const s of query.status) params.append('status', s);
+  }
+  const qs = params.toString();
+  return request<ListAppointmentsResponse>(
+    `/admin/tenants/${tenantId}/appointments${qs ? `?${qs}` : ''}`,
+    { method: 'GET', token },
+  );
+}
+
+export interface ConfirmAppointmentRequest {
+  scheduledAt: string;
+  assignedUserId?: string;
+  notes?: string;
+}
+
+export function confirmAppointment(
+  tenantId: string,
+  appointmentId: string,
+  data: ConfirmAppointmentRequest,
+  token: string,
+): Promise<Appointment> {
+  return request<Appointment>(`/admin/tenants/${tenantId}/appointments/${appointmentId}/confirm`, {
+    method: 'POST',
+    body: data,
+    token,
+  });
+}
+
+export interface RescheduleAppointmentRequest {
+  scheduledAt: string;
+  notes?: string;
+}
+
+export function rescheduleAppointment(
+  tenantId: string,
+  appointmentId: string,
+  data: RescheduleAppointmentRequest,
+  token: string,
+): Promise<Appointment> {
+  return request<Appointment>(
+    `/admin/tenants/${tenantId}/appointments/${appointmentId}/reschedule`,
+    {
+      method: 'POST',
+      body: data,
+      token,
+    },
+  );
+}
+
+export interface CancelAppointmentRequest {
+  notes?: string;
+}
+
+export function cancelAppointment(
+  tenantId: string,
+  appointmentId: string,
+  data: CancelAppointmentRequest,
+  token: string,
+): Promise<Appointment> {
+  return request<Appointment>(`/admin/tenants/${tenantId}/appointments/${appointmentId}/cancel`, {
+    method: 'POST',
+    body: data,
+    token,
+  });
+}
+
+export interface MarkAppointmentDoneRequest {
+  outcome?: string;
+  notes?: string;
+}
+
+export function markAppointmentDone(
+  tenantId: string,
+  appointmentId: string,
+  data: MarkAppointmentDoneRequest,
+  token: string,
+): Promise<Appointment> {
+  return request<Appointment>(`/admin/tenants/${tenantId}/appointments/${appointmentId}/done`, {
+    method: 'POST',
+    body: data,
+    token,
+  });
+}
+
+export interface MarkAppointmentNoShowRequest {
+  outcome?: string;
+  notes?: string;
+}
+
+export function markAppointmentNoShow(
+  tenantId: string,
+  appointmentId: string,
+  data: MarkAppointmentNoShowRequest,
+  token: string,
+): Promise<Appointment> {
+  return request<Appointment>(
+    `/admin/tenants/${tenantId}/appointments/${appointmentId}/no-show`,
+    {
+      method: 'POST',
+      body: data,
+      token,
+    },
+  );
+}

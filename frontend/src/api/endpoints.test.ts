@@ -317,3 +317,102 @@ describe('endpoints', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// admin/tenants/:tenantId/appointments (spec B.2 — todavia no implementado)
+// ---------------------------------------------------------------------------
+
+import {
+  cancelAppointment,
+  confirmAppointment,
+  listAppointments,
+  markAppointmentDone,
+  markAppointmentNoShow,
+  rescheduleAppointment,
+} from './endpoints';
+
+describe('endpoints — appointments (B.2)', () => {
+  afterEach(() => {
+    requestMock.mockClear();
+  });
+
+  // AC-1
+  it('listAppointments: GET /admin/tenants/:tenantId/appointments con rango from/to', async () => {
+    await listAppointments(
+      't1',
+      { from: '2026-07-24T00:00:00.000Z', to: '2026-07-31T23:59:59.999Z' },
+      'tok',
+    );
+    expect(requestMock).toHaveBeenCalledWith(
+      '/admin/tenants/t1/appointments?from=2026-07-24T00%3A00%3A00.000Z&to=2026-07-31T23%3A59%3A59.999Z',
+      { method: 'GET', token: 'tok' },
+    );
+  });
+
+  // AC-3
+  it('listAppointments: status se serializa como parametros repetidos, no CSV', async () => {
+    await listAppointments(
+      't1',
+      { status: ['PROPOSED', 'CONFIRMED'] },
+      'tok',
+    );
+    const [url] = requestMock.mock.calls[0] as [string, unknown];
+    expect(url).toBe('/admin/tenants/t1/appointments?status=PROPOSED&status=CONFIRMED');
+    expect(url).not.toContain('PROPOSED,CONFIRMED');
+  });
+
+  // AC-7
+  it('confirmAppointment: POST /admin/tenants/:tenantId/appointments/:id/confirm con body', async () => {
+    await confirmAppointment(
+      't1',
+      'a1',
+      { scheduledAt: '2026-07-25T15:00:00.000Z', assignedUserId: 'u1', notes: 'trae DNI' },
+      'tok',
+    );
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/appointments/a1/confirm', {
+      method: 'POST',
+      body: { scheduledAt: '2026-07-25T15:00:00.000Z', assignedUserId: 'u1', notes: 'trae DNI' },
+      token: 'tok',
+    });
+  });
+
+  // AC-9
+  it('rescheduleAppointment: POST /admin/tenants/:tenantId/appointments/:id/reschedule con body', async () => {
+    await rescheduleAppointment('t1', 'a1', { scheduledAt: '2026-07-26T10:00:00.000Z' }, 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/appointments/a1/reschedule', {
+      method: 'POST',
+      body: { scheduledAt: '2026-07-26T10:00:00.000Z' },
+      token: 'tok',
+    });
+  });
+
+  // AC-10
+  it('cancelAppointment: POST /admin/tenants/:tenantId/appointments/:id/cancel con body', async () => {
+    await cancelAppointment('t1', 'a1', { notes: 'lead pidio cancelar' }, 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/appointments/a1/cancel', {
+      method: 'POST',
+      body: { notes: 'lead pidio cancelar' },
+      token: 'tok',
+    });
+  });
+
+  // AC-11
+  it('markAppointmentDone: POST /admin/tenants/:tenantId/appointments/:id/done con body', async () => {
+    await markAppointmentDone('t1', 'a1', { outcome: 'interesado', notes: 'vuelve a llamar' }, 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/appointments/a1/done', {
+      method: 'POST',
+      body: { outcome: 'interesado', notes: 'vuelve a llamar' },
+      token: 'tok',
+    });
+  });
+
+  // AC-12
+  it('markAppointmentNoShow: POST /admin/tenants/:tenantId/appointments/:id/no-show con body', async () => {
+    await markAppointmentNoShow('t1', 'a1', { notes: 'no aparecio' }, 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/appointments/a1/no-show', {
+      method: 'POST',
+      body: { notes: 'no aparecio' },
+      token: 'tok',
+    });
+  });
+});

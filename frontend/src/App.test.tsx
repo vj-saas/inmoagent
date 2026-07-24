@@ -125,4 +125,23 @@ describe('AppRoutes', () => {
       expect(screen.getByRole('heading', { name: /panel/i })).toBeInTheDocument();
     });
   });
+
+  // AC-1 / AC-18 (spec B.2): /agenda debe estar registrada bajo ProtectedRoute
+  // y renderizar AgendaPage.
+  it('con sesion, navegar a /agenda renderiza AgendaPage', async () => {
+    setSession({
+      token: 'token-123',
+      role: 'OWNER',
+      tenantId: 'tenant-1',
+      email: 'owner@test.com',
+    });
+
+    vi.spyOn(endpoints, 'listAppointments').mockResolvedValue({ appointments: [] });
+
+    renderApp('/agenda');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /agenda/i })).toBeInTheDocument();
+    });
+  });
 });
