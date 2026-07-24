@@ -5,6 +5,8 @@ import { PipelineModule } from '../pipeline/pipeline.module';
 import { MasterKeyGuard } from './guards/master-key.guard';
 import { PersonOrApiKeyGuard } from './guards/person-or-api-key.guard';
 import { TenantApiKeyGuard } from './guards/tenant-api-key.guard';
+import { AppointmentsAdminController } from './appointments/appointments-admin.controller';
+import { AppointmentsAdminService } from './appointments/appointments-admin.service';
 import { AdminLeadsController } from './leads/admin-leads.controller';
 import { AdminLeadsService } from './leads/admin-leads.service';
 import { AdminMetricsController } from './metrics/admin-metrics.controller';
@@ -22,6 +24,7 @@ import { TenantsAdminService } from './tenants/tenants-admin.service';
     AdminTenantsController,
     AdminPropertiesController,
     AdminMetricsController,
+    AppointmentsAdminController,
   ],
   providers: [
     TenantApiKeyGuard,
@@ -36,6 +39,7 @@ import { TenantsAdminService } from './tenants/tenants-admin.service';
     PropertiesAdminService,
     CsvImportService,
     MetricsService,
+    AppointmentsAdminService,
   ],
 })
 export class AdminModule {}

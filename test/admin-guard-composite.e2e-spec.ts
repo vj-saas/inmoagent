@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { INestApplication } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
+import { AppointmentStatus, PersonRole } from '@prisma/client';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
@@ -613,6 +614,242 @@ describe('Admin: guard compuesto PersonOrApiKey en leads/metrics/properties (e2e
         .expect(200);
       const gone = await prisma.lead.findUnique({ where: { id: disposable.id } });
       expect(gone).toBeNull();
+    });
+  });
+
+  /**
+   * B.1 T10 — regresión de aislamiento multi-tenant sobre los SEIS endpoints de
+   * appointments (`GET` + `confirm`/`reschedule`/`cancel`/`done`/`no-show`),
+   * consolidada acá junto al resto de la cobertura del guard compuesto (mismo
+   * criterio que A.3/A.4). Cubre:
+   *
+   *  (a) sesión de tenant A contra `:tenantId` de tenant B → 403 (TenantScopeGuard,
+   *      antes del handler) SIN exponer ni modificar la cita de B (ambos roles
+   *      OWNER y AGENT donde el patrón lo hace).
+   *  (b) el camino de API key (`X-Api-Key`) sigue funcionando igual que antes en
+   *      los seis endpoints (caso explícito de no-regresión).
+   *  (c) `confirm` con `assignedUserId` de OTRO tenant (session-based) → 400, no
+   *      404: la validación de persona no cruza tenant (refuerza AC-5, que en
+   *      `admin-appointments.e2e-spec.ts::AC-5b` ya lo cubre por X-Api-Key).
+   *
+   * El estado de `apptB` es irrelevante para el 403: el guard corta antes del
+   * handler, así que un único `apptB` en CONFIRMED sirve para las cinco
+   * transiciones y verificamos que status/scheduledAt no cambian.
+   */
+  describe('B.1: appointments cross-tenant (guard compuesto) sobre los 6 endpoints', () => {
+    let leadAApptId: string;
+    let apptB: { id: string; scheduledAt: Date; status: AppointmentStatus };
+    let personBId: string;
+    const apptScheduledB = new Date('2026-11-10T12:00:00.000Z');
+    const futureDate = '2026-12-01T15:00:00.000Z';
+
+    const apptsUrl = (tenantId: string) =>
+      `/admin/tenants/${tenantId}/appointments`;
+    // Los 5 endpoints POST de transición con un body válido mínimo (que igual no
+    // se ejecuta cuando el guard rechaza cross-tenant).
+    const transitionActions: Array<{ path: string; body: object }> = [
+      { path: 'confirm', body: { scheduledAt: futureDate } },
+      { path: 'reschedule', body: { scheduledAt: futureDate } },
+      { path: 'cancel', body: {} },
+      { path: 'done', body: {} },
+      { path: 'no-show', body: {} },
+    ];
+
+    beforeAll(async () => {
+      // Lead + persona en B, y una cita persistente de B como objetivo ajeno.
+      const leadA = await prisma.lead.create({
+        data: {
+          tenantId: tenantA,
+          phone: `54911${randomBytes(4).toString('hex')}`,
+        },
+      });
+      leadAApptId = leadA.id;
+
+      const leadB = await prisma.lead.create({
+        data: {
+          tenantId: tenantB,
+          phone: `54911${randomBytes(4).toString('hex')}`,
+        },
+      });
+      const personB = await prisma.person.create({
+        data: {
+          tenantId: tenantB,
+          email: `person-b-appt-${suffix}@test.com`,
+          passwordHash: 'irrelevante',
+          role: PersonRole.AGENT,
+        },
+      });
+      personBId = personB.id;
+
+      const createdB = await prisma.appointment.create({
+        data: {
+          tenantId: tenantB,
+          leadId: leadB.id,
+          status: AppointmentStatus.CONFIRMED,
+          scheduledAt: apptScheduledB,
+        },
+      });
+      apptB = {
+        id: createdB.id,
+        scheduledAt: createdB.scheduledAt!,
+        status: createdB.status,
+      };
+    });
+
+    // Cita fresca de A en el estado pedido, para el camino de API key.
+    async function freshApptA(
+      status: AppointmentStatus,
+      scheduledAt: Date | null = null,
+    ): Promise<string> {
+      const created = await prisma.appointment.create({
+        data: {
+          tenantId: tenantA,
+          leadId: leadAApptId,
+          status,
+          scheduledAt,
+        },
+      });
+      return created.id;
+    }
+
+    async function expectApptBUnchanged(): Promise<void> {
+      const after = await prisma.appointment.findUniqueOrThrow({
+        where: { id: apptB.id },
+      });
+      expect(after.status).toBe(apptB.status);
+      expect(after.scheduledAt?.toISOString()).toBe(
+        apptB.scheduledAt.toISOString(),
+      );
+      expect(after.tenantId).toBe(tenantB);
+    }
+
+    describe('(a) sesión de A contra URL de B → 403, sin exponer ni modificar la cita de B', () => {
+      it('GET appointments: A contra B → 403 sin listar citas de B', async () => {
+        const res = await request(app.getHttpServer())
+          .get(apptsUrl(tenantB))
+          .set(bearer(ownerTokenA))
+          .expect(403);
+        expect(JSON.stringify(res.body)).not.toContain(apptB.id);
+      });
+
+      it('GET appointments: también con rol AGENT del tenant A → 403', async () => {
+        await request(app.getHttpServer())
+          .get(apptsUrl(tenantB))
+          .set(bearer(agentTokenA))
+          .expect(403);
+      });
+
+      for (const action of transitionActions) {
+        it(`POST ${action.path}: A contra B → 403 y la cita de B no muta`, async () => {
+          const res = await request(app.getHttpServer())
+            .post(`${apptsUrl(tenantB)}/${apptB.id}/${action.path}`)
+            .set(bearer(ownerTokenA))
+            .send(action.body)
+            .expect(403);
+          expect(JSON.stringify(res.body)).not.toContain(apptB.id);
+          await expectApptBUnchanged();
+        });
+      }
+
+      it('POST cancel: también con rol AGENT del tenant A → 403 y B no muta', async () => {
+        await request(app.getHttpServer())
+          .post(`${apptsUrl(tenantB)}/${apptB.id}/cancel`)
+          .set(bearer(agentTokenA))
+          .send({})
+          .expect(403);
+        await expectApptBUnchanged();
+      });
+    });
+
+    describe('(b) camino de API key sigue funcionando igual en los 6 endpoints', () => {
+      it('GET appointments: la API key del tenant lista sus citas', async () => {
+        await request(app.getHttpServer())
+          .get(apptsUrl(tenantA))
+          .set('X-Api-Key', apiKeyA)
+          .expect(200);
+      });
+
+      it('POST confirm: PROPOSED → CONFIRMED por API key', async () => {
+        const aid = await freshApptA(AppointmentStatus.PROPOSED);
+        const res = await request(app.getHttpServer())
+          .post(`${apptsUrl(tenantA)}/${aid}/confirm`)
+          .set('X-Api-Key', apiKeyA)
+          .send({ scheduledAt: futureDate })
+          .expect(200);
+        expect((res.body as { status: string }).status).toBe(
+          AppointmentStatus.CONFIRMED,
+        );
+      });
+
+      it('POST reschedule: CONFIRMED → actualiza scheduledAt por API key', async () => {
+        const aid = await freshApptA(
+          AppointmentStatus.CONFIRMED,
+          new Date(futureDate),
+        );
+        await request(app.getHttpServer())
+          .post(`${apptsUrl(tenantA)}/${aid}/reschedule`)
+          .set('X-Api-Key', apiKeyA)
+          .send({ scheduledAt: '2026-12-05T09:00:00.000Z' })
+          .expect(200);
+      });
+
+      it('POST cancel: PROPOSED → CANCELLED por API key', async () => {
+        const aid = await freshApptA(AppointmentStatus.PROPOSED);
+        const res = await request(app.getHttpServer())
+          .post(`${apptsUrl(tenantA)}/${aid}/cancel`)
+          .set('X-Api-Key', apiKeyA)
+          .send({})
+          .expect(200);
+        expect((res.body as { status: string }).status).toBe(
+          AppointmentStatus.CANCELLED,
+        );
+      });
+
+      it('POST done: CONFIRMED → DONE por API key', async () => {
+        const aid = await freshApptA(
+          AppointmentStatus.CONFIRMED,
+          new Date(futureDate),
+        );
+        const res = await request(app.getHttpServer())
+          .post(`${apptsUrl(tenantA)}/${aid}/done`)
+          .set('X-Api-Key', apiKeyA)
+          .send({ outcome: 'ok' })
+          .expect(200);
+        expect((res.body as { status: string }).status).toBe(
+          AppointmentStatus.DONE,
+        );
+      });
+
+      it('POST no-show: CONFIRMED → NO_SHOW por API key', async () => {
+        const aid = await freshApptA(
+          AppointmentStatus.CONFIRMED,
+          new Date(futureDate),
+        );
+        const res = await request(app.getHttpServer())
+          .post(`${apptsUrl(tenantA)}/${aid}/no-show`)
+          .set('X-Api-Key', apiKeyA)
+          .send({})
+          .expect(200);
+        expect((res.body as { status: string }).status).toBe(
+          AppointmentStatus.NO_SHOW,
+        );
+      });
+    });
+
+    describe('(c) confirm con assignedUserId de otro tenant → 400, no 404', () => {
+      it('sesión de A confirma una cita de A con assignedUserId de B → 400 y la cita de A no cambia', async () => {
+        const aid = await freshApptA(AppointmentStatus.PROPOSED);
+        await request(app.getHttpServer())
+          .post(`${apptsUrl(tenantA)}/${aid}/confirm`)
+          .set(bearer(ownerTokenA))
+          .send({ scheduledAt: futureDate, assignedUserId: personBId })
+          .expect(400);
+        const unchanged = await prisma.appointment.findUniqueOrThrow({
+          where: { id: aid },
+        });
+        expect(unchanged.status).toBe(AppointmentStatus.PROPOSED);
+        expect(unchanged.assignedUserId).toBeNull();
+      });
     });
   });
 });

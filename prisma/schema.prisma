@@ -71,9 +71,10 @@ model Person {
   role         PersonRole
   active       Boolean    @default(true)
 
-  sessions      Session[]
-  assignedLeads Lead[]     @relation("LeadAssignee")
-  authoredNotes LeadNote[]
+  sessions             Session[]
+  assignedLeads        Lead[]        @relation("LeadAssignee")
+  assignedAppointments Appointment[] @relation("AppointmentAssignee")
+  authoredNotes        LeadNote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -292,6 +293,7 @@ enum AppointmentStatus {
   CONFIRMED // lead confirmó fecha (manual o vía Calendly webhook post-MVP)
   DONE
   CANCELLED
+  NO_SHOW // lead no se presentó a una cita CONFIRMED (B.1)
 }
 
 model Appointment {
@@ -305,10 +307,15 @@ model Appointment {
   scheduledAt DateTime?
   notes       String?
 
+  assignedUserId String?
+  assignedUser   Person? @relation("AppointmentAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  outcome        String? // resultado libre de la visita (done/no-show), B.1
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tenantId, status])
+  @@index([tenantId, scheduledAt])
 }
 
 // ─────────────────────────────────────────────
