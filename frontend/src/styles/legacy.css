@@ -1,4 +1,6 @@
-/* Legacy CSS styles — temporary, will be removed in T12 */
+/* Legacy CSS styles — temporary, will be removed in T12.
+   Preserved intact from previous frontend/src/index.css to maintain
+   independence from theme.css tokens and ensure clean removal. */
 
 a {
   font-weight: 500;
@@ -28,7 +30,7 @@ textarea {
   color: var(--color-text);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius);
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
@@ -51,7 +53,7 @@ textarea:disabled {
 }
 
 button {
-  border-radius: var(--radius-card);
+  border-radius: var(--radius);
   border: 1px solid var(--color-border);
   padding: 0.6em 1.2em;
   font-size: 1em;
