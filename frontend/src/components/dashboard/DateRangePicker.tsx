@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface DateRangePickerProps {
   /** Rango por defecto (formato `YYYY-MM-DD`, calculado por el padre). */

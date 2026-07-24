@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc -p tsconfig.build.json && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
@@ -31,6 +31,7 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "jsdom": "^25.0.1",
     "prettier": "^3.4.2",
+    "terser": "^5.49.0",
     "typescript": "^5.7.3",
     "vite": "^5.4.8",
     "vitest": "^2.1.8"

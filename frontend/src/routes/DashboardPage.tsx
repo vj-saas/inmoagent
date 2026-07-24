@@ -48,7 +48,7 @@ export function DashboardPage(): JSX.Element {
   const tenantId = person?.tenantId ?? '';
 
   const [initialRange] = useState(defaultRange);
-  const [range, setRange] = useState<{ from: string; to: string }>(initialRange);
+  const [, setRange] = useState<{ from: string; to: string }>(initialRange);
   const [isRangeValid, setIsRangeValid] = useState(true);
 
   const { loading, error, data, run } = useApi<MetricsResult>(

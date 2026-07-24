@@ -81,7 +81,6 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
     >
       {messages.map((message, index) => {
         const isIncoming = message.direction === 'IN';
-        const isOutgoing = message.direction === 'OUT';
 
         return (
           <div
