@@ -18,6 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { Spinner } from '../components/Spinner';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { Card, CardBody, Input, Button } from '../components/ui';
 
 export function LoginPage(): JSX.Element {
   const { login } = useAuth();
@@ -52,73 +53,60 @@ export function LoginPage(): JSX.Element {
   };
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-      }}
-    >
-      <div
-        style={{
-          width: '100%',
-          maxWidth: '380px',
-          backgroundColor: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: '12px',
-          boxShadow: 'var(--shadow-md)',
-          padding: '32px',
-        }}
-      >
-        <h1 style={{ fontSize: '1.5rem', marginBottom: '4px' }}>Iniciar sesión</h1>
-        <p style={{ color: 'var(--color-text-muted)', marginTop: 0, marginBottom: '24px', fontSize: '0.9rem' }}>
-          Panel de control del agente inmobiliario
-        </p>
-        {errorMessage && (
-          <div style={{ marginBottom: '16px' }}>
-            <ErrorBanner message={errorMessage} />
-          </div>
-        )}
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '16px' }}>
-            <label htmlFor="login-email">Email</label>
-            <input
-              id="login-email"
-              name="email"
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-              required
-            />
-          </div>
-          <div style={{ marginBottom: '20px' }}>
-            <label htmlFor="login-password">Contraseña</label>
-            <input
-              id="login-password"
-              name="password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-              required
-            />
-          </div>
-          {loading && (
-            <div style={{ marginBottom: '16px' }}>
-              <Spinner text="Iniciando sesión..." />
+    <div className="flex min-h-screen w-full items-center justify-center p-6">
+      <Card className="w-full max-w-[380px]">
+        <CardBody className="p-8">
+          <h1 className="mb-1 text-2xl font-semibold text-text">Iniciar sesión</h1>
+          <p className="mb-6 mt-0 text-sm text-text-muted">
+            Panel de control del agente inmobiliario
+          </p>
+          {errorMessage && (
+            <div className="mb-4">
+              <ErrorBanner message={errorMessage} />
             </div>
           )}
-          <button type="submit" disabled={loading} style={{ width: '100%' }}>
-            Ingresar
-          </button>
-        </form>
-      </div>
+          <form onSubmit={handleSubmit}>
+            <div className="mb-4">
+              <label htmlFor="login-email" className="mb-1 block text-sm font-medium text-text">
+                Email
+              </label>
+              <Input
+                id="login-email"
+                name="email"
+                type="email"
+                autoComplete="username"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+            <div className="mb-5">
+              <label htmlFor="login-password" className="mb-1 block text-sm font-medium text-text">
+                Contraseña
+              </label>
+              <Input
+                id="login-password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                required
+              />
+            </div>
+            {loading && (
+              <div className="mb-4">
+                <Spinner text="Iniciando sesión..." />
+              </div>
+            )}
+            <Button type="submit" disabled={loading} className="w-full">
+              Ingresar
+            </Button>
+          </form>
+        </CardBody>
+      </Card>
     </div>
   );
 }
