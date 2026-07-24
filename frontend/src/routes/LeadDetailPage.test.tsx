@@ -88,7 +88,7 @@ describe('LeadDetailPage', () => {
     });
     expect(getLeadMessagesSpy).toHaveBeenCalledWith(TENANT_ID, LEAD_ID, TOKEN);
     expect(getLeadNotesSpy).toHaveBeenCalledWith(TENANT_ID, LEAD_ID, TOKEN);
-    expect(listAssignableUsersSpy).toHaveBeenCalledWith(TENANT_ID, LEAD_ID, TOKEN);
+    expect(listAssignableUsersSpy).toHaveBeenCalledWith(TENANT_ID, TOKEN);
   });
 
   it('AC-2: muestra Spinner mientras lead/messages están en curso', async () => {

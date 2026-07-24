@@ -83,7 +83,7 @@ export function LeadDetailPage(): JSX.Element {
       .then((result) => setNotes(result.notes))
       .catch(() => {});
 
-    assignableApi.run(tenantId, leadId, authToken).catch(() => {});
+    assignableApi.run(tenantId, authToken).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tenantId, leadId]);
 
