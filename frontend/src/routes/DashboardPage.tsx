@@ -20,8 +20,7 @@ import { useState } from 'react';
 import { getMetrics, type MetricsResult } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { useApi } from '../hooks/useApi';
-import { Spinner } from '../components/Spinner';
-import { ErrorBanner } from '../components/ErrorBanner';
+import { AsyncSection } from '../components/ui';
 import { DateRangePicker } from '../components/dashboard/DateRangePicker';
 import { MetricCard } from '../components/dashboard/MetricCard';
 
@@ -66,7 +65,7 @@ export function DashboardPage(): JSX.Element {
 
   return (
     <div>
-      <h1>Panel</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-text">Panel</h1>
 
       <DateRangePicker
         initialFrom={initialRange.from}
@@ -76,23 +75,27 @@ export function DashboardPage(): JSX.Element {
       />
 
       {!isRangeValid && (
-        <p data-testid="range-validation-error">
+        <p data-testid="range-validation-error" className="text-sm text-danger">
           La fecha desde no puede ser posterior a la fecha hasta
         </p>
       )}
 
-      {isRangeValid && loading && <Spinner text="Cargando métricas..." />}
-
-      {isRangeValid && !loading && error && <ErrorBanner message={errorMessage(error)} />}
-
-      {isRangeValid && !loading && !error && data && (
-        <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '16px' }}>
-          <MetricCard label="Leads nuevos" value={data.newLeads} />
-          <MetricCard label="Conversaciones activas" value={data.activeConversations} />
-          <MetricCard label="Handoffs" value={data.handoffs} />
-          <MetricCard label="Citas propuestas" value={data.appointments.proposed} />
-          <MetricCard label="Citas confirmadas" value={data.appointments.confirmed} />
-        </div>
+      {isRangeValid && (
+        <AsyncSection
+          loading={loading}
+          error={error ? errorMessage(error) : null}
+          loadingLabel="Cargando métricas..."
+        >
+          {data && (
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <MetricCard label="Leads nuevos" value={data.newLeads} />
+              <MetricCard label="Conversaciones activas" value={data.activeConversations} />
+              <MetricCard label="Handoffs" value={data.handoffs} />
+              <MetricCard label="Citas propuestas" value={data.appointments.proposed} />
+              <MetricCard label="Citas confirmadas" value={data.appointments.confirmed} />
+            </div>
+          )}
+        </AsyncSection>
       )}
     </div>
   );

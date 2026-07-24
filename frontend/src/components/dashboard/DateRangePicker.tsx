@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Input } from '../ui';
 
 export interface DateRangePickerProps {
   /** Rango por defecto (formato `YYYY-MM-DD`, calculado por el padre). */
@@ -60,25 +61,31 @@ export function DateRangePicker({
   }, [fromDay, toDay]);
 
   return (
-    <div data-testid="date-range-picker" data-valid={isValid}>
-      <label htmlFor="date-range-from">
+    <div
+      className="mb-4 flex flex-wrap items-end gap-4"
+      data-testid="date-range-picker"
+      data-valid={isValid}
+    >
+      <label htmlFor="date-range-from" className="flex flex-col gap-1 text-sm font-medium text-text">
         Desde
-        <input
+        <Input
           id="date-range-from"
           type="date"
           value={fromDay}
           onChange={(e) => setFromDay(e.target.value)}
           data-testid="date-range-from"
+          className="w-auto"
         />
       </label>
-      <label htmlFor="date-range-to">
+      <label htmlFor="date-range-to" className="flex flex-col gap-1 text-sm font-medium text-text">
         Hasta
-        <input
+        <Input
           id="date-range-to"
           type="date"
           value={toDay}
           onChange={(e) => setToDay(e.target.value)}
           data-testid="date-range-to"
+          className="w-auto"
         />
       </label>
     </div>
