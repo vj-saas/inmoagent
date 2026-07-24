@@ -36,8 +36,22 @@ export class AdminLeadsController {
   ) {
     const page = query.page ?? 1;
     const where: Prisma.LeadWhereInput = {
-      tenantId,
-      ...(query.state ? { state: query.state } : {}),
+      AND: [
+        { tenantId },
+        ...(query.state && query.state.length > 0
+          ? [{ state: { in: query.state } }]
+          : []),
+        ...(query.q
+          ? [
+              {
+                OR: [
+                  { phone: { contains: query.q, mode: 'insensitive' as const } },
+                  { name: { contains: query.q, mode: 'insensitive' as const } },
+                ],
+              },
+            ]
+          : []),
+      ],
     };
 
     const [leads, total] = await Promise.all([
@@ -51,6 +65,20 @@ export class AdminLeadsController {
     ]);
 
     return { leads, total, page, pageSize: PAGE_SIZE };
+  }
+
+  @Get(':leadId')
+  async getOne(
+    @Param('tenantId') tenantId: string,
+    @Param('leadId') leadId: string,
+  ) {
+    const lead = await this.prisma.lead.findFirst({
+      where: { id: leadId, tenantId },
+    });
+    if (!lead) {
+      throw new NotFoundException('Lead no encontrado');
+    }
+    return lead;
   }
 
   @Get(':leadId/messages')

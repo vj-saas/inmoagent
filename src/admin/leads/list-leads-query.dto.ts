@@ -1,11 +1,21 @@
-import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { ConversationState } from '@prisma/client';
 
 export class ListLeadsQueryDto {
   @IsOptional()
-  @IsEnum(ConversationState)
-  state?: ConversationState;
+  @IsString()
+  q?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+    return Array.isArray(value) ? value : [value];
+  })
+  @IsEnum(ConversationState, { each: true })
+  state?: ConversationState[];
 
   @IsOptional()
   @Type(() => Number)

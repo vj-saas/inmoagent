@@ -212,4 +212,205 @@ describe('Admin: release y supresión de leads (e2e)', () => {
       .set('X-Api-Key', apiKey)
       .expect(404);
   });
+
+  describe('Búsqueda (q) y filtro multi-estado en GET /leads (AC-2, AC-4, AC-5)', () => {
+    it('busca por phone que contiene el término (case-insensitive)', async () => {
+      const needle = randomBytes(4).toString('hex');
+      const lead = await createLead({ state: ConversationState.GREETING });
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { phone: `5491100${needle.toUpperCase()}` },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/admin/tenants/${tenant.id}/leads`)
+        .query({ q: needle })
+        .set('X-Api-Key', apiKey)
+        .expect(200);
+
+      const body = res.body as { leads: Array<{ id: string }> };
+      expect(body.leads.some((l) => l.id === lead.id)).toBe(true);
+    });
+
+    it('busca por name que contiene el término (case-insensitive)', async () => {
+      const lead = await createLead({ state: ConversationState.GREETING });
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { name: 'Maria Fernanda Gomez' },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/admin/tenants/${tenant.id}/leads`)
+        .query({ q: 'fernanda' })
+        .set('X-Api-Key', apiKey)
+        .expect(200);
+
+      const body = res.body as { leads: Array<{ id: string }> };
+      expect(body.leads.some((l) => l.id === lead.id)).toBe(true);
+    });
+
+    it('combina state + q en una sola llamada (intersección calculada por el backend)', async () => {
+      const needle = randomBytes(4).toString('hex');
+      const matching = await createLead({
+        state: ConversationState.QUALIFICATION,
+      });
+      await prisma.lead.update({
+        where: { id: matching.id },
+        data: { phone: `5491100${needle}` },
+      });
+      const wrongState = await createLead({ state: ConversationState.GREETING });
+      await prisma.lead.update({
+        where: { id: wrongState.id },
+        data: { phone: `5491101${needle}` },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/admin/tenants/${tenant.id}/leads`)
+        .query(`q=${needle}&state=${ConversationState.QUALIFICATION}`)
+        .set('X-Api-Key', apiKey)
+        .expect(200);
+
+      const body = res.body as { leads: Array<{ id: string }> };
+      expect(body.leads.some((l) => l.id === matching.id)).toBe(true);
+      expect(body.leads.some((l) => l.id === wrongState.id)).toBe(false);
+    });
+
+    it('filtra con dos estados a la vez (?state=A&state=B)', async () => {
+      const leadGreeting = await createLead({
+        state: ConversationState.GREETING,
+      });
+      const leadHandoff = await createLead({
+        state: ConversationState.HUMAN_HANDOFF,
+        handoffAt: new Date(),
+      });
+      const leadOptedOut = await createLead({
+        state: ConversationState.OPTED_OUT,
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/admin/tenants/${tenant.id}/leads`)
+        .query(
+          `state=${ConversationState.GREETING}&state=${ConversationState.HUMAN_HANDOFF}`,
+        )
+        .set('X-Api-Key', apiKey)
+        .expect(200);
+
+      const body = res.body as { leads: Array<{ id: string }> };
+      const ids = body.leads.map((l) => l.id);
+      expect(ids).toContain(leadGreeting.id);
+      expect(ids).toContain(leadHandoff.id);
+      expect(ids).not.toContain(leadOptedOut.id);
+    });
+  });
+
+  describe('Detalle de lead GET /leads/:leadId (AC-6, AC-7)', () => {
+    it('200: devuelve todos los campos f* esperados y sin el array messages', async () => {
+      const lead = await createLead({ state: ConversationState.QUALIFICATION });
+
+      const res = await request(app.getHttpServer())
+        .get(`/admin/tenants/${tenant.id}/leads/${lead.id}`)
+        .set('X-Api-Key', apiKey)
+        .expect(200);
+
+      const body = res.body as Record<string, unknown>;
+      expect(body).toEqual(
+        expect.objectContaining({
+          id: lead.id,
+          tenantId: tenant.id,
+          phone: lead.phone,
+          state: ConversationState.QUALIFICATION,
+          fOperation: null,
+          fNeighborhoods: [],
+          fMaxPrice: null,
+          fCurrency: null,
+          fMinRooms: null,
+          fGarage: null,
+          fPetsAllowed: null,
+          fNotes: null,
+          fPreferredDay: null,
+          fOfferedNeighborhoods: [],
+          fPriceMentionedAtTurn: null,
+          lastSearchIds: [],
+          turnCount: 0,
+        }),
+      );
+      expect(body).not.toHaveProperty('messages');
+    });
+
+    it('404: leadId inexistente', async () => {
+      await request(app.getHttpServer())
+        .get(`/admin/tenants/${tenant.id}/leads/lead-inexistente`)
+        .set('X-Api-Key', apiKey)
+        .expect(404);
+    });
+
+    it('404: leadId que pertenece a otro tenant (mismo status/mensaje que inexistente)', async () => {
+      const otherTenant = await prisma.tenant.create({
+        data: {
+          name: 'Otro Tenant Detalle',
+          slug: `otro-tenant-detalle-${randomBytes(4).toString('hex')}`,
+          phoneNumberId: `otro-tenant-detalle-phone-${randomBytes(4).toString('hex')}`,
+          accessTokenEnc: 'irrelevante',
+          apiKeyHash: await argon2.hash('irrelevante'),
+        },
+      });
+      const foreignLead = await prisma.lead.create({
+        data: {
+          tenantId: otherTenant.id,
+          phone: `5491100${randomBytes(4).toString('hex')}`,
+        },
+      });
+
+      try {
+        const resInexistente = await request(app.getHttpServer())
+          .get(`/admin/tenants/${tenant.id}/leads/lead-inexistente`)
+          .set('X-Api-Key', apiKey)
+          .expect(404);
+        const resForeign = await request(app.getHttpServer())
+          .get(`/admin/tenants/${tenant.id}/leads/${foreignLead.id}`)
+          .set('X-Api-Key', apiKey)
+          .expect(404);
+
+        expect(resForeign.body).toEqual(resInexistente.body);
+      } finally {
+        await prisma.tenant
+          .delete({ where: { id: otherTenant.id } })
+          .catch(() => undefined);
+      }
+    });
+  });
+
+  describe('Regresión AC-14: tenantId de otro tenant en la URL → 403 (ya garantizado por TenantScopeGuard de A.2)', () => {
+    it('GET .../leads y GET .../leads/:leadId con X-Api-Key de otro tenant no filtran datos de este tenant (401, camino legado de API key)', async () => {
+      const otherTenant = await prisma.tenant.create({
+        data: {
+          name: 'Otro Tenant Regresion',
+          slug: `otro-tenant-regresion-${randomBytes(4).toString('hex')}`,
+          phoneNumberId: `otro-tenant-regresion-phone-${randomBytes(4).toString('hex')}`,
+          accessTokenEnc: 'irrelevante',
+          apiKeyHash: await argon2.hash('irrelevante'),
+        },
+      });
+      const lead = await createLead({ state: ConversationState.GREETING });
+
+      try {
+        // La API key de `tenant` no autoriza sobre la URL de `otherTenant`
+        // (aislamiento de la rama de API key: la nota de T4 remite el 403 por
+        // sesión al e2e del guard compuesto, donde ya vive esa cobertura de
+        // AC-14/AC-19; acá se confirma que la rama de API key sigue rechazando).
+        await request(app.getHttpServer())
+          .get(`/admin/tenants/${otherTenant.id}/leads`)
+          .set('X-Api-Key', apiKey)
+          .expect(401);
+        await request(app.getHttpServer())
+          .get(`/admin/tenants/${otherTenant.id}/leads/${lead.id}`)
+          .set('X-Api-Key', apiKey)
+          .expect(401);
+      } finally {
+        await prisma.tenant
+          .delete({ where: { id: otherTenant.id } })
+          .catch(() => undefined);
+      }
+    });
+  });
 });

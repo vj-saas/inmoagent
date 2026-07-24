@@ -7,3 +7,11 @@
 - [LoginPage: mocking de useAuth + react-router-dom](login-page-mocking-pattern.md) — patrón de test para pantallas que dependen de ambos hooks
 - [react-router-dom agregado en T11](react-router-dom-added.md) — no estaba instalado, se sumó v6.28; ya disponible para T12/T13/T17
 - [useApi con funciones tipadas de endpoints.ts](useapi-typed-function-cast.md) — castear al pasar la función; encadenar .catch en llamadas sin await para evitar unhandled rejection
+- [Lead/ConversationState calcado de schema.prisma + serialización de arrays en query](lead-type-and-state-serialization.md) — no inventar valores de enum; usar URLSearchParams.append repetido para filtros array
+- [LeadChips: props sueltas en vez de tipo Lead compartido](leadchips-decoupled-props.md) — evita bloqueo por tareas paralelas que tocan el mismo tipo; OperationType le falta TEMP_RENT
+- [AdminLeadsController: patrón getOne + where AND](admin-leads-getone-pattern.md) — findFirst+tenantId nunca por id solo; where con AND para state[]/q condicionales
+- [Cross-tenant 403 vs 401 en PersonOrApiKeyGuard](admin-leads-e2e-cross-tenant-403-vs-401.md) — 403 solo por sesión Bearer, API key da 401; reusar fixtures de admin-guard-composite.e2e-spec.ts
+- [LeadStateFilter: mapeo UI→ConversationState](leadstatefilter-ui-mapping.md) — test de exhaustividad del enum, "Todas" fuera del record como caso especial
+- [LeadsPage: orquestación filtro+búsqueda+paginación](leadspage-orchestration-pattern.md) — esqueleto igual a PeoplePage, mutuamente excluyentes loading/error/vacío/datos, cast de leads a Lead[]
+- [App.tsx: AppRoutes exportado sin BrowserRouter](app-routes-testable-split.md) — permite testear con MemoryRouter+initialEntries sin duplicar el árbol de rutas
+- [Hueco de cobertura en mutua exclusión de estados](leadspage-mutual-exclusion-gap.md) — al auditar tests, buscar caso "éxito oculta el resto" y "cambiar un campo no resetea otro"

@@ -126,17 +126,53 @@ export function resetPassword(
 // TODO(A.3): tipar Lead/Message reales cuando se consuma desde pantallas.
 // ---------------------------------------------------------------------------
 
+// Calcado de `enum ConversationState` en prisma/schema.prisma. No agregar
+// valores que el backend no defina (ver spec A.3).
 export type ConversationState =
+  | 'GREETING'
   | 'QUALIFICATION'
-  | 'SEARCH'
-  | 'PRESENTING'
+  | 'SEARCH_MATCH'
   | 'SCHEDULING'
   | 'HUMAN_HANDOFF'
-  | 'OPTED_OUT'
-  | 'CLOSED';
+  | 'OPTED_OUT';
+
+// El enum `OperationType` de propiedades no incluye TEMP_RENT (solo aplica a
+// alquileres tradicionales/venta); fOperation de Lead sí puede traer los tres
+// valores reales del enum Prisma. Tipo propio para no mentir sobre los
+// valores posibles de este campo.
+export type LeadOperationType = 'SALE' | 'RENT' | 'TEMP_RENT';
+
+// Calcado del modelo `Lead` en prisma/schema.prisma.
+export interface Lead {
+  id: string;
+  tenantId: string;
+  phone: string;
+  name: string | null;
+  state: ConversationState;
+  fOperation: LeadOperationType | null;
+  fNeighborhoods: string[];
+  fMaxPrice: string | null;
+  fCurrency: string | null;
+  fMinRooms: number | null;
+  fGarage: boolean | null;
+  fPetsAllowed: boolean | null;
+  fNotes: string | null;
+  fPreferredDay: string | null;
+  fOfferedNeighborhoods: string[];
+  fPriceMentionedAtTurn: number | null;
+  handoffAt: string | null;
+  optedOutAt: string | null;
+  lastMessageAt: string | null;
+  greetedAt: string | null;
+  lastSearchIds: string[];
+  turnCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface ListLeadsQuery {
-  state?: ConversationState;
+  q?: string;
+  state?: ConversationState[];
   page?: number;
 }
 
@@ -153,7 +189,10 @@ export function listLeads(
   token: string,
 ): Promise<ListLeadsResponse> {
   const params = new URLSearchParams();
-  if (query.state) params.set('state', query.state);
+  if (query.q) params.set('q', query.q);
+  if (query.state) {
+    for (const s of query.state) params.append('state', s);
+  }
   if (query.page) params.set('page', String(query.page));
   const qs = params.toString();
   // TODO(A.3): implementar consumo real en la pantalla de leads.
@@ -161,6 +200,13 @@ export function listLeads(
     `/admin/tenants/${tenantId}/leads${qs ? `?${qs}` : ''}`,
     { method: 'GET', token },
   );
+}
+
+export function getLead(tenantId: string, leadId: string, token: string): Promise<Lead> {
+  return request<Lead>(`/admin/tenants/${tenantId}/leads/${leadId}`, {
+    method: 'GET',
+    token,
+  });
 }
 
 export function getLeadMessages(

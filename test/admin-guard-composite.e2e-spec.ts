@@ -320,6 +320,14 @@ describe('Admin: guard compuesto PersonOrApiKey en leads/metrics/properties (e2e
         .expect(403);
       expect(JSON.stringify(res.body)).not.toContain(propBId);
     });
+
+    it('leads: detalle (GET /leads/:leadId) también rechaza contra la URL de B, sin devolver el lead', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`${leadsUrl(tenantB)}/${leadBId}`)
+        .set(bearer(ownerTokenA))
+        .expect(403);
+      expect(JSON.stringify(res.body)).not.toContain(leadBPhone);
+    });
   });
 
   describe('Sin credenciales → 401 en los tres recursos', () => {

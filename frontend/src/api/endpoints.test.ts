@@ -10,6 +10,7 @@ import {
   createPerson,
   createProperty,
   deactivatePerson,
+  getLead,
   getLeadMessages,
   getMe,
   getMetrics,
@@ -89,12 +90,32 @@ describe('endpoints', () => {
     );
   });
 
-  it('listLeads: GET /admin/tenants/:tenantId/leads con query string', async () => {
-    await listLeads('t1', { state: 'QUALIFICATION', page: 2 }, 'tok');
+  it('listLeads: GET /admin/tenants/:tenantId/leads con query string (state como array de un elemento)', async () => {
+    await listLeads('t1', { state: ['QUALIFICATION'], page: 2 }, 'tok');
     expect(requestMock).toHaveBeenCalledWith(
       '/admin/tenants/t1/leads?state=QUALIFICATION&page=2',
       { method: 'GET', token: 'tok' },
     );
+  });
+
+  it('listLeads: state con múltiples valores se serializa como parámetros repetidos, no CSV ni array', async () => {
+    await listLeads(
+      't1',
+      { state: ['QUALIFICATION', 'SCHEDULING'] as const as ('QUALIFICATION' | 'SCHEDULING')[] },
+      'tok',
+    );
+    const [url] = requestMock.mock.calls[0] as [string, unknown];
+    expect(url).toBe('/admin/tenants/t1/leads?state=QUALIFICATION&state=SCHEDULING');
+    // No debe aparecer como valor único separado por comas ni como "[object Object]".
+    expect(url).not.toContain('QUALIFICATION,SCHEDULING');
+  });
+
+  it('listLeads: q se serializa como parámetro de búsqueda libre', async () => {
+    await listLeads('t1', { q: 'perez' }, 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/leads?q=perez', {
+      method: 'GET',
+      token: 'tok',
+    });
   });
 
   it('listLeads: sin query params no agrega "?"', async () => {
@@ -104,6 +125,20 @@ describe('endpoints', () => {
       token: 'tok',
     });
   });
+
+  it('getLead: GET /admin/tenants/:tenantId/leads/:leadId', async () => {
+    await getLead('t1', 'l1', 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/leads/l1', {
+      method: 'GET',
+      token: 'tok',
+    });
+  });
+
+  // ConversationState solo acepta los valores reales del enum Prisma
+  // (GREETING | QUALIFICATION | SEARCH_MATCH | SCHEDULING | HUMAN_HANDOFF |
+  // OPTED_OUT). Los valores inventados del stub previo (SEARCH, PRESENTING,
+  // CLOSED) ya no existen: lo siguiente no debe compilar si se descomenta:
+  // await listLeads('t1', { state: ['CLOSED'] }, 'tok');
 
   it('getLeadMessages: GET /admin/tenants/:tenantId/leads/:leadId/messages', async () => {
     await getLeadMessages('t1', 'l1', 'tok');

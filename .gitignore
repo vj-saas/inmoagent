@@ -39,3 +39,9 @@ temp/
 # Transcripts regenerables del simulador de personas (scripts/sim-personas.ts).
 # Se generan localmente; no se versionan. Ver docs/QA-SIMULACION-PERSONAS.md.
 scripts/sim-report*.md
+
+# build artifacts
+*.tsbuildinfo
+scripts/*.js
+scripts/*.js.map
+scripts/*.d.ts

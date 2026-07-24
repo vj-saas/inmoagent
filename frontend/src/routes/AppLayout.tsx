@@ -1,6 +1,8 @@
 /**
  * Layout del area autenticada.
  *
+ * - Muestra el link de navegacion a "Leads" para ambos roles
+ *   `OWNER` y `AGENT` (AC-1; accesible desde el layout autenticado).
  * - Muestra el link de navegacion a "Gestion de personas" solo si
  *   `person.role === 'OWNER'` (AC-7); un AGENT no debe verlo (AC-8).
  * - El boton "Cerrar sesion" invoca `AuthContext.logout()` (que ya se ocupa
@@ -26,6 +28,7 @@ export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
       <header>
         <nav>
           <Link to="/">Inicio</Link>
+          <Link to="/leads">Leads</Link>
           {person?.role === 'OWNER' && <Link to="/people">Gestión de personas</Link>}
         </nav>
         <button type="button" onClick={handleLogout}>

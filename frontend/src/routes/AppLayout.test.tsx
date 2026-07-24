@@ -32,6 +32,22 @@ describe('AppLayout', () => {
     clearSession();
   });
 
+  it('muestra el link de Leads para OWNER (AC-1)', () => {
+    setSession({ token: 't1', role: 'OWNER', tenantId: 'tenant-1', email: 'owner@a.com' });
+
+    renderAppLayout();
+
+    expect(screen.getByText('Leads')).toBeInTheDocument();
+  });
+
+  it('muestra el link de Leads para AGENT (AC-1)', () => {
+    setSession({ token: 't2', role: 'AGENT', tenantId: 'tenant-1', email: 'agent@a.com' });
+
+    renderAppLayout();
+
+    expect(screen.getByText('Leads')).toBeInTheDocument();
+  });
+
   it('muestra el link de gestion de personas para OWNER (AC-7)', () => {
     setSession({ token: 't1', role: 'OWNER', tenantId: 'tenant-1', email: 'owner@a.com' });
 
