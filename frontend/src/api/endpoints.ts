@@ -123,8 +123,25 @@ export function resetPassword(
 
 // ---------------------------------------------------------------------------
 // admin/tenants/:tenantId/leads (src/admin/leads/admin-leads.controller.ts)
-// TODO(A.3): tipar Lead/Message reales cuando se consuma desde pantallas.
 // ---------------------------------------------------------------------------
+
+// Calcado del modelo `Message` en prisma/schema.prisma.
+export type MessageDirection = 'IN' | 'OUT';
+export type MessageType = 'TEXT' | 'AUDIO' | 'IMAGE' | 'DOCUMENT' | 'TEMPLATE' | 'UNSUPPORTED';
+
+export interface Message {
+  id: string;
+  tenantId: string;
+  leadId: string;
+  direction: MessageDirection;
+  type: MessageType;
+  waMessageId: string | null;
+  body: string | null;
+  mediaId: string | null;
+  transcription: string | null;
+  meta: unknown;
+  createdAt: string;
+}
 
 // Calcado de `enum ConversationState` en prisma/schema.prisma. No agregar
 // valores que el backend no defina (ver spec A.3).
@@ -166,8 +183,30 @@ export interface Lead {
   greetedAt: string | null;
   lastSearchIds: string[];
   turnCount: number;
+  contactedAt: string | null;
+  assignedUserId: string | null;
+  nextActionAt: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+// Calcado del modelo `LeadNote` (ver prisma/schema.prisma, spec A.4).
+export interface LeadNote {
+  id: string;
+  tenantId: string;
+  leadId: string;
+  authorPersonId: string | null;
+  author: { id: string; email: string } | null;
+  body: string;
+  createdAt: string;
+}
+
+// Persona asignable a un lead (ver src/auth/admin-people.controller.ts,
+// endpoint people/assignable).
+export interface AssignableUser {
+  id: string;
+  email: string;
+  role: PersonRole;
 }
 
 export interface ListLeadsQuery {
@@ -195,7 +234,6 @@ export function listLeads(
   }
   if (query.page) params.set('page', String(query.page));
   const qs = params.toString();
-  // TODO(A.3): implementar consumo real en la pantalla de leads.
   return request<ListLeadsResponse>(
     `/admin/tenants/${tenantId}/leads${qs ? `?${qs}` : ''}`,
     { method: 'GET', token },
@@ -213,9 +251,8 @@ export function getLeadMessages(
   tenantId: string,
   leadId: string,
   token: string,
-): Promise<{ lead: unknown; messages: unknown[] }> {
-  // TODO(A.3): implementar consumo real en la pantalla de leads.
-  return request<{ lead: unknown; messages: unknown[] }>(
+): Promise<{ lead: Lead; messages: Message[] }> {
+  return request<{ lead: Lead; messages: Message[] }>(
     `/admin/tenants/${tenantId}/leads/${leadId}/messages`,
     { method: 'GET', token },
   );
@@ -226,7 +263,6 @@ export function releaseLead(
   leadId: string,
   token: string,
 ): Promise<{ released: true }> {
-  // TODO(A.3): implementar consumo real en la pantalla de leads.
   return request<{ released: true }>(`/admin/tenants/${tenantId}/leads/${leadId}/release`, {
     method: 'POST',
     token,
@@ -238,11 +274,83 @@ export function suppressLead(
   leadId: string,
   token: string,
 ): Promise<{ deleted: true }> {
-  // TODO(A.3): implementar consumo real en la pantalla de leads.
   return request<{ deleted: true }>(`/admin/tenants/${tenantId}/leads/${leadId}`, {
     method: 'DELETE',
     token,
   });
+}
+
+export function createNote(
+  tenantId: string,
+  leadId: string,
+  body: string,
+  token: string,
+): Promise<LeadNote> {
+  return request<LeadNote>(`/admin/tenants/${tenantId}/leads/${leadId}/notes`, {
+    method: 'POST',
+    body: { body },
+    token,
+  });
+}
+
+export function getLeadNotes(
+  tenantId: string,
+  leadId: string,
+  token: string,
+): Promise<{ notes: LeadNote[] }> {
+  return request<{ notes: LeadNote[] }>(`/admin/tenants/${tenantId}/leads/${leadId}/notes`, {
+    method: 'GET',
+    token,
+  });
+}
+
+export function markContacted(tenantId: string, leadId: string, token: string): Promise<Lead> {
+  return request<Lead>(`/admin/tenants/${tenantId}/leads/${leadId}/contacted`, {
+    method: 'POST',
+    token,
+  });
+}
+
+export function markUncontacted(tenantId: string, leadId: string, token: string): Promise<Lead> {
+  return request<Lead>(`/admin/tenants/${tenantId}/leads/${leadId}/uncontacted`, {
+    method: 'POST',
+    token,
+  });
+}
+
+export function optOutLead(tenantId: string, leadId: string, token: string): Promise<Lead> {
+  return request<Lead>(`/admin/tenants/${tenantId}/leads/${leadId}/opt-out`, {
+    method: 'POST',
+    token,
+  });
+}
+
+export interface PatchAssignmentRequest {
+  assignedUserId?: string | null;
+  nextActionAt?: string | null;
+}
+
+export function patchAssignment(
+  tenantId: string,
+  leadId: string,
+  dto: PatchAssignmentRequest,
+  token: string,
+): Promise<Lead> {
+  return request<Lead>(`/admin/tenants/${tenantId}/leads/${leadId}/assignment`, {
+    method: 'PATCH',
+    body: dto,
+    token,
+  });
+}
+
+export function listAssignableUsers(
+  tenantId: string,
+  token: string,
+): Promise<{ users: AssignableUser[] }> {
+  return request<{ users: AssignableUser[] }>(
+    `/admin/tenants/${tenantId}/people/assignable`,
+    { method: 'GET', token },
+  );
 }
 
 // ---------------------------------------------------------------------------

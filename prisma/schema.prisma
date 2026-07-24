@@ -46,6 +46,7 @@ model Tenant {
   messages     Message[]
   appointments Appointment[]
   people       Person[]
+  leadNotes    LeadNote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -70,7 +71,9 @@ model Person {
   role         PersonRole
   active       Boolean    @default(true)
 
-  sessions Session[]
+  sessions      Session[]
+  assignedLeads Lead[]     @relation("LeadAssignee")
+  authoredNotes LeadNote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -203,13 +206,19 @@ model Lead {
   // Control
   handoffAt     DateTime?
   optedOutAt    DateTime?
+  contactedAt   DateTime? // marca de gestión humana (contactado), no es estado de la FSM
+  nextActionAt  DateTime? // fecha/hora libre que carga el asesor para retomar el lead
   lastMessageAt DateTime?
   greetedAt     DateTime? // se completa cuando se manda el saludo+aviso legal completo (una sola vez)
   lastSearchIds String[]  @default([]) // IDs del último resultado (validación de salida)
   turnCount     Int       @default(0) // cantidad de turnos procesados por el FSM (ver fPriceMentionedAtTurn)
 
+  assignedUserId String?
+  assignedUser   Person? @relation("LeadAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
+
   messages     Message[]
   appointments Appointment[]
+  notes        LeadNote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -247,6 +256,27 @@ model Message {
   mediaId       String? // media_id de Meta
   transcription String? // resultado de STT para audios
   meta          Json? // payload crudo recortado / status
+
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, leadId, createdAt])
+}
+
+// ─────────────────────────────────────────────
+// NOTAS HUMANAS SOBRE EL LEAD (panel de asesores)
+// ─────────────────────────────────────────────
+
+model LeadNote {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leadId   String
+  lead     Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  authorPersonId String? // persona autora; null si la persona fue borrada
+  author         Person? @relation(fields: [authorPersonId], references: [id], onDelete: SetNull)
+
+  body String
 
   createdAt DateTime @default(now())
 

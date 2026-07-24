@@ -178,6 +178,21 @@ export class PeopleService {
   }
 
   /**
+   * Lista las personas activas del tenant, saneadas al mínimo necesario para
+   * poblar un selector de asignación (ambos roles, no solo OWNER). A
+   * diferencia de `list`, no incluye personas inactivas ni el resto de los
+   * campos sensibles.
+   */
+  async listAssignable(
+    tenantId: string,
+  ): Promise<Array<{ id: string; email: string; role: PersonRole }>> {
+    return this.prisma.person.findMany({
+      where: { tenantId, active: true },
+      select: { id: true, email: true, role: true },
+    });
+  }
+
+  /**
    * Desactiva una persona del propio tenant (AC-20). Todo dentro de una
    * `$transaction`: si el `personId` no existe o es de otro tenant ⇒ 404; si es
    * el único owner activo del tenant (desactivarla dejaría al tenant sin ningún

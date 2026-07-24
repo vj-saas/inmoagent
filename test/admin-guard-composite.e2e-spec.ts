@@ -461,6 +461,92 @@ describe('Admin: guard compuesto PersonOrApiKey en leads/metrics/properties (e2e
     });
   });
 
+  /**
+   * A.4 T8 — caso (c): los SEIS endpoints nuevos de la ficha del lead
+   * (`notes` POST/GET, `contacted`, `uncontacted`, `opt-out`, `assignment`)
+   * cuelgan del mismo controller protegido por el guard compuesto. Una sesión
+   * del tenant A contra el `:tenantId` de B debe dar 403 (TenantScopeGuard,
+   * antes del handler) SIN exponer ni modificar el lead de B. Complementa la
+   * cobertura de escritura de arriba (release/delete/properties), que no
+   * incluía los endpoints de A.4.
+   */
+  describe('A.4: endpoints de ficha del lead cross-tenant por sesión: A contra URL de B → 403, sin efecto sobre B', () => {
+    const leadBPath = (path: string) =>
+      `${leadsUrl(tenantB)}/${leadBId}/${path}`;
+
+    it('POST notes: A contra B → 403 y no se crea nota en el lead de B', async () => {
+      const before = await prisma.leadNote.count({ where: { leadId: leadBId } });
+      const res = await request(app.getHttpServer())
+        .post(leadBPath('notes'))
+        .set(bearer(ownerTokenA))
+        .send({ body: `intrusa ${suffix}` })
+        .expect(403);
+      expect(JSON.stringify(res.body)).not.toContain(leadBPhone);
+      const after = await prisma.leadNote.count({ where: { leadId: leadBId } });
+      expect(after).toBe(before);
+    });
+
+    it('GET notes: A contra B → 403 sin exponer notas de B', async () => {
+      const res = await request(app.getHttpServer())
+        .get(leadBPath('notes'))
+        .set(bearer(ownerTokenA))
+        .expect(403);
+      expect(JSON.stringify(res.body)).not.toContain(leadBPhone);
+    });
+
+    it('POST contacted: A contra B → 403 y el lead de B no queda contactado', async () => {
+      await request(app.getHttpServer())
+        .post(leadBPath('contacted'))
+        .set(bearer(ownerTokenA))
+        .expect(403);
+      const leadB = await prisma.lead.findUniqueOrThrow({
+        where: { id: leadBId },
+      });
+      expect(leadB.contactedAt).toBeNull();
+    });
+
+    it('POST uncontacted: A contra B → 403', async () => {
+      await request(app.getHttpServer())
+        .post(leadBPath('uncontacted'))
+        .set(bearer(ownerTokenA))
+        .expect(403);
+    });
+
+    it('POST opt-out: A contra B → 403 y el estado de B no cambia', async () => {
+      const before = await prisma.lead.findUniqueOrThrow({
+        where: { id: leadBId },
+      });
+      await request(app.getHttpServer())
+        .post(leadBPath('opt-out'))
+        .set(bearer(ownerTokenA))
+        .expect(403);
+      const after = await prisma.lead.findUniqueOrThrow({
+        where: { id: leadBId },
+      });
+      expect(after.state).toBe(before.state);
+      expect(after.optedOutAt).toEqual(before.optedOutAt);
+    });
+
+    it('PATCH assignment: A contra B → 403 y el lead de B no queda asignado', async () => {
+      await request(app.getHttpServer())
+        .patch(leadBPath('assignment'))
+        .set(bearer(ownerTokenA))
+        .send({ assignedUserId: 'cualquier-id', nextActionAt: null })
+        .expect(403);
+      const leadB = await prisma.lead.findUniqueOrThrow({
+        where: { id: leadBId },
+      });
+      expect(leadB.assignedUserId).toBeNull();
+    });
+
+    it('también con rol AGENT del tenant A: POST opt-out contra B → 403', async () => {
+      await request(app.getHttpServer())
+        .post(leadBPath('opt-out'))
+        .set(bearer(agentTokenA))
+        .expect(403);
+    });
+  });
+
   describe('Escritura con la sesión del tenant correcto sí funciona (contracara del 403)', () => {
     it('POST properties + PATCH + DELETE: ciclo completo con sesión de A → 2xx', async () => {
       const created = await request(app.getHttpServer())

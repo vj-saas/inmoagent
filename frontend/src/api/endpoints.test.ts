@@ -7,19 +7,26 @@ vi.mock('./http-client', () => ({
 }));
 
 import {
+  createNote,
   createPerson,
   createProperty,
   deactivatePerson,
   getLead,
   getLeadMessages,
+  getLeadNotes,
   getMe,
   getMetrics,
   getProperty,
+  listAssignableUsers,
   listLeads,
   listPeople,
   listProperties,
   login,
   logout,
+  markContacted,
+  markUncontacted,
+  optOutLead,
+  patchAssignment,
   releaseLead,
   removeProperty,
   resetPassword,
@@ -225,6 +232,64 @@ describe('endpoints', () => {
     await removeProperty('t1', 'p1', 'tok');
     expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/properties/p1', {
       method: 'DELETE',
+      token: 'tok',
+    });
+  });
+
+  it('createNote: POST /admin/tenants/:tenantId/leads/:leadId/notes con body', async () => {
+    await createNote('t1', 'l1', 'texto de la nota', 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/leads/l1/notes', {
+      method: 'POST',
+      body: { body: 'texto de la nota' },
+      token: 'tok',
+    });
+  });
+
+  it('getLeadNotes: GET /admin/tenants/:tenantId/leads/:leadId/notes', async () => {
+    await getLeadNotes('t1', 'l1', 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/leads/l1/notes', {
+      method: 'GET',
+      token: 'tok',
+    });
+  });
+
+  it('markContacted: POST /admin/tenants/:tenantId/leads/:leadId/contacted', async () => {
+    await markContacted('t1', 'l1', 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/leads/l1/contacted', {
+      method: 'POST',
+      token: 'tok',
+    });
+  });
+
+  it('markUncontacted: POST /admin/tenants/:tenantId/leads/:leadId/uncontacted', async () => {
+    await markUncontacted('t1', 'l1', 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/leads/l1/uncontacted', {
+      method: 'POST',
+      token: 'tok',
+    });
+  });
+
+  it('optOutLead: POST /admin/tenants/:tenantId/leads/:leadId/opt-out', async () => {
+    await optOutLead('t1', 'l1', 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/leads/l1/opt-out', {
+      method: 'POST',
+      token: 'tok',
+    });
+  });
+
+  it('patchAssignment: PATCH /admin/tenants/:tenantId/leads/:leadId/assignment con body parcial', async () => {
+    await patchAssignment('t1', 'l1', { assignedUserId: null }, 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/leads/l1/assignment', {
+      method: 'PATCH',
+      body: { assignedUserId: null },
+      token: 'tok',
+    });
+  });
+
+  it('listAssignableUsers: GET /admin/tenants/:tenantId/people/assignable', async () => {
+    await listAssignableUsers('t1', 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/people/assignable', {
+      method: 'GET',
       token: 'tok',
     });
   });

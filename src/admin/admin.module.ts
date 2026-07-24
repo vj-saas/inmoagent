@@ -6,6 +6,7 @@ import { MasterKeyGuard } from './guards/master-key.guard';
 import { PersonOrApiKeyGuard } from './guards/person-or-api-key.guard';
 import { TenantApiKeyGuard } from './guards/tenant-api-key.guard';
 import { AdminLeadsController } from './leads/admin-leads.controller';
+import { AdminLeadsService } from './leads/admin-leads.service';
 import { AdminMetricsController } from './metrics/admin-metrics.controller';
 import { MetricsService } from './metrics/metrics.service';
 import { AdminPropertiesController } from './properties/admin-properties.controller';
@@ -31,6 +32,7 @@ import { TenantsAdminService } from './tenants/tenants-admin.service';
     MasterKeyGuard,
     TenantThrottlerGuard,
     TenantsAdminService,
+    AdminLeadsService,
     PropertiesAdminService,
     CsvImportService,
     MetricsService,

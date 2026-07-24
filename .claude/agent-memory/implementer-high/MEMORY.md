@@ -7,3 +7,4 @@
 
 - [E2E del guard compuesto](composite-guard-e2e.md) — cómo montar fixture PersonOrApiKey y precedencia/roles fijados para leads/metrics/properties
 - [Scripts de verificación con Prisma 7](prisma7-verify-scripts.md) — cómo correr ts-node contra la DB (driver adapter, --transpile-only, script dentro del repo); Session sin tenantId
+- [PATCH parcial null-vs-ausente](patch-partial-null-vs-absent.md) — detectar presencia sobre req.body crudo, no sobre el DTO transformado; connect/disconnect para FK nullable

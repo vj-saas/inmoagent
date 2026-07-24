@@ -1,9 +1,44 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AppRoutes } from './App';
 import { AuthProvider } from './auth/AuthContext';
 import { clearSession, setSession } from './auth/session-store';
+import * as endpoints from './api/endpoints';
+import type { Lead } from './api/endpoints';
+
+function buildLead(overrides: Partial<Lead> = {}): Lead {
+  return {
+    id: 'lead-42',
+    tenantId: 'tenant-1',
+    phone: '5491100000000',
+    name: 'Lead de prueba',
+    state: 'QUALIFICATION',
+    fOperation: null,
+    fNeighborhoods: [],
+    fMaxPrice: null,
+    fCurrency: null,
+    fMinRooms: null,
+    fGarage: null,
+    fPetsAllowed: null,
+    fNotes: null,
+    fPreferredDay: null,
+    fOfferedNeighborhoods: [],
+    fPriceMentionedAtTurn: null,
+    handoffAt: null,
+    optedOutAt: null,
+    lastMessageAt: null,
+    greetedAt: null,
+    lastSearchIds: [],
+    turnCount: 1,
+    contactedAt: null,
+    assignedUserId: null,
+    nextActionAt: null,
+    createdAt: '2026-07-01T00:00:00.000Z',
+    updatedAt: '2026-07-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
 
 function renderApp(initialEntry: string): void {
   render(
@@ -45,7 +80,7 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('heading', { name: /bandeja de leads/i })).toBeInTheDocument();
   });
 
-  it('con sesion, navegar a /leads/:leadId renderiza LeadDetailPage con el id correcto', () => {
+  it('con sesion, navegar a /leads/:leadId renderiza LeadDetailPage con el id correcto', async () => {
     setSession({
       token: 'token-123',
       role: 'OWNER',
@@ -53,9 +88,16 @@ describe('AppRoutes', () => {
       email: 'owner@test.com',
     });
 
+    vi.spyOn(endpoints, 'getLead').mockResolvedValue(buildLead());
+    vi.spyOn(endpoints, 'getLeadMessages').mockResolvedValue({ lead: buildLead(), messages: [] });
+    vi.spyOn(endpoints, 'getLeadNotes').mockResolvedValue({ notes: [] });
+    vi.spyOn(endpoints, 'listAssignableUsers').mockResolvedValue({ users: [] });
+
     renderApp('/leads/lead-42');
 
-    expect(screen.getByRole('heading', { name: /ficha del lead/i })).toBeInTheDocument();
-    expect(screen.getByText(/lead-42/)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /ficha del lead/i })).toBeInTheDocument();
+    });
+    expect(screen.getByText(/5491100000000/)).toBeInTheDocument();
   });
 });

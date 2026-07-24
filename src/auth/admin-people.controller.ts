@@ -66,6 +66,24 @@ export class AdminPeopleController {
   }
 
   /**
+   * Lista las personas activas del tenant, apta para poblar un selector de
+   * asignación en el panel humano. Accesible a ambos roles (OWNER y AGENT):
+   * a diferencia de `listPeople`, NO usa `OwnerRoleGuard`. Tampoco admite
+   * `PersonOrApiKeyGuard`: es exclusivamente para el panel humano, no hay
+   * caso de uso server-to-server para este endpoint.
+   */
+  @Get('assignable')
+  @UseGuards(PersonSessionGuard, TenantScopeGuard)
+  async listAssignablePeople(
+    @Req() req: AuthenticatedPersonRequest,
+  ): Promise<{ users: Array<{ id: string; email: string; role: string }> }> {
+    const users = await this.peopleService.listAssignable(
+      req.person.tenantId,
+    );
+    return { users };
+  }
+
+  /**
    * Crea una persona en el tenant de la sesión (AC-17). Si no se provee
    * `password`, genera una temporal y la devuelve una única vez en la respuesta.
    * Email duplicado globalmente ⇒ 409 (AC-18).

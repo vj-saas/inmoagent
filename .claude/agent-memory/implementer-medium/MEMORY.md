@@ -15,3 +15,9 @@
 - [LeadsPage: orquestación filtro+búsqueda+paginación](leadspage-orchestration-pattern.md) — esqueleto igual a PeoplePage, mutuamente excluyentes loading/error/vacío/datos, cast de leads a Lead[]
 - [App.tsx: AppRoutes exportado sin BrowserRouter](app-routes-testable-split.md) — permite testear con MemoryRouter+initialEntries sin duplicar el árbol de rutas
 - [Hueco de cobertura en mutua exclusión de estados](leadspage-mutual-exclusion-gap.md) — al auditar tests, buscar caso "éxito oculta el resto" y "cambiar un campo no resetea otro"
+- [T10 A.4: endpoints.ts LeadNote/AssignableUser/Message](endpoints-t10-lead-note-assignable.md) — funciones nuevas ya disponibles para T11-T17, no re-crear
+- [T13: LeadNotes/NoteForm](leadnotes-noteform-pattern.md) — lista presentacional + onCreated sin refetch, integrar con setNotes(prev => [note, ...prev])
+- [T9: guards por-handler solo panel humano](admin-people-assignable-guards.md) — GET .../people/assignable sin OwnerRoleGuard ni PersonOrApiKeyGuard, replicar selectivamente
+- [T11: LeadDetailPage orquestador](leaddetailpage-orchestrator-t11.md) — reemplazar placeholder con I/O real rompe tests de rutas de nivel superior (App.test.tsx) si no se mockean ahí también
+- [T15: AssignmentControl PATCH parcial con flags touched](assignmentcontrol-partial-patch-pattern.md) — sentinela __unassigned__, no diffear valores
+- [T18: patrón de tareas de integración final/verificación](t18-integration-verification-pattern.md) — ensamblado ya suele estar hecho, agregar tests de integración escritura→pantalla en el orquestador
