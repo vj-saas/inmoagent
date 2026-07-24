@@ -21,3 +21,4 @@
 - [T11: LeadDetailPage orquestador](leaddetailpage-orchestrator-t11.md) — reemplazar placeholder con I/O real rompe tests de rutas de nivel superior (App.test.tsx) si no se mockean ahí también
 - [T15: AssignmentControl PATCH parcial con flags touched](assignmentcontrol-partial-patch-pattern.md) — sentinela __unassigned__, no diffear valores
 - [T18: patrón de tareas de integración final/verificación](t18-integration-verification-pattern.md) — ensamblado ya suele estar hecho, agregar tests de integración escritura→pantalla en el orquestador
+- [DateRangePicker: estado inválido vía data-valid](daterangepicker-invalid-state-exposure.md) — no callback onInvalid; si T4 lo necesita en JS, considerar onValidityChange

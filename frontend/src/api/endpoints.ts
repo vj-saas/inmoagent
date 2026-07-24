@@ -355,7 +355,6 @@ export function listAssignableUsers(
 
 // ---------------------------------------------------------------------------
 // admin/tenants/:tenantId/metrics (src/admin/metrics/admin-metrics.controller.ts)
-// TODO(A.4): tipar MetricsResult real cuando se consuma desde pantallas.
 // ---------------------------------------------------------------------------
 
 export interface MetricsQuery {
@@ -363,14 +362,21 @@ export interface MetricsQuery {
   to: string;
 }
 
+export interface MetricsResult {
+  range: { from: string; to: string };
+  newLeads: number;
+  activeConversations: number;
+  handoffs: number;
+  appointments: { proposed: number; confirmed: number };
+}
+
 export function getMetrics(
   tenantId: string,
   query: MetricsQuery,
   token: string,
-): Promise<unknown> {
+): Promise<MetricsResult> {
   const params = new URLSearchParams({ from: query.from, to: query.to });
-  // TODO(A.4): implementar consumo real en la pantalla de métricas.
-  return request<unknown>(`/admin/tenants/${tenantId}/metrics?${params.toString()}`, {
+  return request<MetricsResult>(`/admin/tenants/${tenantId}/metrics?${params.toString()}`, {
     method: 'GET',
     token,
   });

@@ -48,6 +48,22 @@ describe('AppLayout', () => {
     expect(screen.getByText('Leads')).toBeInTheDocument();
   });
 
+  it('muestra el link de Panel para OWNER (AC-8)', () => {
+    setSession({ token: 't1', role: 'OWNER', tenantId: 'tenant-1', email: 'owner@a.com' });
+
+    renderAppLayout();
+
+    expect(screen.getByText('Panel')).toBeInTheDocument();
+  });
+
+  it('muestra el link de Panel para AGENT (AC-8)', () => {
+    setSession({ token: 't2', role: 'AGENT', tenantId: 'tenant-1', email: 'agent@a.com' });
+
+    renderAppLayout();
+
+    expect(screen.getByText('Panel')).toBeInTheDocument();
+  });
+
   it('muestra el link de gestion de personas para OWNER (AC-7)', () => {
     setSession({ token: 't1', role: 'OWNER', tenantId: 'tenant-1', email: 'owner@a.com' });
 

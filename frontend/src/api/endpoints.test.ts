@@ -33,6 +33,7 @@ import {
   suppressLead,
   updateProperty,
   updatePropertyStatus,
+  type MetricsResult,
 } from './endpoints';
 
 describe('endpoints', () => {
@@ -177,6 +178,28 @@ describe('endpoints', () => {
       '/admin/tenants/t1/metrics?from=2026-01-01&to=2026-01-31',
       { method: 'GET', token: 'tok' },
     );
+  });
+
+  it('getMetrics: retorna Promise<MetricsResult> con tipado correcto de campos anidados', async () => {
+    const mockResult: MetricsResult = {
+      range: { from: '2026-01-01T00:00:00.000Z', to: '2026-01-31T23:59:59.999Z' },
+      newLeads: 10,
+      activeConversations: 5,
+      handoffs: 2,
+      appointments: { proposed: 3, confirmed: 1 },
+    };
+    requestMock.mockResolvedValueOnce(mockResult);
+
+    const result = await getMetrics('t1', { from: '2026-01-01', to: '2026-01-31' }, 'tok');
+
+    // Verificar acceso a campos anidados sin error de TS
+    expect(result.appointments.proposed).toBe(3);
+    expect(result.appointments.confirmed).toBe(1);
+    expect(result.newLeads).toBe(10);
+    expect(result.activeConversations).toBe(5);
+    expect(result.handoffs).toBe(2);
+    expect(result.range.from).toBe('2026-01-01T00:00:00.000Z');
+    expect(result.range.to).toBe('2026-01-31T23:59:59.999Z');
   });
 
   it('listProperties: GET /admin/tenants/:tenantId/properties con query string', async () => {

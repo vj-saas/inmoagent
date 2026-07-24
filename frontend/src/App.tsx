@@ -22,6 +22,7 @@ import { LoginPage } from './routes/LoginPage';
 import { LeadsPage } from './routes/LeadsPage';
 import { LeadDetailPage } from './routes/LeadDetailPage';
 import { PeoplePage } from './routes/PeoplePage';
+import { DashboardPage } from './routes/DashboardPage';
 
 export function AppRoutes(): JSX.Element {
   return (
@@ -38,6 +39,7 @@ export function AppRoutes(): JSX.Element {
         <Route index element={<Navigate to="/leads" replace />} />
         <Route path="leads" element={<LeadsPage />} />
         <Route path="leads/:leadId" element={<LeadDetailPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="people" element={<PeoplePage />} />
       </Route>
     </Routes>

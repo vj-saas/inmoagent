@@ -5,7 +5,7 @@ import { AppRoutes } from './App';
 import { AuthProvider } from './auth/AuthContext';
 import { clearSession, setSession } from './auth/session-store';
 import * as endpoints from './api/endpoints';
-import type { Lead } from './api/endpoints';
+import type { Lead, MetricsResult } from './api/endpoints';
 
 function buildLead(overrides: Partial<Lead> = {}): Lead {
   return {
@@ -99,5 +99,30 @@ describe('AppRoutes', () => {
       expect(screen.getByRole('heading', { name: /ficha del lead/i })).toBeInTheDocument();
     });
     expect(screen.getByText(/5491100000000/)).toBeInTheDocument();
+  });
+
+  it('con sesion, navegar a /dashboard renderiza DashboardPage', async () => {
+    setSession({
+      token: 'token-123',
+      role: 'OWNER',
+      tenantId: 'tenant-1',
+      email: 'owner@test.com',
+    });
+
+    const mockMetrics: MetricsResult = {
+      range: { from: '2026-06-24', to: '2026-07-24' },
+      newLeads: 5,
+      activeConversations: 3,
+      handoffs: 1,
+      appointments: { proposed: 2, confirmed: 1 },
+    };
+
+    vi.spyOn(endpoints, 'getMetrics').mockResolvedValue(mockMetrics);
+
+    renderApp('/dashboard');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /panel/i })).toBeInTheDocument();
+    });
   });
 });
