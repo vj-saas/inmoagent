@@ -29,3 +29,9 @@
 - [T10: migración PeoplePage a design system](t10-peoplepage-migration-pattern.md) — early-return de error se preserva fuera de AsyncSection; ui/Modal resuelve role/aria-label/testid via props
 - [T11: migración AppLayout + ToastProvider](t11-applayout-header-toastprovider.md) — nav única con overflow-x-auto, ojo con CSSProperties residual aunque borres los style={{}}
 - [T12: cierre de design system, gate de AC-3 más allá de style=](t12-legacy-css-cleanup-gates.md) — grep de arbitrary values `[Npx]`/`[Nrem]` en className, no solo style={
+- [T10 (onboarding): http-client soporta FormData](httpclient-formdata-support.md) — branch por instanceof FormData, sin tocar mapeo de errores; prerrequisito de uploader CSV
+- [T3 (onboarding): UpdateTenantConfigDto + TENANT_CONFIG_SELECT](update-tenant-config-dto-select-pattern.md) — whitelist fail-closed explícita, no commitear cambios ajenos en tenants-admin.service.ts en paralelo
+- [T5 (onboarding): mock de Prisma compartido en tenants-admin.service.spec.ts](tenantsadmin-webhookstatus-mock-pattern.md) — extender build() existente, no crear factory nueva por método
+- [T4 (onboarding): updateConfig, PATCH vacío no debe pegarle a update](updateconfig-empty-dto-read-pattern.md) — data campo por campo, dto vacío -> findFirst en vez de update, no mueve updatedAt
+- [T6 (onboarding): DI check de módulos con BullMQ se cuelga sin Redis](bullmq-blocks-nest-testingmodule-compile-without-redis.md) — Test.createTestingModule().compile() no termina si PipelineModule está en el árbol y no hay Redis real
+
