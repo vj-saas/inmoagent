@@ -80,4 +80,35 @@ export class TenantsAdminService {
     });
     return { rotatedAt: tenant.updatedAt };
   }
+
+  /**
+   * Estado de conexión del webhook para un tenant. `connected` es un OR entre
+   * eventos de webhook recibidos y leads con mensajes: `MaintenanceProcessor`
+   * purga `WebhookEvent` de más de 30 días, así que un tenant con actividad
+   * antigua igual debe reportar `connected: true` gracias al lead.
+   */
+  async webhookStatus(tenantId: string): Promise<{
+    connected: boolean;
+    lastEventAt: Date | null;
+    lastMessageAt: Date | null;
+  }> {
+    const [lastEvent, lastLead] = await Promise.all([
+      this.prisma.webhookEvent.findFirst({
+        where: { tenantId },
+        orderBy: { receivedAt: 'desc' },
+        select: { receivedAt: true },
+      }),
+      this.prisma.lead.findFirst({
+        where: { tenantId, lastMessageAt: { not: null } },
+        orderBy: { lastMessageAt: 'desc' },
+        select: { lastMessageAt: true },
+      }),
+    ]);
+
+    return {
+      connected: lastEvent !== null || lastLead !== null,
+      lastEventAt: lastEvent?.receivedAt ?? null,
+      lastMessageAt: lastLead?.lastMessageAt ?? null,
+    };
+  }
 }

@@ -30,7 +30,13 @@ function build() {
     capturedArgs = args;
     return Promise.resolve({ id: 'tenant-1' });
   });
-  const prisma = { tenant: { create } } as unknown as PrismaService;
+  const webhookEventFindFirst = jest.fn().mockResolvedValue(null);
+  const leadFindFirst = jest.fn().mockResolvedValue(null);
+  const prisma = {
+    tenant: { create },
+    webhookEvent: { findFirst: webhookEventFindFirst },
+    lead: { findFirst: leadFindFirst },
+  } as unknown as PrismaService;
   const config = {
     get: jest.fn().mockReturnValue(ENCRYPTION_KEY),
   } as unknown as ConfigService<EnvConfig, true>;
@@ -38,6 +44,8 @@ function build() {
     service: new TenantsAdminService(prisma, config),
     prisma,
     create,
+    webhookEventFindFirst,
+    leadFindFirst,
     getCapturedArgs: () => capturedArgs as CapturedCreateArgs,
   };
 }
@@ -69,5 +77,54 @@ describe('TenantsAdminService', () => {
     );
 
     await expect(service.create(dto())).rejects.toThrow(ConflictException);
+  });
+});
+
+describe('TenantsAdminService.webhookStatus', () => {
+  it('devuelve connected:false y fechas null si no hay eventos ni leads con mensaje', async () => {
+    const { service } = build();
+
+    const result = await service.webhookStatus('tenant-1');
+
+    expect(result).toEqual({
+      connected: false,
+      lastEventAt: null,
+      lastMessageAt: null,
+    });
+  });
+
+  it('devuelve connected:true y lastEventAt cuando hay un WebhookEvent', async () => {
+    const { service, webhookEventFindFirst } = build();
+    const receivedAt = new Date('2026-07-20T10:00:00Z');
+    webhookEventFindFirst.mockResolvedValue({ receivedAt });
+
+    const result = await service.webhookStatus('tenant-1');
+
+    expect(result.connected).toBe(true);
+    expect(result.lastEventAt).toBe(receivedAt);
+    expect(result.lastMessageAt).toBeNull();
+    expect(webhookEventFindFirst).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-1' },
+      orderBy: { receivedAt: 'desc' },
+      select: { receivedAt: true },
+    });
+  });
+
+  it('filtra leads con lastMessageAt null y devuelve el máximo del no-nulo', async () => {
+    const { service, leadFindFirst } = build();
+    const lastMessageAt = new Date('2026-07-22T15:30:00Z');
+    // Simula que la query ya excluye lastMessageAt: null (NULLS FIRST en Postgres
+    // haría que el lead sin mensajes "ganara" el orderBy si no se filtrara).
+    leadFindFirst.mockResolvedValue({ lastMessageAt });
+
+    const result = await service.webhookStatus('tenant-1');
+
+    expect(result.connected).toBe(true);
+    expect(result.lastMessageAt).toBe(lastMessageAt);
+    expect(leadFindFirst).toHaveBeenCalledWith({
+      where: { tenantId: 'tenant-1', lastMessageAt: { not: null } },
+      orderBy: { lastMessageAt: 'desc' },
+      select: { lastMessageAt: true },
+    });
   });
 });
