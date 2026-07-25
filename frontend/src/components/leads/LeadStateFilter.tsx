@@ -1,6 +1,7 @@
 import React from 'react';
 
 import type { ConversationState } from '../../api/endpoints';
+import { Select } from '../ui';
 
 /**
  * Categorías de UI para el filtro de estado de leads. Mapeo aprobado en
@@ -55,22 +56,17 @@ export const LeadStateFilter: React.FC<LeadStateFilterProps> = ({ onChange, valu
   };
 
   return (
-    <select
+    <Select
       data-testid="lead-state-filter"
       defaultValue={value ?? 'Todas'}
       onChange={handleChange}
-      style={{
-        padding: '8px 12px',
-        fontSize: '14px',
-        border: '1px solid #ccc',
-        borderRadius: '4px',
-      }}
+      className="w-full sm:w-auto"
     >
       {CATEGORIES.map((category) => (
         <option key={category} value={category}>
           {category}
         </option>
       ))}
-    </select>
+    </Select>
   );
 };

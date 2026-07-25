@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Input } from '../ui';
 
 export interface LeadSearchInputProps {
   /** Callback emitted after debounce (~350ms) with trimmed search term.
@@ -68,20 +69,13 @@ export const LeadSearchInput: React.FC<LeadSearchInputProps> = ({
   };
 
   return (
-    <input
+    <Input
       type="text"
       value={value}
       onChange={handleChange}
       placeholder={placeholder}
       data-testid="lead-search-input"
-      style={{
-        padding: '8px 12px',
-        fontSize: '14px',
-        border: '1px solid #ccc',
-        borderRadius: '4px',
-        width: '100%',
-        boxSizing: 'border-box',
-      }}
+      className="w-full sm:flex-1"
     />
   );
 };

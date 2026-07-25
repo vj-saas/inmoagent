@@ -64,19 +64,12 @@ export const LeadChips: React.FC<LeadChipsProps> = ({
   }
 
   return (
-    <div data-testid="lead-chips" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+    <div data-testid="lead-chips" className="flex flex-wrap gap-2">
       {chips.map((chip) => (
         <span
           key={chip}
           data-testid="lead-chip"
-          style={{
-            backgroundColor: '#eef2ff',
-            color: '#3730a3',
-            borderRadius: '999px',
-            padding: '4px 10px',
-            fontSize: '12px',
-            lineHeight: '1.4',
-          }}
+          className="rounded-pill bg-info/10 px-2.5 py-1 text-xs leading-snug text-info"
         >
           {chip}
         </span>

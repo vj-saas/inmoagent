@@ -7,8 +7,9 @@
  *   vez que cambia `category`, `q` o `page`.
  * - Al cambiar `category` o `q` resetea `page = 1` ANTES de disparar la
  *   llamada, para nunca quedar en una página fuera de rango.
- * - Renderiza, mutuamente excluyentes: Spinner (loading), ErrorBanner
- *   (error), mensaje fijo de lista vacía, o LeadsList + Pagination.
+ * - Renderiza, mutuamente excluyentes vía `AsyncSection`: Spinner (loading),
+ *   ErrorBanner (error), `EmptyState` (lista vacía, testid `leads-empty`), o
+ *   LeadsList + Pagination.
  * - `tenantId` viene siempre de AuthContext (A.2), nunca hardcodeado.
  */
 
@@ -16,8 +17,7 @@ import { useEffect, useState } from 'react';
 import { listLeads, type ConversationState, type Lead, type ListLeadsResponse } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { useApi } from '../hooks/useApi';
-import { Spinner } from '../components/Spinner';
-import { ErrorBanner } from '../components/ErrorBanner';
+import { AsyncSection } from '../components/ui';
 import { LeadStateFilter } from '../components/leads/LeadStateFilter';
 import { LeadSearchInput } from '../components/leads/LeadSearchInput';
 import { LeadsList } from '../components/leads/LeadsList';
@@ -68,32 +68,34 @@ export function LeadsPage(): JSX.Element {
 
   return (
     <div>
-      <h1>Bandeja de leads</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-text">Bandeja de leads</h1>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'center' }}>
+      <div className="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
         <LeadStateFilter onChange={handleCategoryChange} />
         <LeadSearchInput onSearch={handleSearch} />
       </div>
 
-      {loading && <Spinner text="Cargando leads..." />}
-
-      {!loading && error && <ErrorBanner message={errorMessage(error)} />}
-
-      {!loading && !error && data && data.leads.length === 0 && (
-        <p data-testid="leads-empty">No hay leads para este filtro</p>
-      )}
-
-      {!loading && !error && data && data.leads.length > 0 && (
-        <>
-          <LeadsList leads={data.leads as Lead[]} />
-          <Pagination
-            total={data.total}
-            page={data.page}
-            pageSize={data.pageSize}
-            onPageChange={handlePageChange}
-          />
-        </>
-      )}
+      <AsyncSection
+        loading={loading}
+        error={error ? errorMessage(error) : null}
+        isEmpty={Boolean(data && data.leads.length === 0)}
+        loadingLabel="Cargando leads..."
+        emptyTestId="leads-empty"
+        emptyTitle="No hay leads para este filtro"
+        emptyMessage="Probá con otro filtro o cambiá los términos de búsqueda."
+      >
+        {data && data.leads.length > 0 && (
+          <>
+            <LeadsList leads={data.leads as Lead[]} />
+            <Pagination
+              total={data.total}
+              page={data.page}
+              pageSize={data.pageSize}
+              onPageChange={handlePageChange}
+            />
+          </>
+        )}
+      </AsyncSection>
     </div>
   );
 }

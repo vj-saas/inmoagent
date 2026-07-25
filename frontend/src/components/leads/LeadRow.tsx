@@ -19,49 +19,17 @@ export const LeadRow: React.FC<LeadRowProps> = ({ lead }) => {
   const displayName = lead.name || lead.phone;
 
   return (
-    <Link
-      to={`/leads/${lead.id}`}
-      data-testid={`lead-row-${lead.id}`}
-      style={{ textDecoration: 'none', color: 'inherit' }}
-    >
+    <Link to={`/leads/${lead.id}`} data-testid={`lead-row-${lead.id}`} className="block no-underline text-inherit">
       <div
         data-testid="lead-row"
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px',
-          padding: '12px',
-          borderBottom: '1px solid #e5e7eb',
-          cursor: 'pointer',
-          transition: 'background-color 0.2s',
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLDivElement).style.backgroundColor = '#f9fafb';
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLDivElement).style.backgroundColor = 'transparent';
-        }}
+        className="flex cursor-pointer flex-col gap-2 border-b border-border p-3 transition-colors hover:bg-bg"
       >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div className="flex items-start justify-between">
           <div>
-            <div
-              data-testid="lead-name"
-              style={{
-                fontSize: '14px',
-                fontWeight: '600',
-                color: '#1f2937',
-              }}
-            >
+            <div data-testid="lead-name" className="text-sm font-semibold text-text">
               {displayName}
             </div>
-            <div
-              data-testid="lead-state"
-              style={{
-                fontSize: '12px',
-                color: '#6b7280',
-                marginTop: '4px',
-              }}
-            >
+            <div data-testid="lead-state" className="mt-1 text-xs text-text-muted">
               {lead.state}
             </div>
           </div>
