@@ -1,6 +1,7 @@
 import React from 'react';
 
 import type { AppointmentStatus } from '../../api/endpoints';
+import { Select } from '../ui';
 
 /**
  * Tabla de mapeo aprobada de etiquetas en español a valores del enum
@@ -49,22 +50,17 @@ export const AppointmentStatusFilter: React.FC<AppointmentStatusFilterProps> = (
   };
 
   return (
-    <select
+    <Select
       data-testid="appointment-status-filter"
       defaultValue={value ?? 'Todas'}
       onChange={handleChange}
-      style={{
-        padding: '8px 12px',
-        fontSize: '14px',
-        border: '1px solid #ccc',
-        borderRadius: '4px',
-      }}
+      className="sm:w-56"
     >
       {OPTIONS.map((option) => (
         <option key={option} value={option}>
           {option === 'Todas' ? 'Todas' : APPOINTMENT_STATUS_LABELS[option]}
         </option>
       ))}
-    </select>
+    </Select>
   );
 };

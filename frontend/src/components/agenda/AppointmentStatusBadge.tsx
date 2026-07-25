@@ -1,5 +1,6 @@
 import React from 'react';
 import type { AppointmentStatus } from '../../api/endpoints';
+import { Badge } from '../ui';
 
 /**
  * Traducción de `AppointmentStatus` a texto en español.
@@ -12,24 +13,23 @@ const STATUS_LABELS: Record<AppointmentStatus, string> = {
   NO_SHOW: 'No asistió',
 };
 
+/** Tono de `Badge` por estado; PROPOSED/CONFIRMED usan info/success como en el resto del dashboard. */
+const STATUS_TONES: Record<AppointmentStatus, 'neutral' | 'info' | 'success' | 'warning' | 'danger'> = {
+  PROPOSED: 'info',
+  CONFIRMED: 'success',
+  DONE: 'neutral',
+  CANCELLED: 'danger',
+  NO_SHOW: 'warning',
+};
+
 export interface AppointmentStatusBadgeProps {
   status: AppointmentStatus;
 }
 
 export const AppointmentStatusBadge: React.FC<AppointmentStatusBadgeProps> = ({ status }) => {
   return (
-    <span
-      data-testid="appointment-status-badge"
-      style={{
-        backgroundColor: '#eef2ff',
-        color: '#3730a3',
-        borderRadius: '999px',
-        padding: '4px 10px',
-        fontSize: '12px',
-        lineHeight: '1.4',
-      }}
-    >
+    <Badge data-testid="appointment-status-badge" tone={STATUS_TONES[status]}>
       {STATUS_LABELS[status]}
-    </span>
+    </Badge>
   );
 };

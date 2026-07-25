@@ -11,6 +11,7 @@ import { AppointmentStatusBadge } from './AppointmentStatusBadge';
 import { AppointmentActionForm } from './AppointmentActionForm';
 import type { AppointmentActionFormSubmitData } from './AppointmentActionForm';
 import { ErrorBanner } from '../ErrorBanner';
+import { Button, Td, Tr } from '../ui';
 
 export interface AppointmentRowProps {
   appointment: Appointment;
@@ -98,62 +99,65 @@ export const AppointmentRow: React.FC<AppointmentRowProps> = ({
   };
 
   return (
-    <div data-testid="appointment-row">
-      {actionError && <ErrorBanner message={actionError} />}
-
-      <div data-testid="appointment-row-scheduled-at">{formattedDate}</div>
-      <div data-testid="appointment-row-lead">{appointment.leadId}</div>
-      <AppointmentStatusBadge status={appointment.status} />
-      <div data-testid="appointment-row-assignee">
+    <Tr data-testid="appointment-row">
+      <Td data-testid="appointment-row-scheduled-at">{formattedDate}</Td>
+      <Td data-testid="appointment-row-lead">{appointment.leadId}</Td>
+      <Td>
+        <AppointmentStatusBadge status={appointment.status} />
+      </Td>
+      <Td data-testid="appointment-row-assignee">
         {appointment.assignedUserId ?? 'Sin asignar'}
-      </div>
+      </Td>
+      <Td>
+        {actionError && <ErrorBanner message={actionError} />}
 
-      {openForm === 'confirm' && (
-        <AppointmentActionForm
-          mode="confirm"
-          assignableUsers={assignableUsers}
-          onSubmit={handleConfirmSubmit}
-          onVolver={() => setOpenForm(null)}
-          disabled={pending}
-        />
-      )}
+        {openForm === 'confirm' && (
+          <AppointmentActionForm
+            mode="confirm"
+            assignableUsers={assignableUsers}
+            onSubmit={handleConfirmSubmit}
+            onVolver={() => setOpenForm(null)}
+            disabled={pending}
+          />
+        )}
 
-      {openForm === 'reschedule' && (
-        <AppointmentActionForm
-          mode="reschedule"
-          onSubmit={handleRescheduleSubmit}
-          onVolver={() => setOpenForm(null)}
-          disabled={pending}
-        />
-      )}
+        {openForm === 'reschedule' && (
+          <AppointmentActionForm
+            mode="reschedule"
+            onSubmit={handleRescheduleSubmit}
+            onVolver={() => setOpenForm(null)}
+            disabled={pending}
+          />
+        )}
 
-      {openForm === null && appointment.status === 'PROPOSED' && (
-        <>
-          <button type="button" onClick={() => setOpenForm('confirm')} disabled={pending}>
-            Confirmar
-          </button>
-          <button type="button" onClick={handleCancel} disabled={pending}>
-            Cancelar
-          </button>
-        </>
-      )}
+        {openForm === null && appointment.status === 'PROPOSED' && (
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" onClick={() => setOpenForm('confirm')} disabled={pending}>
+              Confirmar
+            </Button>
+            <Button type="button" size="sm" variant="secondary" onClick={handleCancel} disabled={pending}>
+              Cancelar
+            </Button>
+          </div>
+        )}
 
-      {openForm === null && appointment.status === 'CONFIRMED' && (
-        <>
-          <button type="button" onClick={() => setOpenForm('reschedule')} disabled={pending}>
-            Reprogramar
-          </button>
-          <button type="button" onClick={handleCancel} disabled={pending}>
-            Cancelar
-          </button>
-          <button type="button" onClick={handleMarkDone} disabled={pending}>
-            Marcar hecha
-          </button>
-          <button type="button" onClick={handleMarkNoShow} disabled={pending}>
-            Marcar no-show
-          </button>
-        </>
-      )}
-    </div>
+        {openForm === null && appointment.status === 'CONFIRMED' && (
+          <div className="flex flex-wrap gap-2">
+            <Button type="button" size="sm" onClick={() => setOpenForm('reschedule')} disabled={pending}>
+              Reprogramar
+            </Button>
+            <Button type="button" size="sm" variant="secondary" onClick={handleCancel} disabled={pending}>
+              Cancelar
+            </Button>
+            <Button type="button" size="sm" variant="secondary" onClick={handleMarkDone} disabled={pending}>
+              Marcar hecha
+            </Button>
+            <Button type="button" size="sm" variant="danger" onClick={handleMarkNoShow} disabled={pending}>
+              Marcar no-show
+            </Button>
+          </div>
+        )}
+      </Td>
+    </Tr>
   );
 };

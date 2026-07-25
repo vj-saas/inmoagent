@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { AssignableUser } from '../../api/endpoints';
+import { Button, Input, Select } from '../ui';
 
 export type AppointmentActionFormMode = 'confirm' | 'reschedule';
 
@@ -75,9 +76,15 @@ export const AppointmentActionForm: React.FC<AppointmentActionFormProps> = ({
   };
 
   return (
-    <form data-testid="appointment-action-form" onSubmit={handleSubmit}>
-      <label htmlFor="appointment-action-form-scheduled-at">Fecha y hora</label>
-      <input
+    <form
+      data-testid="appointment-action-form"
+      onSubmit={handleSubmit}
+      className="flex flex-col gap-2"
+    >
+      <label htmlFor="appointment-action-form-scheduled-at" className="text-sm font-medium text-text">
+        Fecha y hora
+      </label>
+      <Input
         id="appointment-action-form-scheduled-at"
         data-testid="scheduled-at-input"
         type="datetime-local"
@@ -91,8 +98,10 @@ export const AppointmentActionForm: React.FC<AppointmentActionFormProps> = ({
 
       {mode === 'confirm' && assignableUsers.length > 0 && (
         <>
-          <label htmlFor="appointment-action-form-assignee">Asesor</label>
-          <select
+          <label htmlFor="appointment-action-form-assignee" className="text-sm font-medium text-text">
+            Asesor
+          </label>
+          <Select
             id="appointment-action-form-assignee"
             data-testid="appointment-action-form-assignee"
             value={assignedUserId}
@@ -105,13 +114,15 @@ export const AppointmentActionForm: React.FC<AppointmentActionFormProps> = ({
                 {user.email}
               </option>
             ))}
-          </select>
+          </Select>
         </>
       )}
 
       {mode === 'confirm' && (
         <>
-          <label htmlFor="appointment-action-form-notes">Notas</label>
+          <label htmlFor="appointment-action-form-notes" className="text-sm font-medium text-text">
+            Notas
+          </label>
           <textarea
             id="appointment-action-form-notes"
             data-testid="appointment-action-form-notes"
@@ -119,30 +130,32 @@ export const AppointmentActionForm: React.FC<AppointmentActionFormProps> = ({
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
             disabled={disabled}
+            className="w-full rounded border border-border bg-surface px-3 py-2 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:cursor-not-allowed disabled:opacity-50"
           />
         </>
       )}
 
       {validationError && (
-        <div
-          data-testid="appointment-action-form-validation-error"
-          style={{ color: '#dc2626', fontSize: '13px' }}
-        >
+        <div data-testid="appointment-action-form-validation-error" className="text-sm text-danger">
           {validationError}
         </div>
       )}
 
-      <button type="submit" data-testid="appointment-action-form-submit" disabled={disabled}>
-        {submitLabel}
-      </button>
-      <button
-        type="button"
-        data-testid="appointment-action-form-volver"
-        onClick={onVolver}
-        disabled={disabled}
-      >
-        Volver
-      </button>
+      <div className="flex gap-2">
+        <Button type="submit" data-testid="appointment-action-form-submit" size="sm" disabled={disabled}>
+          {submitLabel}
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          data-testid="appointment-action-form-volver"
+          onClick={onVolver}
+          disabled={disabled}
+        >
+          Volver
+        </Button>
+      </div>
     </form>
   );
 };

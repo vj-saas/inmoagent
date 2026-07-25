@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Appointment, AssignableUser } from '../../api/endpoints';
 import { AppointmentRow } from './AppointmentRow';
+import { Table, TableScroll, TBody, THead, Th, Tr } from '../ui';
 
 export interface AppointmentsListProps {
   appointments: Appointment[];
@@ -43,17 +44,30 @@ export const AppointmentsList: React.FC<AppointmentsListProps> = ({
   });
 
   return (
-    <div data-testid="appointments-list">
-      {sorted.map((appointment) => (
-        <AppointmentRow
-          key={appointment.id}
-          appointment={appointment}
-          tenantId={tenantId}
-          token={token}
-          assignableUsers={assignableUsers}
-          onUpdated={onAppointmentUpdated}
-        />
-      ))}
-    </div>
+    <TableScroll>
+      <Table data-testid="appointments-list">
+        <THead>
+          <Tr>
+            <Th>Fecha y hora</Th>
+            <Th>Lead</Th>
+            <Th>Estado</Th>
+            <Th>Asesor</Th>
+            <Th>Acciones</Th>
+          </Tr>
+        </THead>
+        <TBody>
+          {sorted.map((appointment) => (
+            <AppointmentRow
+              key={appointment.id}
+              appointment={appointment}
+              tenantId={tenantId}
+              token={token}
+              assignableUsers={assignableUsers}
+              onUpdated={onAppointmentUpdated}
+            />
+          ))}
+        </TBody>
+      </Table>
+    </TableScroll>
   );
 };

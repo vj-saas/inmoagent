@@ -29,8 +29,7 @@ import {
 } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { useApi } from '../hooks/useApi';
-import { Spinner } from '../components/Spinner';
-import { ErrorBanner } from '../components/ErrorBanner';
+import { AsyncSection } from '../components/ui';
 import { DateRangePicker } from '../components/dashboard/DateRangePicker';
 import { AppointmentStatusFilter } from '../components/agenda/AppointmentStatusFilter';
 import { AppointmentsList } from '../components/agenda/AppointmentsList';
@@ -92,9 +91,9 @@ export function AgendaPage(): JSX.Element {
 
   return (
     <div>
-      <h1>Agenda</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-text">Agenda</h1>
 
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '16px' }}>
+      <div className="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
         <DateRangePicker
           initialFrom={initialRange.from}
           initialTo={initialRange.to}
@@ -103,18 +102,22 @@ export function AgendaPage(): JSX.Element {
         <AppointmentStatusFilter onChange={handleStatusChange} />
       </div>
 
-      {loading && <Spinner text="Cargando agenda..." />}
-
-      {!loading && error && <ErrorBanner message={errorMessage(error)} />}
-
-      {!loading && !error && (
+      <AsyncSection
+        loading={loading}
+        error={error ? errorMessage(error) : null}
+        isEmpty={appointments.length === 0}
+        loadingLabel="Cargando agenda..."
+        emptyTestId="agenda-empty"
+        emptyTitle="No hay citas para este rango"
+        emptyMessage="Probá con otro rango de fechas o cambiá el filtro de estado."
+      >
         <AppointmentsList
           appointments={appointments}
           tenantId={tenantId}
           token={token ?? ''}
           onAppointmentUpdated={handleAppointmentUpdated}
         />
-      )}
+      </AsyncSection>
     </div>
   );
 }
