@@ -110,8 +110,10 @@ function extractMessage(body: unknown): string | undefined {
 export async function request<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, token, headers = {} } = options;
 
+  const isFormData = body instanceof FormData;
+
   const requestHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
+    ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
     ...headers,
   };
 
@@ -124,7 +126,7 @@ export async function request<T = unknown>(path: string, options: RequestOptions
     response = await fetch(`${getBaseUrl()}${path}`, {
       method,
       headers: requestHeaders,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
     });
   } catch {
     throw new NetworkError();

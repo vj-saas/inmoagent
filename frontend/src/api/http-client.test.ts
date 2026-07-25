@@ -138,6 +138,38 @@ describe('http-client', () => {
     }
   });
 
+  it('no setea Content-Type y envía el FormData tal cual cuando el body es FormData', async () => {
+    const fetchMock = mockFetchOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    });
+
+    const formData = new FormData();
+    formData.append('file', new Blob(['a,b,c'], { type: 'text/csv' }), 'test.csv');
+
+    await request('/admin/properties/import', { method: 'POST', body: formData, token: 'abc123' });
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers['Content-Type']).toBeUndefined();
+    expect(init.headers.Authorization).toBe('Bearer abc123');
+    expect(init.body).toBe(formData);
+  });
+
+  it('sigue serializando un body plano con JSON.stringify y Content-Type application/json (regresión)', async () => {
+    const fetchMock = mockFetchOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({}),
+    });
+
+    await request('/leads', { method: 'POST', body: { name: 'Test' } });
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(init.headers['Content-Type']).toBe('application/json');
+    expect(init.body).toBe(JSON.stringify({ name: 'Test' }));
+  });
+
   it('mapea un fallo de red a NetworkError', async () => {
     vi.stubGlobal(
       'fetch',
