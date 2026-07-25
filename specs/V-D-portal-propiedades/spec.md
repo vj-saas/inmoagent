@@ -57,20 +57,42 @@ a diferencia de `PATCH :tenantId/config` y `AdminPeopleController`, que sí
 lo hacen. La nueva ruta `/propiedades` se agrega al nav de `AppLayout` sin
 condicionar por `person.role`, igual que `Leads`/`Panel`/`Agenda`.
 
-**3. Fotos: URLs públicas manuales, sin mecanismo de upload de archivos.**
+**3. Fotos: upload de archivo directo (además de pegar URL), servidas desde
+un volumen persistente de Railway.**
 
 El modelo `PropertyPhoto.url` ya es una URL pública https consumida
 directamente por Meta al enviar la ficha (`CreatePropertyDto.photoUrls` ya
-valida con `@IsUrl`). No existe en el proyecto ningún servicio de storage de
-archivos (sin `multer`/S3/Cloudinary fuera del parseo de texto del CSV). El
-formulario de alta/edición gestiona fotos como una lista editable de URLs
-(agregar, quitar, reordenar por posición — igual al campo `photos.position`
-ya existente), reutilizando la validación de URL del backend. Construir un
-mecanismo de upload de archivos (elegir proveedor de storage, costo,
-seguridad) es una decisión de infraestructura nueva que queda
-explícitamente fuera de alcance de esta spec — el tenant sigue necesitando
-subir sus fotos a algún hosting externo (o pedirle la URL a su
-inmobiliaria/CRM) y pegar el link.
+valida con `@IsUrl`). Decisión confirmada con el usuario: se agrega un
+endpoint de upload (`multer`, dependencia estándar del ecosistema Nest, no
+"pesada") que guarda el archivo en un volumen persistente de Railway
+(`railway.toml` — agregar un volumen montado, ej. `/data/uploads`) y lo
+sirve como estático desde el propio backend, construyendo la URL pública con
+`PUBLIC_BASE_URL` (env var ya existente y usada para el webhook). El
+formulario de alta/edición ofrece las dos vías —arrastrar/seleccionar un
+archivo o pegar una URL ya alojada externamente— y el resultado en ambos
+casos es una fila más en la lista editable de `PropertyPhoto` (agregar,
+quitar, reordenar por posición, igual que antes).
+
+Restricciones del upload, para no dejar la puerta abierta a abuso o a subir
+cualquier cosa:
+- Tipos aceptados: `image/jpeg`, `image/png`, `image/webp` (rechazo
+  explícito de cualquier otro `mimetype`, validado por contenido real del
+  archivo, no solo por extensión).
+- Tamaño máximo por archivo: 5 MB (cualquier imagen de celular actual entra
+  cómodo; evita llenar el volumen con archivos gigantes sin comprimir).
+- Nombre de archivo generado server-side (uuid + extensión), nunca se usa el
+  nombre original del archivo del usuario como parte de la ruta pública.
+- El endpoint de upload queda dentro de `admin/tenants/:tenantId/properties`,
+  protegido por el mismo `PersonOrApiKeyGuard` que el resto del módulo — sin
+  guard nuevo, mismo aislamiento por tenant (las imágenes se guardan bajo un
+  subdirectorio por `tenantId` dentro del volumen, para que un tenant no
+  pueda inferir ni pisar archivos de otro por coincidencia de nombre).
+
+Elegir Railway volume (en vez de un object storage S3-compatible) es una
+decisión explícita para no sumar una cuenta/proveedor nuevo ni costo
+adicional ahora; si el proyecto escala a múltiples instancias del backend
+en el futuro, el disco local deja de alcanzar y hay que migrar a object
+storage — anotado como limitación conocida, no como bug.
 
 **4. Borrado: cambio de estado (`PAUSED`) es la vía primaria para sacar una
 propiedad de circulación; el hard delete existente se mantiene pero se
@@ -126,6 +148,15 @@ del `AuthContext` para construir las URLs, igual que `PeoplePage` y
   - Antes de borrar, verificar si existe algún `Appointment` con ese
     `propertyId` para el tenant; si existe, rechazar con 409 en vez de
     borrar.
+- **Backend — endpoint de upload de fotos** (nuevo, dentro de
+  `admin/tenants/:tenantId/properties`):
+  - `POST :tenantId/properties/photos` con `multer` (`multipart/form-data`),
+    valida tipo real de archivo (jpeg/png/webp) y tamaño (máx. 5 MB), guarda
+    en el volumen persistente bajo un subdirectorio por `tenantId` con
+    nombre generado server-side, devuelve la URL pública construida con
+    `PUBLIC_BASE_URL`.
+  - `railway.toml`: agregar volumen persistente montado (ej. `/data/uploads`).
+  - `src/main.ts` o un módulo `static`: servir ese directorio como estático.
 - **Frontend — nueva ruta `/propiedades`** (`PropertiesPage.tsx`), visible en
   el nav de `AppLayout` para `OWNER` y `AGENT` (sin condicional de rol):
   - Listado paginado con filtros (operación, barrio, estado, rango de
@@ -155,11 +186,13 @@ del `AuthContext` para construir las URLs, igual que `PeoplePage` y
 
 ## Fuera de alcance
 
-- Cualquier mecanismo de upload de archivos de imágenes (elección de
-  proveedor de storage, firma de URLs, límites de tamaño/formato) — el
-  formulario solo acepta URLs públicas ya alojadas en otro lado (Decisión
-  3). Puede ser un follow-up si se vuelve un problema recurrente para los
-  tenants.
+- Object storage S3-compatible (R2/S3/Cloudinary) — se usa un volumen
+  persistente de Railway (Decisión 3); migrar a object storage queda como
+  follow-up si el proyecto necesita escalar a múltiples instancias del
+  backend.
+- Edición de imagen en el navegador (recorte, compresión, rotación): el
+  archivo se sube tal cual el usuario lo eligió, solo con validación de
+  tipo y tamaño máximo.
 - Cambios al import CSV existente (`csv-import.service.ts` se reusa tal
   cual, sin tocar su lógica de parsing/upsert).
 - Cambios a `property-search.service.ts` (el motor de búsqueda del LLM), a
@@ -227,14 +260,27 @@ un `Appointment` asociado THEN THE SYSTEM SHALL rechazar el borrado (409)
 con un mensaje que sugiera cambiar el estado en lugar de eliminar, sin
 borrar la propiedad ni el/los `Appointment`(s).
 
-**AC-11.** WHEN una persona agrega, quita o reordena URLs de fotos en el
-formulario de alta o edición y guarda THE SYSTEM SHALL persistir la lista de
-fotos con el orden (`position`) reflejado, y esas URLs SHALL ser las mismas
-que use el envío de fichas del bot al lead.
+**AC-11.** WHEN una persona agrega (por archivo o por URL), quita o reordena
+fotos en el formulario de alta o edición y guarda THE SYSTEM SHALL persistir
+la lista de fotos con el orden (`position`) reflejado, y esas URLs SHALL ser
+las mismas que use el envío de fichas del bot al lead.
 
 **AC-12.** IF se intenta guardar una URL de foto que no es una URL http(s)
 válida THEN THE SYSTEM SHALL rechazar el guardado (400) sin persistir
 ninguna foto de esa operación.
+
+**AC-17.** WHEN una persona sube un archivo de imagen válido (jpeg/png/webp,
+≤5MB) THE SYSTEM SHALL guardarlo en el volumen persistente bajo el
+subdirectorio del tenant correspondiente y devolver una URL pública
+(`PUBLIC_BASE_URL` + ruta) usable de inmediato como foto de la propiedad.
+
+**AC-18.** IF se intenta subir un archivo que no es jpeg/png/webp por
+contenido real (no solo por extensión), o que supera 5 MB THEN THE SYSTEM
+SHALL rechazar la subida (400) sin guardar nada en el volumen.
+
+**AC-19.** WHEN una persona del tenant A sube una foto THE SYSTEM SHALL
+guardarla en una ruta que no colisiona ni es adivinable a partir de rutas
+del tenant B (nombre generado server-side, subdirectorio por `tenantId`).
 
 **AC-13.** WHEN una persona con sesión de un tenant A intenta acceder,
 editar o borrar una propiedad de un tenant B (por ID conocido o
