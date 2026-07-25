@@ -9,6 +9,13 @@
  * - `/leads` (index) -> `LeadsPage`, `/leads/:leadId` -> `LeadDetailPage`.
  * - `/people` -> `PeoplePage` (gestion de personas, ya restringida por rol
  *   dentro de `AppLayout`/`PeoplePage`).
+ * - `/configuracion` -> `TenantConfigPage` (edicion de config del tenant ya
+ *   dado de alta, T18), dentro de `ProtectedRoute`, restringida por rol con
+ *   el mismo mecanismo que `/people`: el link de nav se oculta a no-OWNER en
+ *   `AppLayout`.
+ * - `/onboarding` -> `OnboardingWizardPage` (alta de un tenant nuevo, T17),
+ *   FUERA de `ProtectedRoute`: corre antes de que exista ninguna sesion de
+ *   persona (es el flujo de alta en si mismo).
  *
  * `AppRoutes` se exporta por separado (sin `BrowserRouter`) para poder
  * testearla envuelta en `MemoryRouter` con rutas iniciales controladas.
@@ -25,12 +32,15 @@ import { PeoplePage } from './routes/PeoplePage';
 import { DashboardPage } from './routes/DashboardPage';
 import { AgendaPage } from './routes/AgendaPage';
 import { CallQueuePage } from './routes/CallQueuePage';
+import { TenantConfigPage } from './routes/TenantConfigPage';
+import { OnboardingWizardPage } from './routes/OnboardingWizardPage';
 import { ToastProvider } from './components/ui';
 
 export function AppRoutes(): JSX.Element {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/onboarding" element={<OnboardingWizardPage />} />
       <Route
         path="/"
         element={
@@ -46,6 +56,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="agenda" element={<AgendaPage />} />
         <Route path="llamar-hoy" element={<CallQueuePage />} />
         <Route path="people" element={<PeoplePage />} />
+        <Route path="configuracion" element={<TenantConfigPage />} />
       </Route>
     </Routes>
   );

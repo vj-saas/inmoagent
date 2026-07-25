@@ -7,6 +7,9 @@
  *   `OWNER` y `AGENT` (AC-8; accesible desde el layout autenticado).
  * - Muestra el link de navegacion a "Gestion de personas" solo si
  *   `person.role === 'OWNER'` (AC-7); un AGENT no debe verlo (AC-8).
+ * - Muestra el link de navegacion a "Configuracion" solo si
+ *   `person.role === 'OWNER'` (T18), mismo mecanismo que "Gestion de
+ *   personas": un AGENT no debe verlo.
  * - El boton "Cerrar sesion" invoca `AuthContext.logout()` (que ya se ocupa
  *   de llamar a `endpoints.logout` y limpiar `session-store`) y redirige a
  *   `/login` (AC-5).
@@ -41,6 +44,9 @@ export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
           <Link to="/llamar-hoy" className={navLinkClassName}>Llamar hoy</Link>
           {person?.role === 'OWNER' && (
             <Link to="/people" className={navLinkClassName}>Gestión de personas</Link>
+          )}
+          {person?.role === 'OWNER' && (
+            <Link to="/configuracion" className={navLinkClassName}>Configuración</Link>
           )}
         </nav>
         <Button type="button" variant="secondary" size="sm" onClick={handleLogout}>

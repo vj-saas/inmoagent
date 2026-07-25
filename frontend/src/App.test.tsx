@@ -144,4 +144,41 @@ describe('AppRoutes', () => {
       expect(screen.getByRole('heading', { name: /agenda/i })).toBeInTheDocument();
     });
   });
+
+  // T18: /configuracion vive bajo ProtectedRoute -> sin sesion redirige a
+  // /login, igual que el resto de las rutas protegidas.
+  it('sin sesion, /configuracion redirige a /login', () => {
+    renderApp('/configuracion');
+
+    expect(screen.getByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument();
+  });
+
+  it('con sesion OWNER, navegar a /configuracion renderiza TenantConfigPage', async () => {
+    setSession({
+      token: 'token-123',
+      role: 'OWNER',
+      tenantId: 'tenant-1',
+      email: 'owner@test.com',
+    });
+
+    vi.spyOn(endpoints, 'getWebhookStatus').mockResolvedValue({
+      connected: false,
+      lastEventAt: null,
+      lastMessageAt: null,
+    });
+
+    renderApp('/configuracion');
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { level: 1, name: 'Configuración' })).toBeInTheDocument();
+    });
+  });
+
+  // T18: /onboarding es publica (fuera de ProtectedRoute) porque corre antes
+  // de que exista ninguna sesion de persona.
+  it('sin sesion, /onboarding renderiza OnboardingWizardPage (no redirige a /login)', () => {
+    renderApp('/onboarding');
+
+    expect(screen.getByRole('heading', { name: /alta de inmobiliaria/i })).toBeInTheDocument();
+  });
 });

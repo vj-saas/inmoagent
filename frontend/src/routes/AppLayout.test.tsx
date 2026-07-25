@@ -98,6 +98,22 @@ describe('AppLayout', () => {
     expect(screen.getByText('Agenda')).toBeInTheDocument();
   });
 
+  it('muestra el link de Configuracion para OWNER (T18)', () => {
+    setSession({ token: 't1', role: 'OWNER', tenantId: 'tenant-1', email: 'owner@a.com' });
+
+    renderAppLayout();
+
+    expect(screen.getByText('Configuración')).toBeInTheDocument();
+  });
+
+  it('NO muestra el link de Configuracion para AGENT (T18)', () => {
+    setSession({ token: 't2', role: 'AGENT', tenantId: 'tenant-1', email: 'agent@a.com' });
+
+    renderAppLayout();
+
+    expect(screen.queryByText('Configuración')).not.toBeInTheDocument();
+  });
+
   it('logout invoca AuthContext.logout y redirige a /login (AC-5)', async () => {
     setSession({ token: 't1', role: 'OWNER', tenantId: 'tenant-1', email: 'owner@a.com' });
     vi.spyOn(endpoints, 'logout').mockResolvedValue({ ok: true });
