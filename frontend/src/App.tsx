@@ -25,6 +25,7 @@ import { PeoplePage } from './routes/PeoplePage';
 import { DashboardPage } from './routes/DashboardPage';
 import { AgendaPage } from './routes/AgendaPage';
 import { CallQueuePage } from './routes/CallQueuePage';
+import { ToastProvider } from './components/ui';
 
 export function AppRoutes(): JSX.Element {
   return (
@@ -54,7 +55,9 @@ export default function App(): JSX.Element {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes />
+        <ToastProvider>
+          <AppRoutes />
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   );

@@ -12,9 +12,12 @@
  *   `/login` (AC-5).
  */
 
-import type { CSSProperties, ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { Button } from '../components/ui';
+
+const navLinkClassName = 'whitespace-nowrap text-sm font-medium text-text-muted hover:text-text';
 
 export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
   const { person, logout } = useAuth();
@@ -25,41 +28,26 @@ export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
     navigate('/login', { replace: true });
   };
 
-  const navLinkStyle: CSSProperties = {
-    color: 'var(--color-text-muted)',
-    fontWeight: 500,
-    fontSize: '0.9rem',
-  };
-
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <header
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 24px',
-          backgroundColor: 'var(--color-surface)',
-          borderBottom: '1px solid var(--color-border)',
-        }}
-      >
-        <nav style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <Link to="/" style={{ fontWeight: 700, color: 'var(--color-text)', fontSize: '1rem' }}>
+    <div className="flex min-h-screen flex-col">
+      <header className="flex items-center justify-between gap-4 border-b border-border bg-surface px-4 py-3 sm:px-6">
+        <nav className="flex min-w-0 flex-1 items-center gap-5 overflow-x-auto">
+          <Link to="/" className="whitespace-nowrap text-base font-semibold text-text">
             Agente Inmobiliario
           </Link>
-          <Link to="/leads" style={navLinkStyle}>Leads</Link>
-          <Link to="/dashboard" style={navLinkStyle}>Panel</Link>
-          <Link to="/agenda" style={navLinkStyle}>Agenda</Link>
-          <Link to="/llamar-hoy" style={navLinkStyle}>Llamar hoy</Link>
+          <Link to="/leads" className={navLinkClassName}>Leads</Link>
+          <Link to="/dashboard" className={navLinkClassName}>Panel</Link>
+          <Link to="/agenda" className={navLinkClassName}>Agenda</Link>
+          <Link to="/llamar-hoy" className={navLinkClassName}>Llamar hoy</Link>
           {person?.role === 'OWNER' && (
-            <Link to="/people" style={navLinkStyle}>Gestión de personas</Link>
+            <Link to="/people" className={navLinkClassName}>Gestión de personas</Link>
           )}
         </nav>
-        <button type="button" onClick={handleLogout}>
+        <Button type="button" variant="secondary" size="sm" onClick={handleLogout}>
           Cerrar sesión
-        </button>
+        </Button>
       </header>
-      <main style={{ flex: 1, padding: '24px', maxWidth: '1200px', width: '100%', margin: '0 auto' }}>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
         {children ?? <Outlet />}
       </main>
     </div>
