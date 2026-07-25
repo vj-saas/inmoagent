@@ -2,6 +2,7 @@ import React from 'react';
 import { releaseLead } from '../../api/endpoints';
 import type { Lead } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
+import { Button } from '../ui';
 
 export interface ReleaseHandoffButtonProps {
   lead: Lead;
@@ -47,15 +48,16 @@ export const ReleaseHandoffButton: React.FC<ReleaseHandoffButtonProps> = ({
 
   return (
     <div data-testid="release-handoff-button-container">
-      <button
+      <Button
         data-testid="release-handoff-button"
         onClick={handleClick}
         disabled={loading}
+        size="sm"
       >
         {loading ? 'Liberando...' : 'Liberar handoff'}
-      </button>
+      </Button>
       {error && (
-        <div data-testid="release-handoff-error" style={{ color: '#dc2626', fontSize: '13px' }}>
+        <div data-testid="release-handoff-error" className="mt-1 text-sm text-danger">
           No se pudo liberar el handoff. Intentá nuevamente.
         </div>
       )}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createNote } from '../../api/endpoints';
 import type { LeadNote } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
+import { Button } from '../ui';
 
 export interface NoteFormProps {
   tenantId: string;
@@ -53,7 +54,7 @@ export const NoteForm: React.FC<NoteFormProps> = ({ tenantId, leadId, token, onC
   };
 
   return (
-    <form data-testid="note-form" onSubmit={(e) => void handleSubmit(e)}>
+    <form data-testid="note-form" onSubmit={(e) => void handleSubmit(e)} className="mt-3">
       <textarea
         data-testid="note-form-textarea"
         value={body}
@@ -63,25 +64,27 @@ export const NoteForm: React.FC<NoteFormProps> = ({ tenantId, leadId, token, onC
         }}
         placeholder="Escribí una nota interna..."
         rows={3}
-        style={{ width: '100%', resize: 'vertical' }}
+        className="w-full resize-y rounded border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       />
       {validationError && (
-        <div data-testid="note-form-validation-error" style={{ color: '#dc2626', fontSize: '13px' }}>
+        <div data-testid="note-form-validation-error" className="mt-1 text-sm text-danger">
           {validationError}
         </div>
       )}
       {error && (
-        <div data-testid="note-form-api-error" style={{ color: '#dc2626', fontSize: '13px' }}>
+        <div data-testid="note-form-api-error" className="mt-1 text-sm text-danger">
           No se pudo guardar la nota. Intentá nuevamente.
         </div>
       )}
-      <button
+      <Button
         type="submit"
         data-testid="note-form-submit"
         disabled={isEmpty || loading}
+        className="mt-2"
+        size="sm"
       >
         {loading ? 'Guardando...' : 'Agregar nota'}
-      </button>
+      </Button>
     </form>
   );
 };

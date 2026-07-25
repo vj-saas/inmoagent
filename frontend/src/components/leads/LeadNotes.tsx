@@ -29,31 +29,28 @@ export const LeadNotes: React.FC<LeadNotesProps> = ({ notes }) => {
 
   if (notes.length === 0) {
     return (
-      <div data-testid="lead-notes-empty" style={{ padding: '12px', color: '#9ca3af', fontSize: '14px' }}>
+      <div data-testid="lead-notes-empty" className="p-3 text-sm text-text-muted">
         Sin notas aún
       </div>
     );
   }
 
   return (
-    <ul
-      data-testid="lead-notes-list"
-      style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}
-    >
+    <ul data-testid="lead-notes-list" className="m-0 flex list-none flex-col gap-2 p-0">
       {notes.map((note) => (
         <li
           key={note.id}
           data-testid={`lead-note-${note.id}`}
-          style={{ padding: '8px', border: '1px solid #e5e7eb', borderRadius: '6px' }}
+          className="rounded-sm border border-border p-2"
         >
-          <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '4px' }}>
+          <div className="mb-1 text-xs text-text-muted">
             <span data-testid={`lead-note-author-${note.id}`}>
               {note.author?.email ?? 'Sistema'}
             </span>
             {' · '}
             <span data-testid={`lead-note-date-${note.id}`}>{formatDate(note.createdAt)}</span>
           </div>
-          <div data-testid={`lead-note-body-${note.id}`} style={{ fontSize: '14px', whiteSpace: 'pre-wrap' }}>
+          <div data-testid={`lead-note-body-${note.id}`} className="whitespace-pre-wrap text-sm">
             {note.body}
           </div>
         </li>

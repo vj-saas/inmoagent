@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Message } from '../../api/endpoints';
+import { cn } from '../../lib/cn';
 
 export interface MessageTimelineProps {
   messages: Message[];
@@ -9,24 +10,15 @@ export interface MessageTimelineProps {
  * Renderiza el timeline de mensajes de un lead en orden cronológico.
  *
  * - Los mensajes se renderizan en el orden recibido (createdAt ascendente).
- * - Los mensajes IN (del lead) se alinean a la izquierda con fondo gris.
- * - Los mensajes OUT (del bot/agente) se alinean a la derecha con fondo azul.
+ * - Los mensajes IN (del lead) se alinean a la izquierda con fondo neutro.
+ * - Los mensajes OUT (del bot/agente) se alinean a la derecha con fondo primario.
  * - Muestra el contenido (body o transcription para audios), el tipo si es relevante, y la fecha.
  * - Valida AC-4.
  */
 export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) => {
   if (messages.length === 0) {
     return (
-      <div
-        style={{
-          padding: '16px',
-          textAlign: 'center',
-          color: '#9ca3af',
-          fontSize: '14px',
-        }}
-      >
-        Sin mensajes aún
-      </div>
+      <div className="p-4 text-center text-sm text-text-muted">Sin mensajes aún</div>
     );
   }
 
@@ -69,15 +61,7 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
   return (
     <div
       data-testid="message-timeline"
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '12px',
-        padding: '16px',
-        backgroundColor: '#f9fafb',
-        borderRadius: '8px',
-        minHeight: '200px',
-      }}
+      className="flex min-h-[200px] flex-col gap-3 rounded-card bg-bg p-4"
     >
       {messages.map((message, index) => {
         const isIncoming = message.direction === 'IN';
@@ -87,33 +71,23 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
             key={`${message.id}-${index}`}
             data-testid={`message-${message.id}`}
             data-direction={message.direction}
-            style={{
-              display: 'flex',
-              justifyContent: isIncoming ? 'flex-start' : 'flex-end',
-              alignItems: 'flex-start',
-              marginBottom: '8px',
-            }}
+            className={cn(
+              'mb-2 flex items-start',
+              isIncoming ? 'justify-start' : 'justify-end',
+            )}
           >
             <div
               data-testid={`message-bubble-${message.id}`}
-              style={{
-                maxWidth: '70%',
-                padding: '12px',
-                borderRadius: '8px',
-                backgroundColor: isIncoming ? '#e5e7eb' : '#3b82f6',
-                color: isIncoming ? '#1f2937' : '#ffffff',
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word',
-              }}
+              data-tone={isIncoming ? 'incoming' : 'outgoing'}
+              className={cn(
+                'max-w-[70%] break-words rounded-card p-3',
+                isIncoming ? 'bg-border text-text' : 'bg-primary text-white',
+              )}
             >
               {/* Contenido del mensaje */}
               <div
                 data-testid={`message-content-${message.id}`}
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '1.5',
-                  marginBottom: message.type !== 'TEXT' ? '8px' : '0',
-                }}
+                className={cn('text-sm leading-normal', message.type !== 'TEXT' ? 'mb-2' : 'mb-0')}
               >
                 {getMessageContent(message)}
               </div>
@@ -122,12 +96,7 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
               {message.type !== 'TEXT' && (
                 <div
                   data-testid={`message-type-${message.id}`}
-                  style={{
-                    fontSize: '12px',
-                    fontStyle: 'italic',
-                    opacity: 0.8,
-                    marginBottom: '8px',
-                  }}
+                  className="mb-2 text-xs italic opacity-80"
                 >
                   [{getTypeLabel(message.type)}]
                 </div>
@@ -136,11 +105,7 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
               {/* Fecha y hora */}
               <div
                 data-testid={`message-timestamp-${message.id}`}
-                style={{
-                  fontSize: '11px',
-                  opacity: 0.7,
-                  marginTop: '8px',
-                }}
+                className="mt-2 text-[11px] opacity-70"
               >
                 {formatDate(message.createdAt)}
               </div>

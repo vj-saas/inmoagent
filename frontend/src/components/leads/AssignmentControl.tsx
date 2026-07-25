@@ -6,6 +6,7 @@ import {
   type PatchAssignmentRequest,
 } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
+import { Button, Input, Select } from '../ui';
 
 export interface AssignmentControlProps {
   lead: Lead;
@@ -99,55 +100,67 @@ export const AssignmentControl: React.FC<AssignmentControlProps> = ({
   };
 
   return (
-    <div data-testid="assignment-control">
-      <div data-testid="assignment-control-current">Asignado a: {currentAssigneeLabel}</div>
+    <div data-testid="assignment-control" className="flex flex-col gap-3">
+      <div data-testid="assignment-control-current" className="text-sm text-text">
+        Asignado a: {currentAssigneeLabel}
+      </div>
 
-      <label htmlFor="assignment-control-select">Asignar a</label>
-      <select
-        id="assignment-control-select"
-        data-testid="assignment-control-select"
-        value={selectedUserId}
-        onChange={(e) => {
-          setSelectedUserId(e.target.value);
-          setAssignedTouched(true);
-        }}
-        disabled={loading}
-      >
-        <option value={UNASSIGNED_VALUE}>Sin asignar</option>
-        {assignableUsers.map((user) => (
-          <option key={user.id} value={user.id}>
-            {user.email}
-          </option>
-        ))}
-      </select>
+      <div>
+        <label htmlFor="assignment-control-select" className="mb-1 block text-sm font-medium text-text">
+          Asignar a
+        </label>
+        <Select
+          id="assignment-control-select"
+          data-testid="assignment-control-select"
+          value={selectedUserId}
+          onChange={(e) => {
+            setSelectedUserId(e.target.value);
+            setAssignedTouched(true);
+          }}
+          disabled={loading}
+        >
+          <option value={UNASSIGNED_VALUE}>Sin asignar</option>
+          {assignableUsers.map((user) => (
+            <option key={user.id} value={user.id}>
+              {user.email}
+            </option>
+          ))}
+        </Select>
+      </div>
 
-      <label htmlFor="assignment-control-next-action">Próxima acción</label>
-      <input
-        id="assignment-control-next-action"
-        data-testid="assignment-control-next-action"
-        type="datetime-local"
-        value={nextActionAtInput}
-        onChange={(e) => {
-          setNextActionAtInput(e.target.value);
-          setNextActionTouched(true);
-        }}
-        disabled={loading}
-      />
+      <div>
+        <label
+          htmlFor="assignment-control-next-action"
+          className="mb-1 block text-sm font-medium text-text"
+        >
+          Próxima acción
+        </label>
+        <Input
+          id="assignment-control-next-action"
+          data-testid="assignment-control-next-action"
+          type="datetime-local"
+          value={nextActionAtInput}
+          onChange={(e) => {
+            setNextActionAtInput(e.target.value);
+            setNextActionTouched(true);
+          }}
+          disabled={loading}
+        />
+      </div>
 
-      <button
+      <Button
         type="button"
         data-testid="assignment-control-save"
         onClick={() => void handleSave()}
         disabled={loading}
+        size="sm"
+        className="self-start"
       >
         {loading ? 'Guardando...' : 'Guardar'}
-      </button>
+      </Button>
 
       {error && (
-        <div
-          data-testid="assignment-control-error"
-          style={{ color: '#dc2626', fontSize: '13px', marginTop: '4px' }}
-        >
+        <div data-testid="assignment-control-error" className="text-sm text-danger">
           No se pudo actualizar la asignación. Verificá los datos e intentá nuevamente.
         </div>
       )}

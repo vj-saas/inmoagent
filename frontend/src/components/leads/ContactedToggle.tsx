@@ -1,6 +1,7 @@
 import React from 'react';
 import { markContacted, markUncontacted, type Lead } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
+import { Button } from '../ui';
 
 export interface ContactedToggleProps {
   lead: Lead;
@@ -56,17 +57,19 @@ export const ContactedToggle: React.FC<ContactedToggleProps> = ({
 
   return (
     <div data-testid="contacted-toggle">
-      <button
+      <Button
         type="button"
         data-testid="contacted-toggle-btn"
         onClick={() => void handleToggle()}
         disabled={isLoading}
+        variant="secondary"
+        size="sm"
       >
         {isLoading ? 'Actualizando...' : isContacted ? 'Marcar como no contactado' : 'Marcar como contactado'}
-      </button>
+      </Button>
 
       {apiError && (
-        <div data-testid="contacted-toggle-error" style={{ color: '#dc2626', fontSize: '13px', marginTop: '4px' }}>
+        <div data-testid="contacted-toggle-error" className="mt-1 text-sm text-danger">
           No se pudo actualizar el estado. Intentá nuevamente.
         </div>
       )}

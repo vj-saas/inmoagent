@@ -2,6 +2,7 @@ import React from 'react';
 import { optOutLead } from '../../api/endpoints';
 import type { Lead } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
+import { Button } from '../ui';
 
 export interface OptOutButtonProps {
   lead: Lead;
@@ -52,16 +53,18 @@ export const OptOutButton: React.FC<OptOutButtonProps> = ({ lead, tenantId, toke
 
   return (
     <div data-testid="opt-out-button-wrapper">
-      <button
+      <Button
         type="button"
         data-testid="opt-out-button"
         disabled={loading}
         onClick={() => void handleClick()}
+        variant="danger"
+        size="sm"
       >
         {loading ? 'Procesando...' : 'Marcar como baja (opt-out)'}
-      </button>
+      </Button>
       {error && (
-        <div data-testid="opt-out-button-error" style={{ color: '#dc2626', fontSize: '13px' }}>
+        <div data-testid="opt-out-button-error" className="mt-1 text-sm text-danger">
           No se pudo dar de baja al lead. Intentá nuevamente.
         </div>
       )}

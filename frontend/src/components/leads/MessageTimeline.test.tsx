@@ -70,7 +70,7 @@ describe('MessageTimeline Component', () => {
     expect(messages[2]).toHaveTextContent('Tercer mensaje');
   });
 
-  it('distingue visualmente un mensaje IN (alineación a la izquierda, fondo gris)', () => {
+  it('distingue visualmente un mensaje IN (alineación a la izquierda, tono "incoming")', () => {
     const inMessage = createMockMessage({
       direction: 'IN',
       body: 'Mensaje entrante del lead',
@@ -83,16 +83,13 @@ describe('MessageTimeline Component', () => {
     // Verificar data-direction
     expect(messageElement).toHaveAttribute('data-direction', 'IN');
 
-    // Verificar estilos: alineación izquierda y fondo gris
-    const containerStyle = messageElement.getAttribute('style') || '';
-    expect(containerStyle).toContain('flex-start');
-
-    const bubbleStyle = bubbleElement.getAttribute('style') || '';
-    // React convierte hex a rgb(), verificar el color en formato rgb
-    expect(bubbleStyle).toContain('rgb(229, 231, 235)'); // gris claro (#e5e7eb en rgb)
+    // Verificar alineación (clase Tailwind, ya no `style` inline tras la
+    // migración a design system) y el tono de la burbuja.
+    expect(messageElement.className).toContain('justify-start');
+    expect(bubbleElement).toHaveAttribute('data-tone', 'incoming');
   });
 
-  it('distingue visualmente un mensaje OUT (alineación a la derecha, fondo azul)', () => {
+  it('distingue visualmente un mensaje OUT (alineación a la derecha, tono "outgoing")', () => {
     const outMessage = createMockMessage({
       direction: 'OUT',
       body: 'Mensaje saliente del bot',
@@ -105,13 +102,10 @@ describe('MessageTimeline Component', () => {
     // Verificar data-direction
     expect(messageElement).toHaveAttribute('data-direction', 'OUT');
 
-    // Verificar estilos: alineación derecha y fondo azul
-    const containerStyle = messageElement.getAttribute('style') || '';
-    expect(containerStyle).toContain('flex-end');
-
-    const bubbleStyle = bubbleElement.getAttribute('style') || '';
-    // React convierte hex a rgb(), verificar el color en formato rgb
-    expect(bubbleStyle).toContain('rgb(59, 130, 246)'); // azul (#3b82f6 en rgb)
+    // Verificar alineación (clase Tailwind, ya no `style` inline tras la
+    // migración a design system) y el tono de la burbuja.
+    expect(messageElement.className).toContain('justify-end');
+    expect(bubbleElement).toHaveAttribute('data-tone', 'outgoing');
   });
 
   it('muestra el contenido de un mensaje de texto', () => {
@@ -312,20 +306,14 @@ describe('MessageTimeline Component', () => {
     expect(messageElements[1]).toHaveAttribute('data-direction', 'OUT');
     expect(messageElements[2]).toHaveAttribute('data-direction', 'IN');
 
-    // Verificar estilos visuales (IN vs OUT)
+    // Verificar distinción visual IN vs OUT vía `data-tone` (tras la
+    // migración a design system ya no hay `style` inline).
     const bubble1 = screen.getByTestId('message-bubble-ac4-msg-1');
     const bubble2 = screen.getByTestId('message-bubble-ac4-msg-2');
     const bubble3 = screen.getByTestId('message-bubble-ac4-msg-3');
 
-    const style1 = bubble1.getAttribute('style') || '';
-    const style2 = bubble2.getAttribute('style') || '';
-    const style3 = bubble3.getAttribute('style') || '';
-
-    // IN messages tienen fondo gris (React convierte hex a rgb)
-    expect(style1).toContain('rgb(229, 231, 235)');
-    // OUT message tiene fondo azul
-    expect(style2).toContain('rgb(59, 130, 246)');
-    // Otro IN message
-    expect(style3).toContain('rgb(229, 231, 235)');
+    expect(bubble1).toHaveAttribute('data-tone', 'incoming');
+    expect(bubble2).toHaveAttribute('data-tone', 'outgoing');
+    expect(bubble3).toHaveAttribute('data-tone', 'incoming');
   });
 });

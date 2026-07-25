@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { suppressLead } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
+import { Button, Modal } from '../ui';
 
 export interface SuppressLeadButtonProps {
   tenantId: string;
@@ -49,40 +50,55 @@ export const SuppressLeadButton: React.FC<SuppressLeadButtonProps> = ({ tenantId
 
   return (
     <div data-testid="suppress-lead-button-wrapper">
-      <button type="button" data-testid="suppress-lead-open-modal" onClick={handleOpenModal}>
+      <Button
+        type="button"
+        data-testid="suppress-lead-open-modal"
+        onClick={handleOpenModal}
+        variant="danger"
+        size="sm"
+      >
         Eliminar lead
-      </button>
+      </Button>
 
-      {confirming && (
-        <div data-testid="suppress-lead-modal" role="dialog">
-          <p>
-            Esta acción va a eliminar el lead de forma permanente, junto con sus mensajes, notas y
-            visitas agendadas. Esta acción no se puede deshacer.
-          </p>
-          <p>¿Confirmás que querés eliminar este lead?</p>
-          {error && (
-            <div data-testid="suppress-lead-error" style={{ color: '#dc2626', fontSize: '13px' }}>
-              No se pudo eliminar el lead. Intentá nuevamente.
-            </div>
-          )}
-          <button
-            type="button"
-            data-testid="suppress-lead-confirm"
-            disabled={loading}
-            onClick={() => void handleConfirm()}
-          >
-            {loading ? 'Eliminando...' : 'Sí, eliminar definitivamente'}
-          </button>
-          <button
+      <Modal
+        open={confirming}
+        onClose={handleCancel}
+        data-testid="suppress-lead-modal"
+        title="Eliminar lead"
+      >
+        <p className="text-sm text-text">
+          Esta acción va a eliminar el lead de forma permanente, junto con sus mensajes, notas y
+          visitas agendadas. Esta acción no se puede deshacer.
+        </p>
+        <p className="mt-2 text-sm text-text">¿Confirmás que querés eliminar este lead?</p>
+        {error && (
+          <div data-testid="suppress-lead-error" className="mt-2 text-sm text-danger">
+            No se pudo eliminar el lead. Intentá nuevamente.
+          </div>
+        )}
+        <div className="mt-4 flex justify-end gap-2">
+          <Button
             type="button"
             data-testid="suppress-lead-cancel"
             disabled={loading}
             onClick={handleCancel}
+            variant="secondary"
+            size="sm"
           >
             Cancelar
-          </button>
+          </Button>
+          <Button
+            type="button"
+            data-testid="suppress-lead-confirm"
+            disabled={loading}
+            onClick={() => void handleConfirm()}
+            variant="danger"
+            size="sm"
+          >
+            {loading ? 'Eliminando...' : 'Sí, eliminar definitivamente'}
+          </Button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };
