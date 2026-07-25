@@ -25,3 +25,5 @@
 - [AppointmentActionForm: props finales T4 (B2-vista-agenda)](appointmentactionform-t4-props.md) — mode confirm/reschedule, "Confirmar cita"/"Reprogramar cita", botón "Volver" no "Cancelar"
 - [AppointmentRow: props finales T5 (B2-vista-agenda)](appointmentrow-t5-props.md) — desmonta/monta AppointmentActionForm condicionalmente, onUpdated con Appointment del backend
 - [AgendaPage T7: DateRangePicker emite onChange en el mount](agendapage-t7-daterangepicker-mount-emit.md) — no dupliques carga inicial con useEffect propio; rango 7 días = +6, no +7
+- [T9: migración CallQueuePage/CallQueueRow a design system](t9-callqueue-migration-pattern.md) — fila expandible usa Card, no TableScroll; testids viven solo en CallQueuePage.test.tsx
+- [T10: migración PeoplePage a design system](t10-peoplepage-migration-pattern.md) — early-return de error se preserva fuera de AsyncSection; ui/Modal resuelve role/aria-label/testid via props
