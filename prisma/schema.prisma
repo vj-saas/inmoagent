@@ -34,6 +34,12 @@ model Tenant {
   coverageAreas      String[] @default([]) // barrios/zonas que cubre
   privacyNoticeSent  Boolean  @default(true) // incluir aviso de datos en saludo
 
+  // Textos editables por el tenant (onboarding, V-C). El backend siempre agrega
+  // el aviso Ley 25.326 al saludo y la línea de `humanHours` al handoff: estos
+  // campos solo reemplazan la frase de introducción, nunca los guardrails.
+  welcomeIntro String? // primera frase del saludo (el aviso Ley 25.326 lo agrega el backend)
+  handoffIntro String? // frase intro del handoff (la línea de humanHours la agrega el backend)
+
   // Notificación interna (handoff/agendamiento) — ver docs/05-OPERACIONES.md §5
   alertPhone    String? // número interno de la inmobiliaria (wa_id) que recibe las alertas
   alertsEnabled Boolean @default(false) // activar una vez que el template `lead_alert` esté aprobado en el WABA
@@ -328,5 +334,6 @@ model WebhookEvent {
   tenantId    String?
   receivedAt  DateTime @default(now())
 
-  @@index([receivedAt]) // para purga periódica (> 30 días)
+  @@index([receivedAt]) // para purga periódica (> 30 días) — la usa MaintenanceProcessor, no tocar
+  @@index([tenantId, receivedAt]) // último evento por tenant (GET /admin/tenants/:id/webhook-status)
 }
