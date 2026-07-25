@@ -30,3 +30,272 @@
     font-weight: var(--font-weight-semibold);
   }
 }
+
+@layer components {
+  /* Onboarding Stepper */
+  .onboarding-stepper {
+    @apply flex items-center justify-between mb-8;
+  }
+
+  .onboarding-step {
+    @apply flex flex-col items-center gap-2 flex-1;
+  }
+
+  .onboarding-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    width: 40%;
+    height: 2px;
+    background-color: var(--color-border);
+  }
+
+  .onboarding-step--active .onboarding-step-circle {
+    @apply bg-primary text-white;
+  }
+
+  .onboarding-step--completed .onboarding-step-circle {
+    @apply bg-success text-white;
+  }
+
+  .onboarding-step-circle {
+    @apply h-10 w-10 rounded-full border-2 border-border bg-surface text-text flex items-center justify-center font-semibold;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+
+  .onboarding-step-label {
+    @apply text-sm font-medium text-text-muted;
+  }
+
+  .onboarding-step--active .onboarding-step-label {
+    @apply text-primary font-semibold;
+  }
+
+  .onboarding-step--completed .onboarding-step-label {
+    @apply text-success font-semibold;
+  }
+
+  /* Onboarding Card */
+  .onboarding-card {
+    @apply rounded-card border border-border bg-surface shadow-md;
+  }
+
+  .onboarding-card-header {
+    @apply border-b border-border px-6 py-4;
+  }
+
+  .onboarding-card-title {
+    @apply text-lg font-semibold text-text;
+  }
+
+  .onboarding-card-description {
+    @apply text-sm text-text-muted mt-1;
+  }
+
+  .onboarding-card-body {
+    @apply p-6;
+  }
+
+  /* Onboarding Form */
+  .onboarding-form {
+    @apply space-y-6;
+  }
+
+  .onboarding-form-section {
+    @apply space-y-4;
+  }
+
+  .onboarding-form-group {
+    @apply space-y-2;
+  }
+
+  .onboarding-form-label {
+    @apply block text-sm font-medium text-text;
+  }
+
+  .onboarding-form-required::after {
+    content: ' *';
+    color: var(--color-danger);
+  }
+
+  .onboarding-form-helper {
+    @apply text-xs text-text-muted mt-1;
+  }
+
+  .onboarding-form-error {
+    @apply text-xs text-danger mt-1;
+  }
+
+  /* Onboarding Uploader */
+  .onboarding-uploader {
+    @apply space-y-4;
+  }
+
+  .onboarding-uploader-dropzone {
+    @apply rounded-card border-2 border-dashed border-border bg-bg p-8 text-center transition-colors;
+  }
+
+  .onboarding-uploader-dropzone--active {
+    @apply border-primary bg-primary/5;
+  }
+
+  .onboarding-uploader-dropzone-icon {
+    @apply mx-auto mb-3 h-10 w-10 text-text-muted;
+  }
+
+  .onboarding-uploader-dropzone-text {
+    @apply text-sm font-medium text-text;
+  }
+
+  .onboarding-uploader-dropzone-hint {
+    @apply text-xs text-text-muted mt-2;
+  }
+
+  .onboarding-uploader-file-list {
+    @apply space-y-2;
+  }
+
+  .onboarding-uploader-file-item {
+    @apply flex items-center justify-between rounded-card border border-border bg-surface p-3;
+  }
+
+  .onboarding-uploader-file-name {
+    @apply text-sm font-medium text-text;
+  }
+
+  .onboarding-uploader-file-size {
+    @apply text-xs text-text-muted;
+  }
+
+  .onboarding-uploader-file-action {
+    @apply inline-flex items-center justify-center h-6 w-6 rounded text-danger cursor-pointer hover:bg-danger/10;
+  }
+
+  /* Onboarding API Key Reveal */
+  .onboarding-api-key-reveal {
+    @apply space-y-3;
+  }
+
+  .onboarding-api-key-reveal-container {
+    @apply flex items-center gap-2;
+  }
+
+  .onboarding-api-key-reveal-input {
+    @apply flex-1 rounded border border-border bg-surface px-3 py-2 text-sm font-mono text-text placeholder-text-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary;
+  }
+
+  .onboarding-api-key-reveal-input--hidden {
+    letter-spacing: 0.5em;
+  }
+
+  .onboarding-api-key-reveal-button {
+    @apply inline-flex items-center justify-center h-10 w-10 rounded border border-border bg-surface text-text-muted hover:bg-bg transition-colors;
+  }
+
+  .onboarding-api-key-reveal-copy-button {
+    @apply inline-flex items-center justify-center h-10 px-3 rounded border border-border bg-surface text-text-muted hover:bg-bg transition-colors text-sm font-medium gap-1;
+  }
+
+  .onboarding-api-key-reveal-success {
+    @apply text-xs text-success font-medium;
+  }
+
+  /* Onboarding Checklist */
+  .onboarding-checklist {
+    @apply space-y-3;
+  }
+
+  .onboarding-checklist-item {
+    @apply flex items-start gap-3 rounded-card border border-border bg-surface p-4 transition-colors;
+  }
+
+  .onboarding-checklist-item--checked {
+    @apply border-success/30 bg-success/5;
+  }
+
+  .onboarding-checklist-item-checkbox {
+    @apply h-5 w-5 mt-0.5 rounded border border-border bg-surface text-primary accent-primary cursor-pointer transition-colors;
+  }
+
+  .onboarding-checklist-item--checked .onboarding-checklist-item-checkbox {
+    @apply border-success bg-success accent-white;
+  }
+
+  .onboarding-checklist-item-content {
+    @apply flex-1;
+  }
+
+  .onboarding-checklist-item-title {
+    @apply text-sm font-medium text-text;
+  }
+
+  .onboarding-checklist-item-description {
+    @apply text-xs text-text-muted mt-1;
+  }
+
+  .onboarding-checklist-item--checked .onboarding-checklist-item-title {
+    @apply text-success;
+  }
+
+  /* Webhook Status Card */
+  .webhook-status-card {
+    @apply rounded-card border border-border bg-surface shadow-md p-4;
+  }
+
+  .webhook-status-card-header {
+    @apply flex items-center justify-between mb-4;
+  }
+
+  .webhook-status-card-title {
+    @apply text-sm font-semibold text-text;
+  }
+
+  .webhook-status-indicator {
+    @apply inline-flex items-center gap-2 text-xs font-medium;
+  }
+
+  .webhook-status-indicator--active {
+    @apply text-success;
+  }
+
+  .webhook-status-indicator--inactive {
+    @apply text-danger;
+  }
+
+  .webhook-status-indicator--pending {
+    @apply text-warning;
+  }
+
+  .webhook-status-dot {
+    @apply h-2 w-2 rounded-full;
+  }
+
+  .webhook-status-indicator--active .webhook-status-dot {
+    @apply bg-success;
+  }
+
+  .webhook-status-indicator--inactive .webhook-status-dot {
+    @apply bg-danger;
+  }
+
+  .webhook-status-indicator--pending .webhook-status-dot {
+    @apply bg-warning;
+  }
+
+  .webhook-status-info {
+    @apply text-xs text-text-muted space-y-2;
+  }
+
+  .webhook-status-info-item {
+    @apply flex items-start justify-between gap-4;
+  }
+
+  .webhook-status-info-label {
+    @apply font-medium flex-shrink-0;
+  }
+
+  .webhook-status-info-value {
+    @apply text-right break-all font-mono;
+  }
+}
