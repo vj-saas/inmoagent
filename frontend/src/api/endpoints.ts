@@ -644,3 +644,160 @@ export function markAppointmentNoShow(
     },
   );
 }
+
+// ---------------------------------------------------------------------------
+// admin/tenants — wizard de onboarding (src/admin/tenants, src/auth — spec
+// V-C-onboarding-tenant). `createTenant` y `bootstrapOwner` son las únicas
+// funciones de este módulo que se autentican con `X-Master-Key` (no hay sesión
+// de persona todavía en ese punto del wizard); el resto usa el token de
+// sesión, igual que el resto de este archivo.
+// ---------------------------------------------------------------------------
+
+// Calcado de `CreateTenantDto` (src/admin/tenants/create-tenant.dto.ts).
+export interface CreateTenantRequest {
+  name: string;
+  slug: string;
+  phoneNumberId: string;
+  wabaId?: string;
+  accessToken: string;
+  displayPhone?: string;
+  botName?: string;
+  botTone?: string;
+  schedulingLink?: string;
+  humanHours?: string;
+  competitorsToAvoid?: string[];
+  coverageAreas?: string[];
+  alertPhone?: string;
+  alertsEnabled?: boolean;
+}
+
+// Calcado de `CreatedTenant` (src/admin/tenants/tenants-admin.service.ts).
+export interface CreatedTenant {
+  tenantId: string;
+  apiKey: string;
+}
+
+export function createTenant(
+  dto: CreateTenantRequest,
+  masterKey: string,
+): Promise<CreatedTenant> {
+  return request<CreatedTenant>('/admin/tenants', {
+    method: 'POST',
+    body: dto,
+    headers: { 'X-Master-Key': masterKey },
+  });
+}
+
+// Calcado de `BootstrapOwnerDto` (src/auth/dto/bootstrap-owner.dto.ts).
+export interface BootstrapOwnerRequest {
+  email: string;
+  password: string;
+}
+
+export function bootstrapOwner(
+  tenantId: string,
+  dto: BootstrapOwnerRequest,
+  masterKey: string,
+): Promise<PersonResponse> {
+  return request<PersonResponse>(
+    `/admin/tenants/${tenantId}/people/bootstrap-owner`,
+    {
+      method: 'POST',
+      body: dto,
+      headers: { 'X-Master-Key': masterKey },
+    },
+  );
+}
+
+// Calcado de `CsvImportResult` (src/admin/properties/csv-import.service.ts).
+export interface CsvImportError {
+  row: number;
+  message: string;
+}
+
+export interface CsvImportResult {
+  imported: number;
+  errors: CsvImportError[];
+}
+
+export function importPropertiesCsv(
+  tenantId: string,
+  file: File,
+  token: string,
+): Promise<CsvImportResult> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request<CsvImportResult>(`/admin/tenants/${tenantId}/properties/import`, {
+    method: 'POST',
+    body: formData,
+    token,
+  });
+}
+
+// Calcado de `UpdateTenantConfigDto` (src/admin/tenants/update-tenant-config.dto.ts).
+export interface UpdateTenantConfigRequest {
+  alertPhone?: string;
+  alertsEnabled?: boolean;
+  humanHours?: string;
+  botName?: string;
+  botTone?: string;
+  schedulingLink?: string;
+  coverageAreas?: string[];
+  competitorsToAvoid?: string[];
+  displayPhone?: string;
+  welcomeIntro?: string;
+  handoffIntro?: string;
+}
+
+// Calcado de `TenantConfigResponse` (src/admin/tenants/tenant-config-response.ts).
+export interface TenantConfigResponse {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+  phoneNumberId: string;
+  wabaId: string | null;
+  displayPhone: string | null;
+  botName: string;
+  botTone: string;
+  schedulingLink: string | null;
+  humanHours: string | null;
+  competitorsToAvoid: string[];
+  coverageAreas: string[];
+  privacyNoticeSent: boolean;
+  welcomeIntro: string | null;
+  handoffIntro: string | null;
+  alertPhone: string | null;
+  alertsEnabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export function updateTenantConfig(
+  tenantId: string,
+  dto: UpdateTenantConfigRequest,
+  token: string,
+): Promise<TenantConfigResponse> {
+  return request<TenantConfigResponse>(`/admin/tenants/${tenantId}/config`, {
+    method: 'PATCH',
+    body: dto,
+    token,
+  });
+}
+
+// Calcado del handler `webhookStatus` (src/admin/tenants/admin-tenants.controller.ts).
+export interface WebhookStatusResponse {
+  connected: boolean;
+  lastEventAt: string | null;
+  lastMessageAt: string | null;
+}
+
+export function getWebhookStatus(
+  tenantId: string,
+  token: string,
+): Promise<WebhookStatusResponse> {
+  return request<WebhookStatusResponse>(`/admin/tenants/${tenantId}/webhook-status`, {
+    method: 'GET',
+    token,
+  });
+}

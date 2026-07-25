@@ -416,3 +416,87 @@ describe('endpoints — appointments (B.2)', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// admin/tenants — wizard de onboarding (spec V-C-onboarding-tenant, T11)
+// ---------------------------------------------------------------------------
+
+import {
+  bootstrapOwner,
+  createTenant,
+  getWebhookStatus,
+  importPropertiesCsv,
+  updateTenantConfig,
+} from './endpoints';
+
+describe('endpoints — onboarding de tenant (V-C, T11)', () => {
+  afterEach(() => {
+    requestMock.mockClear();
+  });
+
+  it('createTenant: POST /admin/tenants con header X-Master-Key y body del DTO', async () => {
+    const dto = {
+      name: 'Inmobiliaria Test',
+      slug: 'inmobiliaria-test',
+      phoneNumberId: '123456',
+      accessToken: 'meta-token',
+    };
+    await createTenant(dto, 'master-secret');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants', {
+      method: 'POST',
+      body: dto,
+      headers: { 'X-Master-Key': 'master-secret' },
+    });
+  });
+
+  it('createTenant: NO manda un token de sesión (Bearer)', async () => {
+    await createTenant(
+      { name: 'X', slug: 'x', phoneNumberId: '1', accessToken: 'tok' },
+      'master-secret',
+    );
+    const [, options] = requestMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(options.token).toBeUndefined();
+  });
+
+  it('bootstrapOwner: POST /admin/tenants/:tenantId/people/bootstrap-owner con header X-Master-Key', async () => {
+    await bootstrapOwner('t1', { email: 'owner@a.com', password: 'secreto123' }, 'master-secret');
+    expect(requestMock).toHaveBeenCalledWith(
+      '/admin/tenants/t1/people/bootstrap-owner',
+      {
+        method: 'POST',
+        body: { email: 'owner@a.com', password: 'secreto123' },
+        headers: { 'X-Master-Key': 'master-secret' },
+      },
+    );
+  });
+
+  it('importPropertiesCsv: POST /admin/tenants/:tenantId/properties/import con FormData (no JSON)', async () => {
+    const file = new File(['col1,col2\na,b'], 'inventario.csv', { type: 'text/csv' });
+    await importPropertiesCsv('t1', file, 'tok');
+
+    expect(requestMock).toHaveBeenCalledTimes(1);
+    const [url, options] = requestMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(url).toBe('/admin/tenants/t1/properties/import');
+    expect(options.method).toBe('POST');
+    expect(options.token).toBe('tok');
+    expect(options.body).toBeInstanceOf(FormData);
+    expect((options.body as FormData).get('file')).toBe(file);
+  });
+
+  it('updateTenantConfig: PATCH /admin/tenants/:tenantId/config con body parcial y token de sesión', async () => {
+    await updateTenantConfig('t1', { botName: 'Marta' }, 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/config', {
+      method: 'PATCH',
+      body: { botName: 'Marta' },
+      token: 'tok',
+    });
+  });
+
+  it('getWebhookStatus: GET /admin/tenants/:tenantId/webhook-status con token de sesión', async () => {
+    await getWebhookStatus('t1', 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/webhook-status', {
+      method: 'GET',
+      token: 'tok',
+    });
+  });
+});
