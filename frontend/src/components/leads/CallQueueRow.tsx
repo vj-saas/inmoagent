@@ -5,6 +5,7 @@ import { LeadChips } from './LeadChips';
 import { ContactedToggle } from './ContactedToggle';
 import { AssignmentControl } from './AssignmentControl';
 import { NoteForm } from './NoteForm';
+import { Card, CardBody, Button } from '../ui';
 
 export interface CallQueueRowProps {
   lead: Lead;
@@ -32,56 +33,60 @@ export const CallQueueRow: React.FC<CallQueueRowProps> = ({
   const displayName = lead.name || lead.phone;
 
   return (
-    <div data-testid="call-queue-row" style={{ padding: '12px', borderBottom: '1px solid #e5e7eb' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <Link to={`/leads/${lead.id}`} data-testid="call-queue-row-link">
-            <span data-testid="call-queue-row-name" style={{ fontWeight: 600 }}>
-              {displayName}
-            </span>
-          </Link>
-          <div data-testid="call-queue-row-state" style={{ fontSize: '12px', color: '#6b7280' }}>
-            {lead.state}
+    <Card data-testid="call-queue-row">
+      <CardBody>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <Link to={`/leads/${lead.id}`} data-testid="call-queue-row-link">
+              <span data-testid="call-queue-row-name" className="font-semibold text-text">
+                {displayName}
+              </span>
+            </Link>
+            <div data-testid="call-queue-row-state" className="text-xs text-text-muted">
+              {lead.state}
+            </div>
+            <LeadChips
+              fOperation={lead.fOperation}
+              fNeighborhoods={lead.fNeighborhoods}
+              fMaxPrice={lead.fMaxPrice}
+              fCurrency={lead.fCurrency}
+              fMinRooms={lead.fMinRooms}
+            />
           </div>
-          <LeadChips
-            fOperation={lead.fOperation}
-            fNeighborhoods={lead.fNeighborhoods}
-            fMaxPrice={lead.fMaxPrice}
-            fCurrency={lead.fCurrency}
-            fMinRooms={lead.fMinRooms}
-          />
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            data-testid="call-queue-row-toggle"
+            onClick={() => setExpanded((prev) => !prev)}
+          >
+            {expanded ? 'Cerrar' : 'Registrar llamada'}
+          </Button>
         </div>
-        <button
-          type="button"
-          data-testid="call-queue-row-toggle"
-          onClick={() => setExpanded((prev) => !prev)}
-        >
-          {expanded ? 'Cerrar' : 'Registrar llamada'}
-        </button>
-      </div>
 
-      {expanded && (
-        <div data-testid="call-queue-row-actions" style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <ContactedToggle lead={lead} tenantId={tenantId} token={token} onUpdated={onUpdated} />
-          <AssignmentControl
-            lead={lead}
-            assignableUsers={assignableUsers}
-            tenantId={tenantId}
-            leadId={lead.id}
-            token={token}
-            onUpdated={onUpdated}
-          />
-          <NoteForm
-            tenantId={tenantId}
-            leadId={lead.id}
-            token={token}
-            onCreated={(_note: LeadNote) => {
-              // La nota queda persistida en el backend; la ficha del lead
-              // (A.4) es donde se lee el historial completo de notas.
-            }}
-          />
-        </div>
-      )}
-    </div>
+        {expanded && (
+          <div data-testid="call-queue-row-actions" className="mt-3 flex flex-col gap-3">
+            <ContactedToggle lead={lead} tenantId={tenantId} token={token} onUpdated={onUpdated} />
+            <AssignmentControl
+              lead={lead}
+              assignableUsers={assignableUsers}
+              tenantId={tenantId}
+              leadId={lead.id}
+              token={token}
+              onUpdated={onUpdated}
+            />
+            <NoteForm
+              tenantId={tenantId}
+              leadId={lead.id}
+              token={token}
+              onCreated={(_note: LeadNote) => {
+                // La nota queda persistida en el backend; la ficha del lead
+                // (A.4) es donde se lee el historial completo de notas.
+              }}
+            />
+          </div>
+        )}
+      </CardBody>
+    </Card>
   );
 };

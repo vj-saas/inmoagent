@@ -24,8 +24,7 @@ import {
 } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { useApi } from '../hooks/useApi';
-import { Spinner } from '../components/Spinner';
-import { ErrorBanner } from '../components/ErrorBanner';
+import { AsyncSection } from '../components/ui';
 import { CallQueueRow } from '../components/leads/CallQueueRow';
 
 const QUEUE_STATES: ConversationState[] = ['HUMAN_HANDOFF', 'QUALIFICATION'];
@@ -77,18 +76,18 @@ export function CallQueuePage(): JSX.Element {
 
   return (
     <div>
-      <h1>Llamar hoy</h1>
+      <h1 className="mb-4 text-2xl font-semibold text-text">Llamar hoy</h1>
 
-      {leadsApi.loading && <Spinner text="Cargando cola de llamados..." />}
-
-      {!leadsApi.loading && leadsApi.error && <ErrorBanner message={errorMessage(leadsApi.error)} />}
-
-      {!leadsApi.loading && !leadsApi.error && leads.length === 0 && (
-        <p data-testid="call-queue-empty">No hay leads pendientes de llamar.</p>
-      )}
-
-      {!leadsApi.loading && !leadsApi.error && leads.length > 0 && (
-        <div data-testid="call-queue-list">
+      <AsyncSection
+        loading={leadsApi.loading}
+        error={leadsApi.error ? errorMessage(leadsApi.error) : null}
+        isEmpty={leads.length === 0}
+        loadingLabel="Cargando cola de llamados..."
+        emptyTestId="call-queue-empty"
+        emptyTitle="No hay leads pendientes de llamar."
+        emptyMessage="Cuando un lead pida un humano o quede tibio en calificación, va a aparecer acá."
+      >
+        <div data-testid="call-queue-list" className="flex flex-col gap-3">
           {leads.map((lead) => (
             <CallQueueRow
               key={lead.id}
@@ -100,7 +99,7 @@ export function CallQueuePage(): JSX.Element {
             />
           ))}
         </div>
-      )}
+      </AsyncSection>
     </div>
   );
 }
