@@ -54,7 +54,7 @@ export function LoginPage(): JSX.Element {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center p-6">
-      <Card className="w-full max-w-[380px]">
+      <Card className="w-full max-w-sm">
         <CardBody className="p-8">
           <h1 className="mb-1 text-2xl font-semibold text-text">Iniciar sesión</h1>
           <p className="mb-6 mt-0 text-sm text-text-muted">

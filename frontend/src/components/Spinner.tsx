@@ -11,7 +11,7 @@ export const Spinner: React.FC<SpinnerProps> = ({ text = 'Cargando...' }) => {
       data-testid="spinner"
     >
       <div
-        className="h-6 w-6 animate-spin rounded-full border-[3px] border-border border-t-text"
+        className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-text"
         aria-hidden="true"
       />
       <span>{text}</span>

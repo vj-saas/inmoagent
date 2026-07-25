@@ -27,3 +27,5 @@
 - [AgendaPage T7: DateRangePicker emite onChange en el mount](agendapage-t7-daterangepicker-mount-emit.md) — no dupliques carga inicial con useEffect propio; rango 7 días = +6, no +7
 - [T9: migración CallQueuePage/CallQueueRow a design system](t9-callqueue-migration-pattern.md) — fila expandible usa Card, no TableScroll; testids viven solo en CallQueuePage.test.tsx
 - [T10: migración PeoplePage a design system](t10-peoplepage-migration-pattern.md) — early-return de error se preserva fuera de AsyncSection; ui/Modal resuelve role/aria-label/testid via props
+- [T11: migración AppLayout + ToastProvider](t11-applayout-header-toastprovider.md) — nav única con overflow-x-auto, ojo con CSSProperties residual aunque borres los style={{}}
+- [T12: cierre de design system, gate de AC-3 más allá de style=](t12-legacy-css-cleanup-gates.md) — grep de arbitrary values `[Npx]`/`[Nrem]` en className, no solo style={

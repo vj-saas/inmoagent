@@ -61,7 +61,7 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
   return (
     <div
       data-testid="message-timeline"
-      className="flex min-h-[200px] flex-col gap-3 rounded-card bg-bg p-4"
+      className="flex min-h-52 flex-col gap-3 rounded-card bg-bg p-4"
     >
       {messages.map((message, index) => {
         const isIncoming = message.direction === 'IN';
@@ -105,7 +105,7 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
               {/* Fecha y hora */}
               <div
                 data-testid={`message-timestamp-${message.id}`}
-                className="mt-2 text-[11px] opacity-70"
+                className="mt-2 text-xs opacity-70"
               >
                 {formatDate(message.createdAt)}
               </div>
