@@ -34,6 +34,6 @@ import { TenantScopeGuard } from './guards/tenant-scope.guard';
   ],
   // Se exportan para que AdminModule pueda inyectarlos en PersonOrApiKeyGuard
   // (guard compuesto OR) sin reimplementar su lógica de sesión/scope.
-  exports: [PersonSessionGuard, TenantScopeGuard],
+  exports: [PersonSessionGuard, TenantScopeGuard, OwnerRoleGuard],
 })
 export class AuthModule {}
