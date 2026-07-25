@@ -1,4 +1,8 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
@@ -7,7 +11,21 @@ import { encrypt } from '../../common/crypto';
 import type { EnvConfig } from '../../config/env.schema';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { CreateTenantDto } from './create-tenant.dto';
+import { TENANT_CONFIG_SELECT } from './tenant-config-response';
+import type { TenantConfigResponse } from './tenant-config-response';
+import type { UpdateTenantConfigDto } from './update-tenant-config.dto';
 import type { UpdateTokenDto } from './update-token.dto';
+
+/** Normaliza un string opcional: trim y "" -> null. `undefined` se propaga tal cual. */
+function normalizeOptionalText(
+  value: string | undefined,
+): string | null | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length === 0 ? null : trimmed;
+}
 
 export interface CreatedTenant {
   tenantId: string;
@@ -79,6 +97,79 @@ export class TenantsAdminService {
       data: { accessTokenEnc },
     });
     return { rotatedAt: tenant.updatedAt };
+  }
+
+  /**
+   * PATCH parcial de configuración de un tenant. Arma `data` campo por campo
+   * (nunca spread del body crudo) solo con las claves presentes en el `dto`.
+   * Un PATCH sin campos no toca la DB (no mueve `updatedAt`).
+   */
+  async updateConfig(
+    tenantId: string,
+    dto: UpdateTenantConfigDto,
+  ): Promise<TenantConfigResponse> {
+    const data: Prisma.TenantUpdateInput = {};
+
+    if (dto.alertPhone !== undefined) {
+      data.alertPhone = normalizeOptionalText(dto.alertPhone);
+    }
+    if (dto.alertsEnabled !== undefined) {
+      data.alertsEnabled = dto.alertsEnabled;
+    }
+    if (dto.humanHours !== undefined) {
+      data.humanHours = normalizeOptionalText(dto.humanHours);
+    }
+    if (dto.botName !== undefined) {
+      data.botName = dto.botName.trim();
+    }
+    if (dto.botTone !== undefined) {
+      data.botTone = dto.botTone.trim();
+    }
+    if (dto.schedulingLink !== undefined) {
+      data.schedulingLink = normalizeOptionalText(dto.schedulingLink);
+    }
+    if (dto.coverageAreas !== undefined) {
+      data.coverageAreas = dto.coverageAreas;
+    }
+    if (dto.competitorsToAvoid !== undefined) {
+      data.competitorsToAvoid = dto.competitorsToAvoid;
+    }
+    if (dto.displayPhone !== undefined) {
+      data.displayPhone = normalizeOptionalText(dto.displayPhone);
+    }
+    if (dto.welcomeIntro !== undefined) {
+      data.welcomeIntro = normalizeOptionalText(dto.welcomeIntro);
+    }
+    if (dto.handoffIntro !== undefined) {
+      data.handoffIntro = normalizeOptionalText(dto.handoffIntro);
+    }
+
+    if (Object.keys(data).length === 0) {
+      const tenant = await this.prisma.tenant.findFirst({
+        where: { id: tenantId },
+        select: TENANT_CONFIG_SELECT,
+      });
+      if (!tenant) {
+        throw new NotFoundException('Tenant no encontrado');
+      }
+      return tenant;
+    }
+
+    try {
+      return await this.prisma.tenant.update({
+        where: { id: tenantId },
+        data,
+        select: TENANT_CONFIG_SELECT,
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2025'
+      ) {
+        throw new NotFoundException('Tenant no encontrado');
+      }
+      throw error;
+    }
   }
 
   /**

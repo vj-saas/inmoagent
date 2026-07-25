@@ -1,4 +1,4 @@
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import type { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import * as argon2 from 'argon2';
@@ -6,6 +6,7 @@ import { randomBytes } from 'node:crypto';
 import type { EnvConfig } from '../../config/env.schema';
 import type { PrismaService } from '../../prisma/prisma.service';
 import type { CreateTenantDto } from './create-tenant.dto';
+import type { UpdateTenantConfigDto } from './update-tenant-config.dto';
 import { TenantsAdminService } from './tenants-admin.service';
 
 const ENCRYPTION_KEY = randomBytes(32).toString('hex');
@@ -32,8 +33,10 @@ function build() {
   });
   const webhookEventFindFirst = jest.fn().mockResolvedValue(null);
   const leadFindFirst = jest.fn().mockResolvedValue(null);
+  const update = jest.fn().mockResolvedValue({ id: 'tenant-1' });
+  const tenantFindFirst = jest.fn().mockResolvedValue({ id: 'tenant-1' });
   const prisma = {
-    tenant: { create },
+    tenant: { create, update, findFirst: tenantFindFirst },
     webhookEvent: { findFirst: webhookEventFindFirst },
     lead: { findFirst: leadFindFirst },
   } as unknown as PrismaService;
@@ -44,6 +47,8 @@ function build() {
     service: new TenantsAdminService(prisma, config),
     prisma,
     create,
+    update,
+    tenantFindFirst,
     webhookEventFindFirst,
     leadFindFirst,
     getCapturedArgs: () => capturedArgs as CapturedCreateArgs,
@@ -126,5 +131,73 @@ describe('TenantsAdminService.webhookStatus', () => {
       orderBy: { lastMessageAt: 'desc' },
       select: { lastMessageAt: true },
     });
+  });
+});
+
+describe('TenantsAdminService.updateConfig', () => {
+  it('arma `data` solo con el subconjunto de campos presentes en el dto', async () => {
+    const { service, update } = build();
+    const dto: UpdateTenantConfigDto = {
+      alertPhone: '+5491100000000',
+      alertsEnabled: true,
+    };
+
+    await service.updateConfig('tenant-1', dto);
+
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'tenant-1' },
+      data: { alertPhone: '+5491100000000', alertsEnabled: true },
+      select: expect.any(Object),
+    });
+  });
+
+  it('normaliza welcomeIntro vacío a null en el `data` pasado a Prisma', async () => {
+    const { service, update } = build();
+
+    await service.updateConfig('tenant-1', { welcomeIntro: '' });
+
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'tenant-1' },
+      data: { welcomeIntro: null },
+      select: expect.any(Object),
+    });
+  });
+
+  it('normaliza un string de solo espacios a null', async () => {
+    const { service, update } = build();
+
+    await service.updateConfig('tenant-1', { humanHours: '   ' });
+
+    expect(update).toHaveBeenCalledWith({
+      where: { id: 'tenant-1' },
+      data: { humanHours: null },
+      select: expect.any(Object),
+    });
+  });
+
+  it('con dto vacío no llama a prisma.tenant.update, hace una lectura en su lugar', async () => {
+    const { service, update, tenantFindFirst } = build();
+
+    await service.updateConfig('tenant-1', {});
+
+    expect(update).not.toHaveBeenCalled();
+    expect(tenantFindFirst).toHaveBeenCalledWith({
+      where: { id: 'tenant-1' },
+      select: expect.any(Object),
+    });
+  });
+
+  it('lanza NotFoundException si Prisma responde P2025 al actualizar', async () => {
+    const { service, update } = build();
+    update.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Record not found', {
+        code: 'P2025',
+        clientVersion: '7.8.0',
+      }),
+    );
+
+    await expect(
+      service.updateConfig('tenant-1', { alertPhone: '123' }),
+    ).rejects.toThrow(NotFoundException);
   });
 });
