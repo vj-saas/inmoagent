@@ -25,9 +25,40 @@ export function summarizeLeadFilters(lead: Lead): string {
 
 /** Mensajes 100% deterministos (sin LLM) — docs/03-CONVERSACION.md. */
 
+/**
+ * Frase introductoria por defecto del saludo (la que un tenant puede reemplazar
+ * con `welcomeIntro`). Se exporta para que los tests verifiquen la regresión
+ * contra un valor único en vez de contra un string copiado.
+ */
+export function DEFAULT_INTRO(tenant: Tenant): string {
+  return `¡Hola! 👋 Soy ${tenant.botName}, de ${tenant.name}. Estoy para ayudarte a encontrar tu próxima propiedad, a cualquier hora.`;
+}
+
+/** Pregunta de operación del saludo: la agrega SIEMPRE el backend, no es configurable. */
+export const OPERATION_QUESTION =
+  'Contame, ¿estás buscando *comprar* o *alquilar*?';
+
+/**
+ * Aviso de tratamiento de datos (Ley 25.326) — regla de negocio innegociable 5.
+ *
+ * GUARDRAIL: se deriva únicamente de `tenant.name`, NUNCA del texto configurable
+ * por el tenant, y `buildGreetingMessage` lo concatena en la misma (y única)
+ * expresión de retorno. No existe ninguna rama de código que pueda omitirlo.
+ */
+function buildPrivacyLine(tenant: Tenant): string {
+  return `_Al continuar aceptás que ${tenant.name} use tus datos solo para gestionar tu consulta (Ley 25.326). Escribí BAJA cuando quieras dejar de recibir mensajes._`;
+}
+
+/**
+ * Primer mensaje al lead. `welcomeIntro` (configurable por el tenant) reemplaza
+ * SOLO la frase introductoria: la pregunta de operación y el aviso de Ley 25.326
+ * los agrega siempre el backend, sin importar el contenido configurado (AC-5,
+ * AC-6, AC-7; regla de negocio innegociable 5 de CLAUDE.md).
+ */
 export function buildGreetingMessage(tenant: Tenant): string {
-  const privacyLine = `_Al continuar aceptás que ${tenant.name} use tus datos solo para gestionar tu consulta (Ley 25.326). Escribí BAJA cuando quieras dejar de recibir mensajes._`;
-  return `¡Hola! 👋 Soy ${tenant.botName}, de ${tenant.name}. Estoy para ayudarte a encontrar tu próxima propiedad, a cualquier hora.\n\nContame, ¿estás buscando *comprar* o *alquilar*?\n\n${privacyLine}`;
+  const intro = tenant.welcomeIntro?.trim() || DEFAULT_INTRO(tenant);
+  const privacyLine = buildPrivacyLine(tenant);
+  return `${intro}\n\n${OPERATION_QUESTION}\n\n${privacyLine}`;
 }
 
 /** Repregunta de operación cuando el saludo completo ya se mandó antes (no repetirlo íntegro). */
@@ -36,11 +67,24 @@ export const OPERATION_FOLLOWUP_FALLBACK = '¿Buscás *comprar* o *alquilar*?';
 export const OPT_OUT_CONFIRMATION =
   'Listo, no te escribimos más. Si algún día retomás la búsqueda, escribinos y seguimos donde quedamos.';
 
+/**
+ * Frase introductoria por defecto del handoff genérico (la que un tenant puede
+ * reemplazar con `handoffIntro`). Exportada como referencia para los tests.
+ */
+export function DEFAULT_HANDOFF_INTRO(tenant: Tenant): string {
+  return `¡Claro! Te dejo con un asesor de ${tenant.name}, te escribe a la brevedad.`;
+}
+
+/**
+ * Handoff genérico a humano. `handoffIntro` reemplaza SOLO la frase
+ * introductoria; la línea de `humanHours` la sigue agregando el backend (AC-8).
+ */
 export function buildHandoffFarewell(tenant: Tenant): string {
+  const intro = tenant.handoffIntro?.trim() || DEFAULT_HANDOFF_INTRO(tenant);
   const hoursLine = tenant.humanHours
     ? ` Horario de atención: ${tenant.humanHours}.`
     : '';
-  return `¡Claro! Te dejo con un asesor de ${tenant.name}, te escribe a la brevedad.${hoursLine}`;
+  return `${intro}${hoursLine}`;
 }
 
 /** Handoff post-interés en una propiedad: baja el peso de la decisión (§5.4). */
