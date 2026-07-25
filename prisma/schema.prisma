@@ -81,6 +81,7 @@ model Person {
   assignedLeads        Lead[]        @relation("LeadAssignee")
   assignedAppointments Appointment[] @relation("AppointmentAssignee")
   authoredNotes        LeadNote[]
+  sentMessages         Message[]     @relation("MessageSender")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -264,9 +265,16 @@ model Message {
   transcription String? // resultado de STT para audios
   meta          Json? // payload crudo recortado / status
 
+  // Autor humano del mensaje saliente; null = enviado por el bot (100% de los
+  // mensajes previos a esta migración). SetNull: borrar una Person NUNCA puede
+  // borrar historial de conversación (evidencia / trazabilidad Ley 25.326).
+  sentByPersonId String?
+  sentByPerson   Person? @relation("MessageSender", fields: [sentByPersonId], references: [id], onDelete: SetNull)
+
   createdAt DateTime @default(now())
 
   @@index([tenantId, leadId, createdAt])
+  @@index([sentByPersonId]) // columna líder para que el SetNull no haga seq scan de messages
 }
 
 // ─────────────────────────────────────────────
