@@ -18,7 +18,10 @@ function build() {
     findOrCreateByPhone: jest.fn().mockResolvedValue({ id: 'lead-1' }),
   } as unknown as LeadsService;
   const prisma = {
-    message: { create: jest.fn().mockResolvedValue({}) },
+    message: {
+      create: jest.fn().mockResolvedValue({}),
+      updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+    },
   } as unknown as PrismaService;
   const graphClient = {
     sendText: jest.fn().mockResolvedValue({ waMessageId: 'wamid.out.1' }),
@@ -133,6 +136,66 @@ describe('OutboundProcessor', () => {
       ['Juan', '5491100000000', 'alquiler caballito', 'Depto A'],
     );
     expect(prisma.message.create).not.toHaveBeenCalled();
+  });
+
+  it('con messageId actualiza el Message ya persistido con el waMessageId, sin crear otro ni tocar el lead', async () => {
+    const { processor, graphClient, prisma, leads } = build();
+
+    await processor.process(
+      job({
+        kind: 'text',
+        tenantId: 'tenant-1',
+        to: '5491100000000',
+        body: 'te escribe Juan del equipo',
+        messageId: 'msg-manual-1',
+      }),
+    );
+
+    expect(graphClient.sendText).toHaveBeenCalledWith(
+      'phone-1',
+      'token-abc',
+      '5491100000000',
+      'te escribe Juan del equipo',
+    );
+    expect(prisma.message.updateMany).toHaveBeenCalledWith({
+      where: { id: 'msg-manual-1', tenantId: 'tenant-1' },
+      data: { waMessageId: 'wamid.out.1' },
+    });
+    // Doble persistencia = dos burbujas del mismo texto en la bandeja (AC-7/AC-12).
+    expect(prisma.message.create).not.toHaveBeenCalled();
+    // `findOrCreateByPhone` contamina `Lead.lastMessageAt` (decisión 4 de la spec).
+    expect(leads.findOrCreateByPhone).not.toHaveBeenCalled();
+  });
+
+  it('sin messageId mantiene el comportamiento del bot: crea el Message vía findOrCreateByPhone y no actualiza nada', async () => {
+    const { processor, prisma, leads } = build();
+
+    await processor.process(
+      job({
+        kind: 'text',
+        tenantId: 'tenant-1',
+        to: '5491100000000',
+        body: 'hola',
+      }),
+    );
+
+    expect(leads.findOrCreateByPhone).toHaveBeenCalledWith(
+      'tenant-1',
+      '5491100000000',
+    );
+    expect(prisma.message.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          tenantId: 'tenant-1',
+          leadId: 'lead-1',
+          direction: 'OUT',
+          type: 'TEXT',
+          waMessageId: 'wamid.out.1',
+          body: 'hola',
+        }),
+      }),
+    );
+    expect(prisma.message.updateMany).not.toHaveBeenCalled();
   });
 
   it('descarta el job sin lanzar si el tenant ya no existe', async () => {

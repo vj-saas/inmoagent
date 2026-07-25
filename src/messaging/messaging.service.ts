@@ -24,10 +24,26 @@ export class MessagingService {
     private readonly outboundQueue: Queue<OutboundJobData>,
   ) {}
 
-  async sendText(tenant: Tenant, to: string, body: string): Promise<void> {
+  /**
+   * `opts.messageId` (opcional) referencia un `Message` OUT ya persistido: en ese
+   * caso el processor lo actualiza con el `waMessageId` en vez de crear otro.
+   */
+  async sendText(
+    tenant: Tenant,
+    to: string,
+    body: string,
+    opts?: { messageId?: string },
+  ): Promise<void> {
     await this.outboundQueue.add(
       'send',
-      { kind: 'text', tenantId: tenant.id, to, body },
+      {
+        kind: 'text',
+        tenantId: tenant.id,
+        to,
+        body,
+        // Sin `opts` el payload queda idéntico al de siempre (camino del bot).
+        ...(opts?.messageId ? { messageId: opts.messageId } : {}),
+      },
       RETRY_JOB_OPTIONS,
     );
   }

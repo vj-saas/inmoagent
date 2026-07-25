@@ -49,6 +49,7 @@ export class OutboundProcessor extends WorkerHost {
               data.to,
               data.body,
             ),
+          data.messageId,
         );
         return;
       case 'image':
@@ -94,8 +95,19 @@ export class OutboundProcessor extends WorkerHost {
     type: MessageType,
     body: string | null,
     send: () => Promise<MetaSendResult>,
+    messageId?: string,
   ): Promise<void> {
     const result = await send();
+    if (messageId) {
+      // Envío manual desde la bandeja: el `Message` ya fue persistido antes de
+      // llamar a Meta. Se actualiza esa misma fila (una sola burbuja) y NO se
+      // llama a `findOrCreateByPhone`, que tocaría `Lead.lastMessageAt`.
+      await this.prisma.message.updateMany({
+        where: { id: messageId, tenantId: tenant.id },
+        data: { waMessageId: result.waMessageId || null },
+      });
+      return;
+    }
     const lead = await this.leads.findOrCreateByPhone(tenant.id, to);
     await this.prisma.message.create({
       data: {
