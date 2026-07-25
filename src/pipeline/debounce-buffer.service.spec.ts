@@ -20,23 +20,42 @@ function entry(overrides: Partial<DebounceEntry> = {}): DebounceEntry {
   };
 }
 
-function build() {
+/**
+ * `statefulLock: true` hace que `set`/`del` respeten de verdad la semántica
+ * `SET NX` sobre un store en memoria, para poder ejercitar concurrencia real
+ * sobre la misma key. Por default se mantiene el mock plano que usan los tests
+ * de `push`/`tryFlush`/`purgeLead` ya existentes.
+ */
+function build({ statefulLock = false }: { statefulLock?: boolean } = {}) {
   const jobs = new Map<string, { remove: jest.Mock }>();
+  const store = new Set<string>();
 
   const redis = {
     rpush: jest.fn().mockResolvedValue(1),
     lrange: jest.fn().mockResolvedValue([]),
-    del: jest.fn().mockResolvedValue(1),
-    set: jest.fn().mockResolvedValue('OK'),
+    del: statefulLock
+      ? jest.fn((key: string) => Promise.resolve(store.delete(key) ? 1 : 0))
+      : jest.fn().mockResolvedValue(1),
+    set: statefulLock
+      ? jest.fn((key: string) => {
+          if (store.has(key)) {
+            return Promise.resolve(null);
+          }
+          store.add(key);
+          return Promise.resolve('OK');
+        })
+      : jest.fn().mockResolvedValue('OK'),
   } as unknown as Redis;
 
   const queue = {
     getJob: jest.fn(async (jobId: string) => jobs.get(jobId) ?? null),
-    add: jest.fn(async (_name: string, _data: unknown, opts: { jobId: string }) => {
-      const job = { remove: jest.fn().mockResolvedValue(undefined) };
-      jobs.set(opts.jobId, job);
-      return job;
-    }),
+    add: jest.fn(
+      async (_name: string, _data: unknown, opts: { jobId: string }) => {
+        const job = { remove: jest.fn().mockResolvedValue(undefined) };
+        jobs.set(opts.jobId, job);
+        return job;
+      },
+    ),
   } as unknown as Queue;
 
   const config = {
@@ -45,6 +64,12 @@ function build() {
 
   const service = new DebounceBufferService(redis, queue, config);
   return { service, redis, queue, jobs };
+}
+
+/** Key con la que se intentó tomar el lock en la primera llamada a `set`. */
+function firstSetKey(redis: Redis): string {
+  const calls = (redis.set as jest.Mock).mock.calls as unknown as string[][];
+  return calls[0][0];
 }
 
 describe('DebounceBufferService', () => {
@@ -120,7 +145,11 @@ describe('DebounceBufferService', () => {
       JSON.stringify(staleEntry),
     ]);
     const errorSpy = jest
-      .spyOn((service as unknown as { logger: { error: (...a: unknown[]) => void } }).logger, 'error')
+      .spyOn(
+        (service as unknown as { logger: { error: (...a: unknown[]) => void } })
+          .logger,
+        'error',
+      )
       .mockImplementation(() => undefined);
     const handler = jest.fn().mockResolvedValue(undefined);
 
@@ -135,9 +164,15 @@ describe('DebounceBufferService', () => {
 
   it('no loguea nada si las entradas están dentro del rango normal de debounce', async () => {
     const { service, redis } = build();
-    (redis.lrange as jest.Mock).mockResolvedValueOnce([JSON.stringify(entry())]);
+    (redis.lrange as jest.Mock).mockResolvedValueOnce([
+      JSON.stringify(entry()),
+    ]);
     const errorSpy = jest
-      .spyOn((service as unknown as { logger: { error: (...a: unknown[]) => void } }).logger, 'error')
+      .spyOn(
+        (service as unknown as { logger: { error: (...a: unknown[]) => void } })
+          .logger,
+        'error',
+      )
       .mockImplementation(() => undefined);
     const handler = jest.fn().mockResolvedValue(undefined);
 
@@ -162,5 +197,121 @@ describe('DebounceBufferService', () => {
     );
     expect(canonicalJob.remove).toHaveBeenCalled();
     expect(retryJob.remove).toHaveBeenCalled();
+  });
+
+  describe('withLeadLock (exclusión mutua bot-humano, AC-7)', () => {
+    it('toma exactamente la misma key de lock que tryFlush', async () => {
+      const { service, redis } = build();
+
+      await service.tryFlush(TENANT_ID, LEAD_ID, jest.fn());
+      const flushKey = firstSetKey(redis);
+      (redis.set as jest.Mock).mockClear();
+      (redis.del as jest.Mock).mockClear();
+
+      await service.withLeadLock(TENANT_ID, LEAD_ID, jest.fn());
+      const lockKey = firstSetKey(redis);
+
+      expect(lockKey).toBe(flushKey);
+      expect(lockKey).toBe(`debounce:lock:${TENANT_ID}:${LEAD_ID}`);
+      expect(redis.set).toHaveBeenCalledWith(lockKey, '1', 'PX', 60000, 'NX');
+      // Y lo libera sobre esa misma key.
+      expect(redis.del).toHaveBeenCalledWith(lockKey);
+    });
+
+    it('devuelve el resultado de fn cuando pudo tomar el lock', async () => {
+      const { service } = build({ statefulLock: true });
+
+      const result = await service.withLeadLock(TENANT_ID, LEAD_ID, () =>
+        Promise.resolve({ ok: true }),
+      );
+
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('devuelve null y NO ejecuta fn si el lock ya está tomado', async () => {
+      const { service, redis } = build();
+      (redis.set as jest.Mock).mockResolvedValueOnce(null); // lock ocupado
+      const fn = jest.fn().mockResolvedValue('nunca');
+
+      const result = await service.withLeadLock(TENANT_ID, LEAD_ID, fn);
+
+      expect(result).toBeNull();
+      expect(fn).not.toHaveBeenCalled();
+      // No libera un lock que nunca tomó (sería robarle el lock al bot).
+      expect(redis.del).not.toHaveBeenCalledWith(
+        `debounce:lock:${TENANT_ID}:${LEAD_ID}`,
+      );
+    });
+
+    it('libera el lock igual si fn lanza, y propaga la excepción', async () => {
+      const { service, redis } = build();
+      const boom = new Error('falló el envío manual');
+
+      await expect(
+        service.withLeadLock(TENANT_ID, LEAD_ID, () => Promise.reject(boom)),
+      ).rejects.toBe(boom);
+
+      expect(redis.del).toHaveBeenCalledWith(
+        `debounce:lock:${TENANT_ID}:${LEAD_ID}`,
+      );
+    });
+
+    it('tras una excepción de fn el lock queda libre para el siguiente actor', async () => {
+      const { service } = build({ statefulLock: true });
+
+      await expect(
+        service.withLeadLock(TENANT_ID, LEAD_ID, () =>
+          Promise.reject(new Error('boom')),
+        ),
+      ).rejects.toThrow('boom');
+
+      const second = await service.withLeadLock(TENANT_ID, LEAD_ID, () =>
+        Promise.resolve('entró'),
+      );
+      expect(second).toBe('entró');
+    });
+
+    it('dos llamadas concurrentes: solo UNA ejecuta fn, la otra recibe null', async () => {
+      const { service } = build({ statefulLock: true });
+      let release!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      const fn = jest.fn(async () => {
+        await gate;
+        return 'ejecutado';
+      });
+
+      const first = service.withLeadLock(TENANT_ID, LEAD_ID, fn);
+      const second = service.withLeadLock(TENANT_ID, LEAD_ID, fn);
+      release();
+      const results = await Promise.all([first, second]);
+
+      expect(fn).toHaveBeenCalledTimes(1);
+      expect(results.filter((r) => r === 'ejecutado')).toHaveLength(1);
+      expect(results.filter((r) => r === null)).toHaveLength(1);
+    });
+
+    it('un turno del bot en vuelo (tryFlush con el lock) bloquea el send humano', async () => {
+      const { service, redis } = build({ statefulLock: true });
+      (redis.lrange as jest.Mock).mockResolvedValue([JSON.stringify(entry())]);
+      let sendResult: unknown = 'sin-correr';
+
+      await service.tryFlush(TENANT_ID, LEAD_ID, async () => {
+        // Dentro del turno del bot, con el lock sostenido.
+        sendResult = await service.withLeadLock(
+          TENANT_ID,
+          LEAD_ID,
+          jest.fn().mockResolvedValue('enviado'),
+        );
+      });
+
+      expect(sendResult).toBeNull();
+      // Terminado el turno, el lock quedó libre.
+      const after = await service.withLeadLock(TENANT_ID, LEAD_ID, () =>
+        Promise.resolve('enviado'),
+      );
+      expect(after).toBe('enviado');
+    });
   });
 });

@@ -93,6 +93,43 @@ export class DebounceBufferService {
     }
   }
 
+  /**
+   * Ejecuta `fn` sosteniendo el MISMO lock de lead que `tryFlush`
+   * (`debounce:lock:<tenantId>:<leadId>`), garantizando que el bot y un humano
+   * nunca escriban sobre el mismo lead a la vez: mientras un turno del bot está
+   * en vuelo el lock está tomado y esto devuelve `null` sin ejecutar `fn`; a la
+   * inversa, mientras esto corre ningún turno puede arrancar (`tryFlush`
+   * reencola el retry solo).
+   *
+   * Devuelve `null` —sin ejecutar `fn`— si el lock ya estaba tomado; si no,
+   * devuelve el resultado de `fn`. El lock se libera SIEMPRE, incluso si `fn`
+   * lanza; la excepción de `fn` se propaga tal cual (un error real no se
+   * confunde con "lock ocupado").
+   *
+   * Nota para el llamador: si `fn` puede resolver `null`, ese caso es
+   * indistinguible de "no se pudo tomar el lock". Devolvé un objeto.
+   */
+  async withLeadLock<T>(
+    tenantId: string,
+    leadId: string,
+    fn: () => Promise<T>,
+  ): Promise<T | null> {
+    const locked = await this.acquireLock(tenantId, leadId);
+    if (!locked) {
+      this.logger.warn(
+        { tenantId, leadId },
+        'Lock activo para el lead, no se ejecuta la acción exclusiva',
+      );
+      return null;
+    }
+
+    try {
+      return await fn();
+    } finally {
+      await this.releaseLock(tenantId, leadId);
+    }
+  }
+
   private oldestEntryAgeMs(entries: DebounceEntry[]): number {
     const oldestCreatedAt = Math.min(
       ...entries.map((entry) => new Date(entry.createdAt).getTime()),
