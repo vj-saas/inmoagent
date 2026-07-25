@@ -61,7 +61,7 @@ describe('ReleaseHandoffButton Component', () => {
     expect(screen.queryByTestId('release-handoff-button')).not.toBeInTheDocument();
   });
 
-  it('se renderiza si lead.state es HUMAN_HANDOFF', () => {
+  it('se renderiza si lead.state es HUMAN_HANDOFF, con label "Devolver al agente IA"', () => {
     const onReleased = vi.fn();
     render(
       <ReleaseHandoffButton
@@ -73,9 +73,52 @@ describe('ReleaseHandoffButton Component', () => {
     );
 
     expect(screen.getByTestId('release-handoff-button')).toBeInTheDocument();
+    expect(screen.getByTestId('release-handoff-button')).toHaveTextContent(
+      'Devolver al agente IA',
+    );
   });
 
-  it('invoca releaseLead al hacer click, y luego onReleased si tiene éxito', async () => {
+  it('el click en el botón principal abre el modal sin invocar releaseLead', () => {
+    const onReleased = vi.fn();
+    render(
+      <ReleaseHandoffButton
+        lead={mockLead}
+        tenantId="tenant-1"
+        token="tok"
+        onReleased={onReleased}
+      />,
+    );
+
+    expect(screen.queryByTestId('release-handoff-modal')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('release-handoff-button'));
+
+    expect(screen.getByTestId('release-handoff-modal')).toBeInTheDocument();
+    expect(mockReleaseLead).not.toHaveBeenCalled();
+  });
+
+  it('cancelar en el modal cierra el modal sin invocar releaseLead', () => {
+    const onReleased = vi.fn();
+    render(
+      <ReleaseHandoffButton
+        lead={mockLead}
+        tenantId="tenant-1"
+        token="tok"
+        onReleased={onReleased}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId('release-handoff-button'));
+    expect(screen.getByTestId('release-handoff-modal')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('release-handoff-cancel'));
+
+    expect(screen.queryByTestId('release-handoff-modal')).not.toBeInTheDocument();
+    expect(mockReleaseLead).not.toHaveBeenCalled();
+    expect(onReleased).not.toHaveBeenCalled();
+  });
+
+  it('invoca releaseLead solo al confirmar en el modal, y luego onReleased si tiene éxito', async () => {
     mockReleaseLead.mockResolvedValue({ released: true });
 
     const onReleased = vi.fn();
@@ -89,6 +132,9 @@ describe('ReleaseHandoffButton Component', () => {
     );
 
     fireEvent.click(screen.getByTestId('release-handoff-button'));
+    expect(mockReleaseLead).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId('release-handoff-confirm'));
 
     await waitFor(() => {
       expect(onReleased).toHaveBeenCalled();
@@ -97,7 +143,7 @@ describe('ReleaseHandoffButton Component', () => {
     expect(mockReleaseLead).toHaveBeenCalledWith('tenant-1', 'lead-1', 'tok');
   });
 
-  it('deshabilita el botón mientras está cargando', async () => {
+  it('deshabilita el botón de confirmar mientras está cargando', async () => {
     mockReleaseLead.mockImplementation(
       () =>
         new Promise((resolve) => {
@@ -115,18 +161,19 @@ describe('ReleaseHandoffButton Component', () => {
       />,
     );
 
-    const button = screen.getByTestId('release-handoff-button');
-    fireEvent.click(button);
+    fireEvent.click(screen.getByTestId('release-handoff-button'));
+    const confirmButton = screen.getByTestId('release-handoff-confirm');
+    fireEvent.click(confirmButton);
 
-    expect(button).toBeDisabled();
-    expect(button).toHaveTextContent('Liberando...');
+    expect(confirmButton).toBeDisabled();
+    expect(confirmButton).toHaveTextContent('Liberando...');
 
     await waitFor(() => {
       expect(onReleased).toHaveBeenCalled();
     });
   });
 
-  it('muestra error si releaseLead falla, sin invocar onReleased', async () => {
+  it('muestra error si releaseLead falla, sin invocar onReleased, y el modal sigue abierto', async () => {
     mockReleaseLead.mockRejectedValue(new Error('Network error'));
 
     const onReleased = vi.fn();
@@ -140,11 +187,13 @@ describe('ReleaseHandoffButton Component', () => {
     );
 
     fireEvent.click(screen.getByTestId('release-handoff-button'));
+    fireEvent.click(screen.getByTestId('release-handoff-confirm'));
 
     await waitFor(() => {
       expect(screen.getByTestId('release-handoff-error')).toBeInTheDocument();
     });
 
     expect(onReleased).not.toHaveBeenCalled();
+    expect(screen.getByTestId('release-handoff-modal')).toBeInTheDocument();
   });
 });

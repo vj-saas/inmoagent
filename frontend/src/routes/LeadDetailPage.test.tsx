@@ -222,6 +222,12 @@ describe('LeadDetailPage', () => {
     await user.click(screen.getByTestId('release-handoff-button'));
 
     await waitFor(() => {
+      expect(screen.getByTestId('release-handoff-modal')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTestId('release-handoff-confirm'));
+
+    await waitFor(() => {
       expect(screen.queryByTestId('release-handoff-button')).not.toBeInTheDocument();
     });
     expect(getLeadSpy).toHaveBeenCalledTimes(2);
