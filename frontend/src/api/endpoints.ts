@@ -412,44 +412,106 @@ export function getMetrics(
 }
 
 // ---------------------------------------------------------------------------
-// admin/tenants/:tenantId/properties (src/admin/properties/admin-properties.controller.ts)
-// TODO(A.5): tipar Property/CreatePropertyRequest reales cuando se consuma
-// desde pantallas.
+// admin/tenants/:tenantId/properties (src/admin/properties/admin-properties.controller.ts,
+// src/admin/properties/properties-admin.service.ts — spec V-D-portal-propiedades, T9)
 // ---------------------------------------------------------------------------
 
 export type OperationType = 'SALE' | 'RENT' | 'TEMP_RENT';
 export type PropertyStatus = 'ACTIVE' | 'RESERVED' | 'SOLD_OR_RENTED' | 'PAUSED';
 
+export interface PropertyPhoto {
+  id: string;
+  url: string;
+  position: number;
+}
+
+// Calcado del modelo `Property` en prisma/schema.prisma. `price`/`expenses` son
+// `Decimal` en el backend y viajan como string por HTTP (mismo criterio que
+// `Lead.fMaxPrice`, ver más arriba). El campo real del schema es `garage`
+// (no `hasGarage`): se verificó contra `properties-admin.service.ts`.
+export interface Property {
+  id: string;
+  tenantId: string;
+  externalRef: string | null;
+  title: string;
+  description: string | null;
+  operation: OperationType;
+  propertyType: string;
+  status: PropertyStatus;
+  price: string;
+  currency: string;
+  expenses: string | null;
+  neighborhood: string;
+  city: string | null;
+  address: string | null;
+  rooms: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  areaM2: number | null;
+  garage: boolean;
+  petsAllowed: boolean | null;
+  features: string[];
+  listingUrl: string | null;
+  photos: PropertyPhoto[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ListPropertiesQuery {
   status?: PropertyStatus;
   operation?: OperationType;
+  neighborhood?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  rooms?: number;
+  q?: string;
   page?: number;
+}
+
+export interface ListPropertiesResponse {
+  items: Property[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+// El backend devuelve `{ properties, total, page, pageSize }`
+// (`PropertiesAdminService.list`); se renombra a `items` acá para el
+// contrato que consumen T10-T16, sin tocar el shape real del backend.
+interface RawListPropertiesResponse {
+  properties: Property[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export function listProperties(
   tenantId: string,
   query: ListPropertiesQuery,
   token: string,
-): Promise<unknown> {
+): Promise<ListPropertiesResponse> {
   const params = new URLSearchParams();
   if (query.status) params.set('status', query.status);
   if (query.operation) params.set('operation', query.operation);
+  if (query.neighborhood) params.set('neighborhood', query.neighborhood);
+  if (query.minPrice !== undefined) params.set('minPrice', String(query.minPrice));
+  if (query.maxPrice !== undefined) params.set('maxPrice', String(query.maxPrice));
+  if (query.rooms !== undefined) params.set('rooms', String(query.rooms));
+  if (query.q) params.set('q', query.q);
   if (query.page) params.set('page', String(query.page));
   const qs = params.toString();
-  // TODO(A.5): implementar consumo real en la pantalla de propiedades.
-  return request<unknown>(
+  return request<RawListPropertiesResponse>(
     `/admin/tenants/${tenantId}/properties${qs ? `?${qs}` : ''}`,
     { method: 'GET', token },
-  );
+  ).then(({ properties, total, page, pageSize }) => ({ items: properties, total, page, pageSize }));
 }
 
 export function getProperty(
   tenantId: string,
   propertyId: string,
   token: string,
-): Promise<unknown> {
-  // TODO(A.5): implementar consumo real en la pantalla de propiedades.
-  return request<unknown>(`/admin/tenants/${tenantId}/properties/${propertyId}`, {
+): Promise<Property> {
+  return request<Property>(`/admin/tenants/${tenantId}/properties/${propertyId}`, {
     method: 'GET',
     token,
   });
@@ -482,9 +544,8 @@ export function createProperty(
   tenantId: string,
   data: CreatePropertyRequest,
   token: string,
-): Promise<unknown> {
-  // TODO(A.5): implementar consumo real en la pantalla de propiedades.
-  return request<unknown>(`/admin/tenants/${tenantId}/properties`, {
+): Promise<Property> {
+  return request<Property>(`/admin/tenants/${tenantId}/properties`, {
     method: 'POST',
     body: data,
     token,
@@ -496,9 +557,8 @@ export function updateProperty(
   propertyId: string,
   data: Partial<CreatePropertyRequest>,
   token: string,
-): Promise<unknown> {
-  // TODO(A.5): implementar consumo real en la pantalla de propiedades.
-  return request<unknown>(`/admin/tenants/${tenantId}/properties/${propertyId}`, {
+): Promise<Property> {
+  return request<Property>(`/admin/tenants/${tenantId}/properties/${propertyId}`, {
     method: 'PATCH',
     body: data,
     token,
@@ -510,9 +570,8 @@ export function updatePropertyStatus(
   propertyId: string,
   status: PropertyStatus,
   token: string,
-): Promise<unknown> {
-  // TODO(A.5): implementar consumo real en la pantalla de propiedades.
-  return request<unknown>(`/admin/tenants/${tenantId}/properties/${propertyId}/status`, {
+): Promise<Property> {
+  return request<Property>(`/admin/tenants/${tenantId}/properties/${propertyId}/status`, {
     method: 'PATCH',
     body: { status },
     token,
@@ -524,9 +583,30 @@ export function removeProperty(
   propertyId: string,
   token: string,
 ): Promise<{ deleted: true }> {
-  // TODO(A.5): implementar consumo real en la pantalla de propiedades.
   return request<{ deleted: true }>(`/admin/tenants/${tenantId}/properties/${propertyId}`, {
     method: 'DELETE',
+    token,
+  });
+}
+
+/**
+ * Sube una foto suelta y devuelve su URL pública (T5,
+ * `PropertyPhotoStorageService` + `POST :tenantId/properties/photos`). Se usa
+ * desde `PhotoListEditor` (T12) antes de armar `photoUrls` para create/update;
+ * no persiste nada en `Property` por sí sola. Sin `Content-Type` manual: el
+ * navegador arma el boundary del `multipart/form-data` (mismo patrón que
+ * `importPropertiesCsv`).
+ */
+export function uploadPropertyPhoto(
+  tenantId: string,
+  file: File,
+  token: string,
+): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request<{ url: string }>(`/admin/tenants/${tenantId}/properties/photos`, {
+    method: 'POST',
+    body: formData,
     token,
   });
 }

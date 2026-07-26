@@ -34,6 +34,7 @@ import {
   suppressLead,
   updateProperty,
   updatePropertyStatus,
+  uploadPropertyPhoto,
   type MetricsResult,
 } from './endpoints';
 
@@ -218,6 +219,38 @@ describe('endpoints', () => {
       '/admin/tenants/t1/properties?status=ACTIVE&operation=SALE&page=1',
       { method: 'GET', token: 'tok' },
     );
+  });
+
+  it('listProperties: serializa los 5 filtros nuevos (T9) y omite los vacíos', async () => {
+    await listProperties(
+      't1',
+      { neighborhood: 'Palermo', minPrice: 100000, maxPrice: 200000, rooms: 2, q: 'luminoso' },
+      'tok',
+    );
+    expect(requestMock).toHaveBeenCalledWith(
+      '/admin/tenants/t1/properties?neighborhood=Palermo&minPrice=100000&maxPrice=200000&rooms=2&q=luminoso',
+      { method: 'GET', token: 'tok' },
+    );
+  });
+
+  it('listProperties: omite status/operation/neighborhood/precios/rooms/q vacíos', async () => {
+    await listProperties('t1', {}, 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/properties', {
+      method: 'GET',
+      token: 'tok',
+    });
+  });
+
+  it('listProperties: mapea la respuesta cruda `{ properties }` del backend a `{ items }`', async () => {
+    requestMock.mockResolvedValueOnce({
+      properties: [{ id: 'p1' }],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    });
+    const result = await listProperties('t1', {}, 'tok');
+    expect(result.items).toEqual([{ id: 'p1' }]);
+    expect(result.total).toBe(1);
   });
 
   it('getProperty: GET /admin/tenants/:tenantId/properties/:propertyId', async () => {
@@ -489,6 +522,20 @@ describe('endpoints — onboarding de tenant (V-C, T11)', () => {
     expect(url).toBe('/admin/tenants/t1/properties/import');
     expect(options.method).toBe('POST');
     expect(options.token).toBe('tok');
+    expect(options.body).toBeInstanceOf(FormData);
+    expect((options.body as FormData).get('file')).toBe(file);
+  });
+
+  it('uploadPropertyPhoto: POST /admin/tenants/:tenantId/properties/photos con FormData (no JSON)', async () => {
+    const file = new File(['binario'], 'foto.jpg', { type: 'image/jpeg' });
+    await uploadPropertyPhoto('t1', file, 'tok');
+
+    expect(requestMock).toHaveBeenCalledTimes(1);
+    const [url, options] = requestMock.mock.calls[0] as [string, Record<string, unknown>];
+    expect(url).toBe('/admin/tenants/t1/properties/photos');
+    expect(options.method).toBe('POST');
+    expect(options.token).toBe('tok');
+    expect(options.headers).toBeUndefined();
     expect(options.body).toBeInstanceOf(FormData);
     expect((options.body as FormData).get('file')).toBe(file);
   });

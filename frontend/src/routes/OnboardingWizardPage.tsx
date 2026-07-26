@@ -45,11 +45,7 @@
  *   única forma sin tocar el componente de T15).
  * - `propertiesCount` tampoco lo expone `CsvUploader` (no tiene callback de
  *   éxito): se resuelve con una llamada propia a `listProperties` al entrar
- *   al paso 3. El endpoint todavía no tiene un tipo de respuesta público en
- *   `endpoints.ts` (queda como `TODO(A.5)`), así que acá se declara un tipo
- *   mínimo local calcado de `PropertiesAdminService.list` (ver
- *   `src/admin/properties/properties-admin.service.ts`:
- *   `{ properties, total, page, pageSize }`).
+ *   al paso 3 (tipado real desde T9, `ListPropertiesResponse.total`).
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -72,13 +68,6 @@ import { WebhookStatusCard } from '../components/onboarding/WebhookStatusCard';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { Spinner } from '../components/Spinner';
 import { Button, Card, CardBody, CardHeader } from '../components/ui';
-
-// Tipo local mínimo: `listProperties` todavía no tiene un tipo de respuesta
-// público en `endpoints.ts` (TODO(A.5)). Calcado de
-// `PropertiesAdminService.list` (src/admin/properties/properties-admin.service.ts).
-interface PropertiesListResult {
-  total: number;
-}
 
 type Step1Phase = 'form' | 'bootstrapping' | 'bootstrap-error' | 'logging-in' | 'login-error' | 'ready';
 
@@ -146,7 +135,7 @@ export function OnboardingWizardPage(): JSX.Element {
     getWebhookStatus(tenantId, sessionToken)
       .then(setWebhookStatus)
       .catch(() => {});
-    (listProperties(tenantId, {}, sessionToken) as Promise<PropertiesListResult>)
+    listProperties(tenantId, {}, sessionToken)
       .then((result) => setPropertiesCount(result.total))
       .catch(() => {});
   }, [step, tenantId, sessionToken]);
