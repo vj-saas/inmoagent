@@ -417,8 +417,8 @@ export function getMetrics(
 // desde pantallas.
 // ---------------------------------------------------------------------------
 
-export type OperationType = 'SALE' | 'RENT';
-export type PropertyStatus = 'ACTIVE' | 'PAUSED' | 'SOLD' | 'RENTED';
+export type OperationType = 'SALE' | 'RENT' | 'TEMP_RENT';
+export type PropertyStatus = 'ACTIVE' | 'RESERVED' | 'SOLD_OR_RENTED' | 'PAUSED';
 
 export interface ListPropertiesQuery {
   status?: PropertyStatus;
