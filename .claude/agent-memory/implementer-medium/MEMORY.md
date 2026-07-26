@@ -48,4 +48,18 @@
 - [T13 (B2-bandeja-manual): sendManualMessage devuelve {message, lead}](sendmanualmessage-t13-response-shape.md) — no tratar la respuesta como Message suelto, T15/T16/T18 deben leer .message
 - [T16 (B2-bandeja-manual): ManualReplyBox, ventana 24hs + fake timers](manualreplybox-t16-window-pattern.md) — no mezclar vi.setSystemTime con advanceTimersByTime; usar Date.now() real cuando no hace falta testear el interval
 - [T18 (B2-bandeja-manual): LeadDetailPage wiring final](leaddetailpage-t18-final-wiring.md) — header por modo + ManualReplyBox; lastInboundAt en fixtures debe ser new Date().toISOString(), no fecha fija vieja
+- [T4 (V-D-portal-propiedades): sniffImageType magic bytes](image-magic-bytes-t4-pattern.md) — webp exige chequear RIFF+WEBP en dos offsets, no solo RIFF; prerrequisito de T5
+- [T1 (V-D-portal-propiedades): filtros de listado, archivo compartido](t1-list-properties-filters-shared-file.md) — spec del service no existía, se creó; T2/T3 tocan el mismo archivo después
+- [T2 (V-D-portal-propiedades): findOneOrThrow + remove() transaccional](findoneorthrow-shared-remove-t2-pattern.md) — Appointment bloquea borrado, tenantId explícito en findFirst pese a propertyId único; gotcha de mock con `??` vs `null`
+- [T9 (V-D-portal-propiedades): tipado real de Property en endpoints.ts](endpoints-t9-property-typing.md) — garage no hasGarage, backend devuelve `properties` no `items` (se mapea), Decimal→string; limpiar casts locales en consumidores
+- [T12 (V-D-portal-propiedades): PhotoListEditor](photolisteditor-t12-pattern.md) — extensión validada por nombre (no magic bytes, eso es solo backend), userEvent.upload respeta `accept` así que test de rechazo usa fireEvent.change
+- [Race de git add con agentes paralelos en el mismo directorio nuevo](git-add-race-parallel-agents.md) — verificar `git show --stat HEAD` tras commitear, arreglar con `git rm --cached` si se coló algo ajeno
+- [T10 (V-D-portal-propiedades): PropertyFilters, rooms como Select](propertyfilters-t10-select-rooms-decision.md) — `rooms` no estaba en la lista de debounceados ni en la de selects; se decidió tratarlo como select de valores exactos
+- [T14 (V-D-portal-propiedades): PropertyStatusControl.tsx](t14-propertystatuscontrol-pattern.md) — control dedicado calcado de AssignmentControl, botón deshabilitado si no cambió el status
+- [git add -A de agente paralelo puede commitear tus archivos antes que vos](parallel-agent-git-add-a-sweeps-files.md) — verificar con git log/show si "nothing to commit" antes de asumir pérdida
+- [T15 (V-D-portal-propiedades): DeletePropertyButton, testear 409 con ConflictError](deletepropertybutton-t15-conflicterror-pattern.md) — usar el tipo de error real de http-client.ts en mocks de 409, no Error genérico
+- [T11 (V-D-portal-propiedades): PropertiesList.tsx callbacks por fila](propertieslist-t11-callback-pattern.md) — no embeber PropertyStatusControl/DeletePropertyButton de otros agentes, callbacks reciben la Property completa
+- [T3 (V-D-portal-propiedades): update() transaccional para fotos](t3-update-photos-transaction-pattern.md) — deleteMany+createMany dentro de $transaction, photoUrls undefined no toca fotos, [] borra todas
+- [T18 (V-D-portal-propiedades): e2e portal, normalización de neighborhood en fixtures](t18-admin-properties-portal-e2e-neighborhood-normalization.md) — enum en mayúsculas usado como barrio rompe el filtro si no se normaliza igual que `create()`
+- [T13 (V-D-portal-propiedades): PropertyForm.tsx, mapeo de error por substring](propertyform-t13-field-error-mapping.md) — ConflictError/ValidationError se importan de http-client.ts, no de endpoints.ts; PhotoListEditor anida <form>, solo warning
 
