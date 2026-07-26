@@ -18,7 +18,7 @@
  * revalida tamaño y magic bytes reales del archivo.
  */
 
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { uploadPropertyPhoto } from '../../api/endpoints';
 import { Button } from '../ui';
 import { ErrorBanner } from '../ErrorBanner';
@@ -62,8 +62,7 @@ export function PhotoListEditor({
   const [fileError, setFileError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
-  function handleAddUrl(event: FormEvent<HTMLFormElement>): void {
-    event.preventDefault();
+  function handleAddUrl(): void {
     const trimmed = urlInput.trim();
 
     if (!isHttpUrl(trimmed)) {
@@ -74,6 +73,13 @@ export function PhotoListEditor({
     onChange([...photoUrls, trimmed]);
     setUrlInput('');
     setUrlError(null);
+  }
+
+  function handleUrlInputKeyDown(event: KeyboardEvent<HTMLInputElement>): void {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      handleAddUrl();
+    }
   }
 
   async function handleFileChange(event: ChangeEvent<HTMLInputElement>): Promise<void> {
@@ -157,7 +163,7 @@ export function PhotoListEditor({
         ))}
       </ul>
 
-      <form onSubmit={handleAddUrl}>
+      <div>
         <label htmlFor="photo-list-editor-url-input">Agregar por URL</label>
         <input
           id="photo-list-editor-url-input"
@@ -167,10 +173,13 @@ export function PhotoListEditor({
             setUrlInput(event.target.value);
             setUrlError(null);
           }}
+          onKeyDown={handleUrlInputKeyDown}
           placeholder="https://..."
         />
-        <Button type="submit">Agregar URL</Button>
-      </form>
+        <Button type="button" onClick={handleAddUrl}>
+          Agregar URL
+        </Button>
+      </div>
       {urlError && <ErrorBanner message={urlError} />}
 
       <div>

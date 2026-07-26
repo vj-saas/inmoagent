@@ -1,3 +1,4 @@
+import type { FormEvent } from 'react';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, cleanup, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -162,6 +163,43 @@ describe('PhotoListEditor Component', () => {
       'https://a.com/3.jpg',
       'https://a.com/2.jpg',
     ]);
+  });
+
+  it('agrega una URL al presionar Enter en el input (sin depender de un <form>)', async () => {
+    const handleChange = vi.fn();
+    const user = userEvent.setup();
+
+    render(
+      <PhotoListEditor tenantId="tenant-1" token="tok" photoUrls={[]} onChange={handleChange} />,
+    );
+
+    await user.type(
+      screen.getByLabelText(/agregar por url/i),
+      'https://cdn.example.com/foto1.jpg{Enter}',
+    );
+
+    expect(handleChange).toHaveBeenCalledWith(['https://cdn.example.com/foto1.jpg']);
+  });
+
+  it('no dispara el submit de un <form> externo al agregar una foto por URL (regresión: form anidado)', async () => {
+    const handleChange = vi.fn();
+    const outerSubmit = vi.fn((event: FormEvent) => event.preventDefault());
+    const user = userEvent.setup();
+
+    render(
+      <form onSubmit={outerSubmit}>
+        <PhotoListEditor tenantId="tenant-1" token="tok" photoUrls={[]} onChange={handleChange} />
+      </form>,
+    );
+
+    await user.type(
+      screen.getByLabelText(/agregar por url/i),
+      'https://cdn.example.com/foto1.jpg',
+    );
+    await user.click(screen.getByRole('button', { name: /agregar url/i }));
+
+    expect(handleChange).toHaveBeenCalledWith(['https://cdn.example.com/foto1.jpg']);
+    expect(outerSubmit).not.toHaveBeenCalled();
   });
 
   it('deshabilita el botón subir en la primera fila y bajar en la última', () => {
