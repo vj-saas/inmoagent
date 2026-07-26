@@ -45,11 +45,9 @@ actual real — esto puede haber avanzado si algo siguió corriendo en backgroun
 
 ## Sin arrancar — próxima spec candidata
 
-Con B2 cerrada, las candidatas para la próxima ronda son:
-1. El hallazgo de `InboundProcessor.respondUnsupported` (ver sección
-   siguiente) — es chico y quirúrgico, se puede resolver directo sin pasar
-   por spec-writer/planner.
-2. Aprobar y planear V-D (portal de propiedades, ver abajo).
+Con B2 cerrada y el hallazgo de `respondUnsupported` resuelto, la candidata
+para la próxima ronda es aprobar y planear V-D (portal de propiedades, ver
+abajo) — no hay más follow-ups sueltos pendientes.
 
 ## Spec en espera de aprobación — Portal de gestión de propiedades (V-D)
 
@@ -59,16 +57,25 @@ Con B2 cerrada, las candidatas para la próxima ronda son:
   spec primero** (despachar `planner` cuando el usuario confirme el alcance).
 - Backend CRUD ya existe (`src/admin/properties/`); falta solo el frontend.
 
-## Hallazgo pendiente, sin resolver — guardrail de mensajes no soportados
+## Hallazgo resuelto (2026-07-26) — guardrail de mensajes no soportados
 
-- `InboundProcessor.respondUnsupported` (`src/pipeline/inbound.processor.ts:78-98`)
-  sigue respondiendo automáticamente a mensajes no soportados (stickers, etc.)
-  sin chequear si el lead está en `HUMAN_HANDOFF` u `OPTED_OUT` — verificado
-  en este handoff, el código no tiene ningún check de `lead.state` antes de
-  `messaging.sendText`. Confirmado explícitamente **fuera de alcance** de
-  Fase B2 (nota en `specs/V-B2-bandeja-manual/tasks.md` líneas 4-6 y 414-418):
-  es candidato a spec/tarea de follow-up separada. No bloquea nada del resto
-  del plan pero es un guardrail real roto — priorizar cuando se cierre B2.
+- `InboundProcessor.respondUnsupported` respondía automáticamente a mensajes
+  no soportados (stickers, etc.) sin chequear si el lead estaba en
+  `HUMAN_HANDOFF` u `OPTED_OUT`, violando las reglas #6/#7 del CLAUDE.md.
+  **Corregido** (commit `f814223`): ahora no responde si `lead.state` es
+  `OPTED_OUT` o `HUMAN_HANDOFF` (incluido handoff vencido >48hs, que no se
+  libera por un mensaje sin texto). Tests nuevos en
+  `inbound.processor.spec.ts`, `code-reviewer` aprobó sin hallazgos
+  críticos.
+- Colateral encontrado y corregido en la misma ronda: dos queries en el
+  mismo archivo (`respondUnsupported` sobre `lead`, y `handleMessage` sobre
+  `message`) usaban `findUnique` filtrando solo por `id`, sin `tenantId` —
+  violación de la regla del CLAUDE.md "toda query a DB filtrada por
+  tenantId". Riesgo real bajo (`leadId`/`messageId` vienen de jobs internos
+  del propio tenant), pero corregidas igual por consistencia y defensa en
+  profundidad (`findFirst({ where: { id, tenantId } })`, commits `610443a`
+  y `3b0bc24`). Suite completa (backend unit 377 tests, e2e 254 tests) en
+  verde después del cambio.
 
 ## Sin tocar, no relevante para retomar
 
@@ -94,10 +101,10 @@ Con B2 cerrada, las candidatas para la próxima ronda son:
    confirmar qué quedó commiteado/pusheado realmente (este handoff puede
    estar desactualizado si algo terminó de correr en background después de
    escribirlo).
-3. B2 ya está cerrada. Elegir entre: resolver el hallazgo de
-   `InboundProcessor.respondUnsupported`, o aprobar/planear V-D (portal de
-   propiedades). Correr `npm run test` (backend) y `npx vitest run`
-   (frontend) antes de arrancar para confirmar que no se rompió nada.
+3. B2 cerrada y el hallazgo de `respondUnsupported` resuelto. Siguiente
+   candidata: aprobar/planear V-D (portal de propiedades). Correr
+   `npm run test` (backend) y `npx vitest run` (frontend) antes de arrancar
+   para confirmar que no se rompió nada.
 4. Los agentes en background NO sobreviven al cierre de la sesión/chat — no
    asumas que van a seguir corriendo ni que vas a recibir su notificación
    final en el chat nuevo.
