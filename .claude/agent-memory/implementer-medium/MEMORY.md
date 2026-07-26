@@ -18,6 +18,7 @@
 - [App.tsx: AppRoutes exportado sin BrowserRouter](app-routes-testable-split.md) — permite testear con MemoryRouter+initialEntries sin duplicar el árbol de rutas
 - [Hueco de cobertura en mutua exclusión de estados](leadspage-mutual-exclusion-gap.md) — al auditar tests, buscar caso "éxito oculta el resto" y "cambiar un campo no resetea otro"
 - [T10 A.4: endpoints.ts LeadNote/AssignableUser/Message](endpoints-t10-lead-note-assignable.md) — funciones nuevas ya disponibles para T11-T17, no re-crear
+- [T15 (B2-bandeja-manual): MessageTimeline 3 tonos](messagetimeline-t15-three-tones.md) — data-tone incoming/bot/human, bg-warning reusado de LeadModeBadge para "humano respondiendo"
 - [T13: LeadNotes/NoteForm](leadnotes-noteform-pattern.md) — lista presentacional + onCreated sin refetch, integrar con setNotes(prev => [note, ...prev])
 - [T9: guards por-handler solo panel humano](admin-people-assignable-guards.md) — GET .../people/assignable sin OwnerRoleGuard ni PersonOrApiKeyGuard, replicar selectivamente
 - [T11: LeadDetailPage orquestador](leaddetailpage-orchestrator-t11.md) — reemplazar placeholder con I/O real rompe tests de rutas de nivel superior (App.test.tsx) si no se mockean ahí también
@@ -44,4 +45,7 @@
 - [T18 (onboarding): TenantConfigPage sin GET de config](t18-tenantconfigpage-no-get-endpoint.md) — form arranca vacío, se completa tras primer submit; restricción de rol calcada de /people (solo nav-link)
 - [T17 (B2-bandeja-manual): ReleaseHandoffButton + Modal](releasehandoffbutton-t17-modal-pattern.md) — copiar patrón de SuppressLeadButton; grep del testid en toda la suite antes de cerrar, rompe LeadDetailPage.test.tsx si no
 - [T14 (B2-bandeja-manual): LeadModeBadge/resolveLeadMode](leadmodebadge-t14-pattern.md) — punto único de derivación de modo del lead; distinguir fallas propias vs. de tareas paralelas con git status
+- [T13 (B2-bandeja-manual): sendManualMessage devuelve {message, lead}](sendmanualmessage-t13-response-shape.md) — no tratar la respuesta como Message suelto, T15/T16/T18 deben leer .message
+- [T16 (B2-bandeja-manual): ManualReplyBox, ventana 24hs + fake timers](manualreplybox-t16-window-pattern.md) — no mezclar vi.setSystemTime con advanceTimersByTime; usar Date.now() real cuando no hace falta testear el interval
+- [T18 (B2-bandeja-manual): LeadDetailPage wiring final](leaddetailpage-t18-final-wiring.md) — header por modo + ManualReplyBox; lastInboundAt en fixtures debe ser new Date().toISOString(), no fecha fija vieja
 

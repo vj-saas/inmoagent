@@ -17,4 +17,5 @@
 - [Fixtures tipados con Pick en specs](pick-fixture-excess-property.md) — probar que un campo NO influye requiere factory tipada, no literal inline (excess property check)
 - [Mutar la rama para validar el test](mutation-check-critical-branches.md) — en messaging/pipeline, forzar if(false)/if(true) y confirmar que el test nuevo falla antes de cerrar
 - [Lock de lead sin fencing](debounce-lock-ttl-no-fencing.md) — TTL 60s + DEL plano: no meter trabajo largo dentro de withLeadLock/tryFlush
+- [E2E de envío manual (V-B2)](manual-reply-e2e-v-b2.md) — turnos por engine.handleTurn, encolado vía mock de MessagingService, release 200 vs send 201
 - [FK scalar en updateMany](prisma-updatemany-fk-scalar.md) — tipar data como UncheckedUpdateManyInput para setear assignedUserId vía updateMany condicionado a status

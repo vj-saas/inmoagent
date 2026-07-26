@@ -20,55 +20,36 @@ actual real — esto puede haber avanzado si algo siguió corriendo en backgroun
   (`OnboardingWizardPage`) + `TenantConfigPage` para editar después (solo
   `OWNER`). Nota de coordinación en `specs/V-C-onboarding-tenant/NOTA-COORDINACION-VB.md`.
 
-## En progreso ahora mismo — Fase B2 (bandeja de leads, toma manual)
+- **Fase B2** (bandeja de leads, toma manual): **CERRADA por completo**
+  (2026-07-26). Las 20 tareas de `specs/V-B2-bandeja-manual/tasks.md`
+  (T1-T20) están implementadas, testeadas y pusheadas a `main`. Cada grupo
+  (1 a 6) pasó `code-reviewer` de forma independiente sin hallazgos críticos
+  ni de advertencia (solo sugerencias menores no bloqueantes, documentadas
+  en los propios reviews). Estado final de la suite: backend unit 45 suites
+  / 370 tests, backend e2e 20 suites / 254 tests, frontend 57 archivos / 418
+  tests — todo en verde. `AdminLeadMessagingService.sendManual` (T8) permite
+  al asesor tomar la conversación con lock+transacción+envío atómico;
+  `resolveReleaseState` (T3) unifica el estado de retorno tras un handoff
+  tanto en el release manual (T10) como en el timeout de 48hs (T11);
+  `LeadDetailPage`/`LeadRow` muestran el modo del lead (IA/manual/opt-out,
+  T14/T18/T19) y permiten responder manualmente con `ManualReplyBox` (T16)
+  respetando la ventana de servicio de 24hs.
 
-`specs/V-B2-bandeja-manual/tasks.md` tiene 20 tareas (T1-T20). **13 de 20
-pusheadas a `main`** (Grupo 1 completo + Grupo 2 completo):
+  Hallazgo menor anotado durante T11 (no bloqueante, no resuelto): en el
+  camino de guardrail `stop: false`, el `handoffAt: null` del release por
+  timeout no se persiste (`persistLeadUpdate` rearma el `data` de cero).
+  Hoy es inocuo porque los guardrails deciden por `state`, no por
+  `handoffAt`, pero cualquier feature futura que lea `handoffAt` (métricas,
+  filtros de bandeja) vería datos sucios en leads liberados por timeout. Si
+  se quiere cerrar, es una tarea aparte con su propio test.
 
-| Tarea | Qué es | Commit |
-|---|---|---|
-| T1 | Migración Prisma `Message.sentByPersonId` | `a4e2dd4` |
-| T2 | `service-window.util.ts` (ventana 24hs) | `734da61` |
-| T3 | `release-state.util.ts` (`resolveReleaseState`) | `7e0b028` |
-| T4 | `PersonSessionRequiredGuard` | `5f069f1` |
-| T5 | `DebounceBufferService.withLeadLock` | `9f020bf` |
-| T6 | `messageId` opcional en job de texto (`messaging`) | `58dae06` |
-| T7 | `SendManualMessageDto` | `7b4919b` |
-| T14 | `LeadModeBadge` + `resolveLeadMode` | `1ad9074` |
-| T17 | `ReleaseHandoffButton` con modal de confirmación | `adaf3b4` |
-| T19 | Badge por lead en `LeadRow.tsx` | `4058805` |
-| T10 | `release()` movido a `AdminLeadsService` con `resolveReleaseState` | `31bba35` |
-| T11 | `resolveGuardrail` usa `resolveReleaseState` en el timeout de 48hs | `8999cf5` |
-| T8 | `AdminLeadMessagingService.sendManual` (lock + tx + envío) | `f8b2bc2` |
+## Sin arrancar — próxima spec candidata
 
-Grupo 2 pasó `code-reviewer` sin hallazgos críticos ni de advertencia
-(veredicto: aprobado; dos sugerencias menores no bloqueantes sobre
-documentación de invariantes, no requieren cambio). Suite completa en verde:
-backend 45 suites / 353 tests, frontend 56 archivos / 404 tests.
-
-**Faltan 7 tareas — Grupo 3 en adelante** (todas dependen de T8/T9):
-
-- **T9** — `POST :leadId/send`: controller + wiring de `AdminModule` +
-  exponer `lastInboundAt`/`sentByPerson` en `getOne`/`messages`. Depende de
-  T4, T7, T8 (las tres ya están listas) — **siguiente a despachar**.
-- **T12** — extender tests de `GuardrailsService`/`conversation.engine.spec.ts`
-  sobre `HUMAN_HANDOFF` originado por `send` (sin cambios de código). Depende
-  de T8 (listo) y T11 (listo).
-- **T13** — `frontend/src/api/endpoints.ts`: tipos + `sendManualMessage`.
-  Depende de T9.
-- **T15, T16** — `MessageTimeline.tsx` (tres tonos) y `ManualReplyBox.tsx`
-  (caja de envío). Dependen de T13 (T16 además de T14, ya lista).
-- **T18** — wiring de badge/header/`ManualReplyBox` en `LeadDetailPage.tsx`.
-  Integra T14, T15, T16, T17 (T14 y T17 ya listas).
-- **T20** — e2e completo `test/admin-lead-manual-reply.e2e-spec.ts`. Depende
-  de T9, T10, T12.
-
-Ver "Orden de ejecución sugerido" al final de `tasks.md` para el detalle:
-Grupo 3 (T9, T12) → Grupo 4 (T13, T20) → Grupo 5 (T15, T16) → Grupo 6 (T18).
-
-Para retomar: despachar `task-router` sobre el resto de `tasks.md`, o
-despachar T9 primero (bloquea casi todo lo demás) manualmente vía
-`implementer-medium`.
+Con B2 cerrada, las candidatas para la próxima ronda son:
+1. El hallazgo de `InboundProcessor.respondUnsupported` (ver sección
+   siguiente) — es chico y quirúrgico, se puede resolver directo sin pasar
+   por spec-writer/planner.
+2. Aprobar y planear V-D (portal de propiedades, ver abajo).
 
 ## Spec en espera de aprobación — Portal de gestión de propiedades (V-D)
 
@@ -113,10 +94,10 @@ despachar T9 primero (bloquea casi todo lo demás) manualmente vía
    confirmar qué quedó commiteado/pusheado realmente (este handoff puede
    estar desactualizado si algo terminó de correr en background después de
    escribirlo).
-3. Priorizar Grupo 3 de `specs/V-B2-bandeja-manual/tasks.md` (T9, empieza
-   ahí — bloquea T13/T15/T16/T18/T20) y T12. Correr `npm run test` (backend)
-   y `npx vitest run` (frontend) antes de arrancar para confirmar que no se
-   rompió nada.
+3. B2 ya está cerrada. Elegir entre: resolver el hallazgo de
+   `InboundProcessor.respondUnsupported`, o aprobar/planear V-D (portal de
+   propiedades). Correr `npm run test` (backend) y `npx vitest run`
+   (frontend) antes de arrancar para confirmar que no se rompió nada.
 4. Los agentes en background NO sobreviven al cierre de la sesión/chat — no
    asumas que van a seguir corriendo ni que vas a recibir su notificación
    final en el chat nuevo.
