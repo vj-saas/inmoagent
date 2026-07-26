@@ -13,11 +13,13 @@
  *   AC-10 (409 de borrado no quita la fila) funcione solo, sin lógica extra.
  * - Alta/edición: `PropertyForm` (T13) dentro de un `Modal`.
  * - Cambiar estado / borrar: al clickear "Cambiar estado"/"Borrar" en
- *   `PropertiesList` (T11) se selecciona la propiedad y se monta, inline,
- *   el componente dedicado correspondiente (`PropertyStatusControl` T14 /
- *   `DeletePropertyButton` T15) con sus propios botones y su propio manejo
- *   de error (p.ej. el 409 de borrado se muestra vía el `ErrorBanner` que
- *   `DeletePropertyButton` ya expone internamente, sin duplicar nada acá).
+ *   `PropertiesList` (T11) se selecciona la propiedad y se monta el
+ *   componente dedicado correspondiente (`PropertyStatusControl` T14 /
+ *   `DeletePropertyButton` T15) dentro de un `Modal`, con sus propios
+ *   botones y su propio manejo de error (p.ej. el 409 de borrado se muestra
+ *   vía el `ErrorBanner` que `DeletePropertyButton` ya expone internamente,
+ *   sin duplicar nada acá). Un solo estado (`selectedAction`) controla cuál
+ *   de los dos modales está abierto, así que nunca conviven los dos a la vez.
  * - Import CSV: `CsvUploader` (ya existe, del wizard de onboarding) dentro
  *   de un `Modal`, recibiendo únicamente `tenantId`/`token`. Al cerrarse el
  *   modal se dispara el refetch de la lista, sin duplicar su reporte de
@@ -50,7 +52,6 @@ import {
   Button,
   Card,
   CardBody,
-  CardHeader,
   Modal,
   Skeleton,
   Table,
@@ -130,8 +131,9 @@ export function PropertiesPage(): JSX.Element {
   );
 
   const [formModal, setFormModal] = useState<FormModalState | null>(null);
-  const [statusProperty, setStatusProperty] = useState<Property | null>(null);
-  const [deleteProperty, setDeleteProperty] = useState<Property | null>(null);
+  const [selectedAction, setSelectedAction] = useState<
+    { kind: 'status' | 'delete'; property: Property } | null
+  >(null);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
 
   const fetchProperties = (nextPage: number): void => {
@@ -174,30 +176,24 @@ export function PropertiesPage(): JSX.Element {
   };
 
   const handleChangeStatus = (property: Property): void => {
-    setDeleteProperty(null);
-    setStatusProperty(property);
-  };
-
-  const handleCloseStatus = (): void => {
-    setStatusProperty(null);
-  };
-
-  const handleStatusUpdated = (): void => {
-    setStatusProperty(null);
-    fetchProperties(page);
+    setSelectedAction({ kind: 'status', property });
   };
 
   const handleDelete = (property: Property): void => {
-    setStatusProperty(null);
-    setDeleteProperty(property);
+    setSelectedAction({ kind: 'delete', property });
   };
 
-  const handleCloseDelete = (): void => {
-    setDeleteProperty(null);
+  const handleCloseAction = (): void => {
+    setSelectedAction(null);
+  };
+
+  const handleStatusUpdated = (): void => {
+    setSelectedAction(null);
+    fetchProperties(page);
   };
 
   const handleDeleted = (): void => {
-    setDeleteProperty(null);
+    setSelectedAction(null);
     fetchProperties(page);
   };
 
@@ -213,9 +209,14 @@ export function PropertiesPage(): JSX.Element {
   const properties: Property[] = data?.items ?? [];
 
   return (
-    <div>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold text-text">Propiedades</h1>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-text">Propiedades</h1>
+          <p className="text-sm text-text-muted">
+            Cargá, editá y gestioná el estado del inventario de tu inmobiliaria.
+          </p>
+        </div>
         <div className="flex gap-2">
           <Button type="button" onClick={handleOpenCreate}>
             Cargar propiedad
@@ -239,68 +240,56 @@ export function PropertiesPage(): JSX.Element {
         emptyMessage="Cargá la primera propiedad o importá un CSV con tu stock."
       >
         {data && properties.length > 0 && (
-          <>
-            <PropertiesList
-              items={properties}
-              onEdit={handleEdit}
-              onChangeStatus={handleChangeStatus}
-              onDelete={handleDelete}
-            />
-            <Pagination
-              total={data.total}
-              page={data.page}
-              pageSize={data.pageSize}
-              onPageChange={handlePageChange}
-            />
-          </>
+          <Card>
+            <CardBody className="flex flex-col gap-4">
+              <PropertiesList
+                items={properties}
+                onEdit={handleEdit}
+                onChangeStatus={handleChangeStatus}
+                onDelete={handleDelete}
+              />
+              <Pagination
+                total={data.total}
+                page={data.page}
+                pageSize={data.pageSize}
+                onPageChange={handlePageChange}
+              />
+            </CardBody>
+          </Card>
         )}
       </AsyncSection>
 
-      {statusProperty && (
-        <div className="mt-4">
-          <Card>
-            <CardHeader className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-text">
-                Cambiar estado — {statusProperty.title}
-              </h2>
-              <Button type="button" variant="ghost" size="sm" onClick={handleCloseStatus}>
-                Cerrar
-              </Button>
-            </CardHeader>
-            <CardBody>
-              <PropertyStatusControl
-                property={statusProperty}
-                tenantId={tenantId}
-                token={token ?? ''}
-                onUpdated={handleStatusUpdated}
-              />
-            </CardBody>
-          </Card>
-        </div>
-      )}
+      <Modal
+        open={selectedAction?.kind === 'status'}
+        onClose={handleCloseAction}
+        title={selectedAction ? `Cambiar estado — ${selectedAction.property.title}` : undefined}
+        data-testid="property-status-modal"
+      >
+        {selectedAction?.kind === 'status' && (
+          <PropertyStatusControl
+            property={selectedAction.property}
+            tenantId={tenantId}
+            token={token ?? ''}
+            onUpdated={handleStatusUpdated}
+          />
+        )}
+      </Modal>
 
-      {deleteProperty && (
-        <div className="mt-4">
-          <Card>
-            <CardHeader className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-text">
-                Eliminar propiedad — {deleteProperty.title}
-              </h2>
-              <Button type="button" variant="ghost" size="sm" onClick={handleCloseDelete}>
-                Cerrar
-              </Button>
-            </CardHeader>
-            <CardBody>
-              <DeletePropertyButton
-                property={deleteProperty}
-                tenantId={tenantId}
-                token={token ?? ''}
-                onDeleted={handleDeleted}
-              />
-            </CardBody>
-          </Card>
-        </div>
-      )}
+      <Modal
+        open={selectedAction?.kind === 'delete'}
+        onClose={handleCloseAction}
+        title={selectedAction ? `Eliminar propiedad — ${selectedAction.property.title}` : undefined}
+        data-testid="property-delete-modal"
+      >
+        {selectedAction?.kind === 'delete' && (
+          <DeletePropertyButton
+            property={selectedAction.property}
+            tenantId={tenantId}
+            token={token ?? ''}
+            onDeleted={handleDeleted}
+          />
+        )}
+      </Modal>
 
       <Modal
         open={Boolean(formModal)}

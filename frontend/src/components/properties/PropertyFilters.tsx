@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 
 import type { ListPropertiesQuery, OperationType, PropertyStatus } from '../../api/endpoints';
-import { Input, Select } from '../ui';
+import { Card, CardBody, Input, Select } from '../ui';
 
 const DEBOUNCE_MS = 300;
 
@@ -103,130 +103,136 @@ export const PropertyFilters: React.FC<PropertyFiltersProps> = ({ onChange }) =>
   };
 
   return (
-    <div className="mb-4 flex flex-col gap-3">
-      <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-        <div className="flex flex-col gap-1">
-          <label htmlFor="property-filter-q" className="text-sm text-text-muted">
-            Buscar
-          </label>
-          <Input
-            id="property-filter-q"
-            data-testid="property-filter-q"
-            type="text"
-            placeholder="Título, dirección..."
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
+    <Card className="mb-4">
+      <CardBody className="flex flex-col gap-4">
+        <h2 className="text-sm font-semibold text-text">Filtros</h2>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="flex flex-col gap-1 lg:col-span-2">
+            <label htmlFor="property-filter-q" className="text-sm text-text-muted">
+              Buscar
+            </label>
+            <Input
+              id="property-filter-q"
+              data-testid="property-filter-q"
+              type="text"
+              placeholder="Título, dirección..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="property-filter-status" className="text-sm text-text-muted">
+              Estado
+            </label>
+            <Select
+              id="property-filter-status"
+              data-testid="property-filter-status"
+              defaultValue=""
+              onChange={handleStatusChange}
+            >
+              <option value="">Todos</option>
+              {STATUS_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="property-filter-operation" className="text-sm text-text-muted">
+              Operación
+            </label>
+            <Select
+              id="property-filter-operation"
+              data-testid="property-filter-operation"
+              defaultValue=""
+              onChange={handleOperationChange}
+            >
+              <option value="">Todas</option>
+              {OPERATION_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="property-filter-neighborhood" className="text-sm text-text-muted">
+              Barrio
+            </label>
+            <Input
+              id="property-filter-neighborhood"
+              data-testid="property-filter-neighborhood"
+              type="text"
+              placeholder="Barrio"
+              value={neighborhood}
+              onChange={(e) => setNeighborhood(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="property-filter-min-price" className="text-sm text-text-muted">
+              Precio mínimo
+            </label>
+            <Input
+              id="property-filter-min-price"
+              data-testid="property-filter-min-price"
+              type="number"
+              placeholder="Mínimo"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="property-filter-max-price" className="text-sm text-text-muted">
+              Precio máximo
+            </label>
+            <Input
+              id="property-filter-max-price"
+              data-testid="property-filter-max-price"
+              type="number"
+              placeholder="Máximo"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="property-filter-rooms" className="text-sm text-text-muted">
+              Ambientes
+            </label>
+            <Select
+              id="property-filter-rooms"
+              data-testid="property-filter-rooms"
+              defaultValue=""
+              onChange={handleRoomsChange}
+            >
+              <option value="">Cualquiera</option>
+              {ROOMS_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </Select>
+          </div>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label htmlFor="property-filter-status" className="text-sm text-text-muted">
-            Estado
-          </label>
-          <Select
-            id="property-filter-status"
-            data-testid="property-filter-status"
-            defaultValue=""
-            onChange={handleStatusChange}
-          >
-            <option value="">Todos</option>
-            {STATUS_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </Select>
+        <div className="flex flex-col gap-1 border-t border-border pt-3">
+          <p className="text-xs text-text-muted">
+            El filtro de precio (mínimo y máximo) compara sobre el valor numérico cargado,
+            sin conversión de moneda: propiedades en distintas monedas no se equiparan.
+          </p>
+          <p className="text-xs text-text-muted">
+            El filtro de ambientes busca una coincidencia exacta y excluye las propiedades
+            que no tienen la cantidad de ambientes cargada.
+          </p>
         </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="property-filter-operation" className="text-sm text-text-muted">
-            Operación
-          </label>
-          <Select
-            id="property-filter-operation"
-            data-testid="property-filter-operation"
-            defaultValue=""
-            onChange={handleOperationChange}
-          >
-            <option value="">Todas</option>
-            {OPERATION_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </Select>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="property-filter-neighborhood" className="text-sm text-text-muted">
-            Barrio
-          </label>
-          <Input
-            id="property-filter-neighborhood"
-            data-testid="property-filter-neighborhood"
-            type="text"
-            placeholder="Barrio"
-            value={neighborhood}
-            onChange={(e) => setNeighborhood(e.target.value)}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="property-filter-min-price" className="text-sm text-text-muted">
-            Precio mínimo
-          </label>
-          <Input
-            id="property-filter-min-price"
-            data-testid="property-filter-min-price"
-            type="number"
-            placeholder="Mínimo"
-            value={minPrice}
-            onChange={(e) => setMinPrice(e.target.value)}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="property-filter-max-price" className="text-sm text-text-muted">
-            Precio máximo
-          </label>
-          <Input
-            id="property-filter-max-price"
-            data-testid="property-filter-max-price"
-            type="number"
-            placeholder="Máximo"
-            value={maxPrice}
-            onChange={(e) => setMaxPrice(e.target.value)}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="property-filter-rooms" className="text-sm text-text-muted">
-            Ambientes
-          </label>
-          <Select
-            id="property-filter-rooms"
-            data-testid="property-filter-rooms"
-            defaultValue=""
-            onChange={handleRoomsChange}
-          >
-            <option value="">Cualquiera</option>
-            {ROOMS_OPTIONS.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </Select>
-        </div>
-      </div>
-
-      <p className="text-xs text-text-muted">
-        El filtro de precio (mínimo y máximo) compara sobre el valor numérico cargado,
-        sin conversión de moneda: propiedades en distintas monedas no se equiparan.
-      </p>
-      <p className="text-xs text-text-muted">
-        El filtro de ambientes busca una coincidencia exacta y excluye las propiedades
-        que no tienen la cantidad de ambientes cargada.
-      </p>
-    </div>
+      </CardBody>
+    </Card>
   );
 };

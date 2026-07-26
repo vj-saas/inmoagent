@@ -51,10 +51,72 @@ describe('PropertiesList', () => {
     const row = screen.getByTestId('property-row-prop-1');
     expect(within(row).getByText('Depto 2 ambientes en Palermo')).toBeInTheDocument();
     expect(within(row).getByText('Alquiler')).toBeInTheDocument();
-    expect(within(row).getByText('ARS 150000')).toBeInTheDocument();
+    expect(within(row).getByText('ARS 150.000')).toBeInTheDocument();
     expect(within(row).getByText('Palermo')).toBeInTheDocument();
     expect(within(row).getByText('Activa')).toBeInTheDocument();
     expect(within(row).getByText('2')).toBeInTheDocument();
+  });
+
+  it('sin fotos, muestra el placeholder en vez de una imagen', () => {
+    const property = buildProperty({ photos: [] });
+
+    render(
+      <PropertiesList
+        items={[property]}
+        onEdit={vi.fn()}
+        onChangeStatus={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const row = screen.getByTestId('property-row-prop-1');
+    expect(row.querySelector('img')).not.toBeInTheDocument();
+  });
+
+  it('con fotos, muestra la primera como thumbnail', () => {
+    const property = buildProperty({
+      photos: [
+        { id: 'photo-1', url: 'https://example.com/a.jpg', position: 0 },
+        { id: 'photo-2', url: 'https://example.com/b.jpg', position: 1 },
+      ],
+    });
+
+    render(
+      <PropertiesList
+        items={[property]}
+        onEdit={vi.fn()}
+        onChangeStatus={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const row = screen.getByTestId('property-row-prop-1');
+    const img = row.querySelector('img');
+    expect(img).toHaveAttribute('src', 'https://example.com/a.jpg');
+  });
+
+  it('el estado se muestra con un tono distinto por cada valor de PropertyStatus', () => {
+    const statuses: Array<[Property['status'], string]> = [
+      ['ACTIVE', 'Activa'],
+      ['RESERVED', 'Reservada'],
+      ['PAUSED', 'Pausada'],
+      ['SOLD_OR_RENTED', 'Vendida/Alquilada'],
+    ];
+
+    statuses.forEach(([status, label], index) => {
+      const property = buildProperty({ id: `prop-status-${index}`, status });
+      const { unmount } = render(
+        <PropertiesList
+          items={[property]}
+          onEdit={vi.fn()}
+          onChangeStatus={vi.fn()}
+          onDelete={vi.fn()}
+        />
+      );
+
+      expect(screen.getByText(label)).toBeInTheDocument();
+      unmount();
+    });
   });
 
   it('muestra un guion cuando rooms es null', () => {
