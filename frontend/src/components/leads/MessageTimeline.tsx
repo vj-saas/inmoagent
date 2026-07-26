@@ -6,14 +6,32 @@ export interface MessageTimelineProps {
   messages: Message[];
 }
 
+/** Tono visual de una burbuja del timeline. */
+type MessageTone = 'incoming' | 'bot' | 'human';
+
+/**
+ * Deriva el tono de un mensaje: los `IN` son siempre del lead ('incoming');
+ * los `OUT` son 'human' si tienen `sentByPersonId` (respondió un asesor
+ * humano desde el panel manual) o 'bot' si los mandó el agente IA.
+ */
+function resolveMessageTone(message: Message): MessageTone {
+  if (message.direction === 'IN') {
+    return 'incoming';
+  }
+  return message.sentByPersonId ? 'human' : 'bot';
+}
+
 /**
  * Renderiza el timeline de mensajes de un lead en orden cronológico.
  *
  * - Los mensajes se renderizan en el orden recibido (createdAt ascendente).
- * - Los mensajes IN (del lead) se alinean a la izquierda con fondo neutro.
- * - Los mensajes OUT (del bot/agente) se alinean a la derecha con fondo primario.
+ * - Los mensajes IN (del lead) se alinean a la izquierda, tono 'incoming'.
+ * - Los mensajes OUT se alinean a la derecha, con dos tonos posibles:
+ *   'bot' (agente IA) o 'human' (asesor humano, tiene `sentByPersonId`), cada
+ *   uno con su propia paleta para que se distingan a simple vista (AC-14).
+ * - Las burbujas 'human' muestran el email del autor (`sentByPerson.email`).
  * - Muestra el contenido (body o transcription para audios), el tipo si es relevante, y la fecha.
- * - Valida AC-4.
+ * - Valida AC-4 y AC-14.
  */
 export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) => {
   if (messages.length === 0) {
@@ -65,6 +83,7 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
     >
       {messages.map((message, index) => {
         const isIncoming = message.direction === 'IN';
+        const tone = resolveMessageTone(message);
 
         return (
           <div
@@ -78,12 +97,24 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
           >
             <div
               data-testid={`message-bubble-${message.id}`}
-              data-tone={isIncoming ? 'incoming' : 'outgoing'}
+              data-tone={tone}
               className={cn(
                 'max-w-[70%] break-words rounded-card p-3',
-                isIncoming ? 'bg-border text-text' : 'bg-primary text-white',
+                tone === 'incoming' && 'bg-border text-text',
+                tone === 'bot' && 'bg-primary text-white',
+                tone === 'human' && 'bg-warning text-white',
               )}
             >
+              {/* Rótulo del autor humano */}
+              {tone === 'human' && message.sentByPerson && (
+                <div
+                  data-testid={`message-author-${message.id}`}
+                  className="mb-1 text-xs font-semibold opacity-90"
+                >
+                  {message.sentByPerson.email}
+                </div>
+              )}
+
               {/* Contenido del mensaje */}
               <div
                 data-testid={`message-content-${message.id}`}

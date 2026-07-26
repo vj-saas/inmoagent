@@ -19,7 +19,10 @@ describe('MessageTimeline Component', () => {
     body: 'Test message',
     mediaId: null,
     transcription: null,
+    meta: null,
     createdAt: new Date().toISOString(),
+    sentByPersonId: null,
+    sentByPerson: null,
     ...overrides,
   });
 
@@ -89,10 +92,12 @@ describe('MessageTimeline Component', () => {
     expect(bubbleElement).toHaveAttribute('data-tone', 'incoming');
   });
 
-  it('distingue visualmente un mensaje OUT (alineación a la derecha, tono "outgoing")', () => {
+  it('distingue visualmente un mensaje OUT del bot (alineación a la derecha, tono "bot")', () => {
     const outMessage = createMockMessage({
       direction: 'OUT',
       body: 'Mensaje saliente del bot',
+      sentByPersonId: null,
+      sentByPerson: null,
     });
     render(<MessageTimeline messages={[outMessage]} />);
 
@@ -105,7 +110,32 @@ describe('MessageTimeline Component', () => {
     // Verificar alineación (clase Tailwind, ya no `style` inline tras la
     // migración a design system) y el tono de la burbuja.
     expect(messageElement.className).toContain('justify-end');
-    expect(bubbleElement).toHaveAttribute('data-tone', 'outgoing');
+    expect(bubbleElement).toHaveAttribute('data-tone', 'bot');
+  });
+
+  it('AC-14: distingue visualmente un mensaje OUT de un humano (tono "human" + rótulo de email)', () => {
+    const humanMessage = createMockMessage({
+      direction: 'OUT',
+      body: 'Mensaje saliente de un asesor humano',
+      sentByPersonId: 'person-1',
+      sentByPerson: { id: 'person-1', email: 'asesor@inmobiliaria.com' },
+    });
+    render(<MessageTimeline messages={[humanMessage]} />);
+
+    const messageElement = screen.getByTestId(`message-${humanMessage.id}`);
+    const bubbleElement = screen.getByTestId(`message-bubble-${humanMessage.id}`);
+
+    // Verificar data-direction
+    expect(messageElement).toHaveAttribute('data-direction', 'OUT');
+
+    // Verificar alineación y tono de la burbuja, distinto del tono "bot"
+    expect(messageElement.className).toContain('justify-end');
+    expect(bubbleElement).toHaveAttribute('data-tone', 'human');
+
+    // Verificar rótulo con el email del autor humano
+    expect(screen.getByTestId(`message-author-${humanMessage.id}`)).toHaveTextContent(
+      'asesor@inmobiliaria.com',
+    );
   });
 
   it('muestra el contenido de un mensaje de texto', () => {
@@ -313,7 +343,7 @@ describe('MessageTimeline Component', () => {
     const bubble3 = screen.getByTestId('message-bubble-ac4-msg-3');
 
     expect(bubble1).toHaveAttribute('data-tone', 'incoming');
-    expect(bubble2).toHaveAttribute('data-tone', 'outgoing');
+    expect(bubble2).toHaveAttribute('data-tone', 'bot');
     expect(bubble3).toHaveAttribute('data-tone', 'incoming');
   });
 });
