@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '../ui';
+import { Search } from 'lucide-react';
 
 export interface LeadSearchInputProps {
   /** Callback emitted after debounce (~350ms) with trimmed search term.
@@ -69,13 +70,18 @@ export const LeadSearchInput: React.FC<LeadSearchInputProps> = ({
   };
 
   return (
-    <Input
-      type="text"
-      value={value}
-      onChange={handleChange}
-      placeholder={placeholder}
-      data-testid="lead-search-input"
-      className="w-full sm:flex-1"
-    />
+    <div className="relative w-full sm:flex-1">
+      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-text-muted/65 pointer-events-none">
+        <Search className="h-4 w-4" />
+      </span>
+      <Input
+        type="text"
+        value={value}
+        onChange={handleChange}
+        placeholder={placeholder}
+        data-testid="lead-search-input"
+        className="pl-9 w-full"
+      />
+    </div>
   );
 };

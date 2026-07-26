@@ -20,22 +20,25 @@ export const LeadRow: React.FC<LeadRowProps> = ({ lead }) => {
   const displayName = lead.name || lead.phone;
 
   return (
-    <Link to={`/leads/${lead.id}`} data-testid={`lead-row-${lead.id}`} className="block no-underline text-inherit">
+    <Link to={`/leads/${lead.id}`} data-testid={`lead-row-${lead.id}`} className="block no-underline text-inherit mb-3 last:mb-0">
       <div
         data-testid="lead-row"
-        className="flex cursor-pointer flex-col gap-2 border-b border-border p-3 transition-colors hover:bg-bg"
+        className="flex cursor-pointer flex-col gap-3 rounded-xl border border-border/80 bg-surface p-4 shadow-xs transition-all duration-200 hover:shadow-md hover:border-text/10 hover:translate-y-[-1px]"
       >
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-0.5">
             <div data-testid="lead-name" className="text-sm font-semibold text-text">
               {displayName}
             </div>
-            <div data-testid="lead-state" className="mt-1 text-xs text-text-muted">
+            <div data-testid="lead-state" className="text-[11px] font-bold text-text-muted tracking-wider uppercase">
               {lead.state}
             </div>
           </div>
-          <LeadModeBadge state={lead.state} />
+          <div className="shrink-0">
+            <LeadModeBadge state={lead.state} />
+          </div>
         </div>
+        {/* Render chips container only if chips exist */}
         <div>
           <LeadChips
             fOperation={lead.fOperation}

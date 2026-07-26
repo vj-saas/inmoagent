@@ -64,20 +64,31 @@ export function DashboardPage(): JSX.Element {
   };
 
   return (
-    <div>
-      <h1 className="mb-4 text-2xl font-semibold text-text">Panel</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-5">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-text">Panel de Control</h1>
+          <p className="text-xs text-text-muted mt-1">
+            Estadísticas de leads, conversaciones y citas programadas en tiempo real.
+          </p>
+        </div>
 
-      <DateRangePicker
-        initialFrom={initialRange.from}
-        initialTo={initialRange.to}
-        onChange={handleChange}
-        onValidityChange={handleValidityChange}
-      />
+        <div className="flex items-center shrink-0">
+          <DateRangePicker
+            initialFrom={initialRange.from}
+            initialTo={initialRange.to}
+            onChange={handleChange}
+            onValidityChange={handleValidityChange}
+          />
+        </div>
+      </div>
 
       {!isRangeValid && (
-        <p data-testid="range-validation-error" className="text-sm text-danger">
-          La fecha desde no puede ser posterior a la fecha hasta
-        </p>
+        <div className="rounded-lg bg-danger/10 p-4 border border-danger/20">
+          <p data-testid="range-validation-error" className="text-sm font-semibold text-danger">
+            La fecha desde no puede ser posterior a la fecha hasta
+          </p>
+        </div>
       )}
 
       {isRangeValid && (
@@ -87,7 +98,7 @@ export function DashboardPage(): JSX.Element {
           loadingLabel="Cargando métricas..."
         >
           {data && (
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
               <MetricCard label="Leads nuevos" value={data.newLeads} />
               <MetricCard label="Conversaciones activas" value={data.activeConversations} />
               <MetricCard label="Handoffs" value={data.handoffs} />

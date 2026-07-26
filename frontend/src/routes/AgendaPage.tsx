@@ -90,16 +90,26 @@ export function AgendaPage(): JSX.Element {
   };
 
   return (
-    <div>
-      <h1 className="mb-4 text-2xl font-semibold text-text">Agenda</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-5">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-text">Agenda</h1>
+          <p className="text-xs text-text-muted mt-1">
+            Visualizá y gestioná las citas agendadas por tus clientes.
+          </p>
+        </div>
+      </div>
 
-      <div className="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+      <div className="flex flex-wrap items-end gap-4">
         <DateRangePicker
           initialFrom={initialRange.from}
           initialTo={initialRange.to}
           onChange={handleRangeChange}
         />
-        <AppointmentStatusFilter onChange={handleStatusChange} />
+        <div className="mb-4 flex flex-col gap-1 text-sm font-medium text-text sm:w-56 w-full">
+          Estado
+          <AppointmentStatusFilter onChange={handleStatusChange} />
+        </div>
       </div>
 
       <AsyncSection

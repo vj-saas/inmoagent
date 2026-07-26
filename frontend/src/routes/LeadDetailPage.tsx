@@ -130,91 +130,110 @@ export function LeadDetailPage(): JSX.Element {
   const assignableUsers = assignableApi.data?.users ?? [];
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-4 p-4">
-      <h1 className="text-xl font-semibold text-text">Ficha del lead</h1>
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      {/* Left Column: Chat / Messages (Primary) */}
+      <div className="lg:col-span-2 space-y-6">
+        <div className="flex items-center gap-3 border-b border-border/80 pb-4">
+          <h1 className="text-2xl font-bold tracking-tight text-text">Ficha del lead</h1>
+        </div>
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-base font-semibold text-text">Datos del lead</h2>
-        </CardHeader>
-        <CardBody className="flex flex-col gap-1 text-sm text-text">
-          <p>Teléfono: {lead.phone}</p>
-          <p>Nombre: {lead.name ?? 'Sin nombre'}</p>
-          <p>Estado: {lead.state}</p>
-        </CardBody>
-      </Card>
+        <Card className="shadow-sm">
+          <CardHeader
+            data-testid="messages-card-header"
+            className={`flex items-center justify-between ${MODE_HEADER_CLASSES[resolveLeadMode(lead.state)]} border-b border-border/80 px-5 py-4`}
+          >
+            <h2 className="text-base font-semibold text-text">Mensajes</h2>
+            <LeadModeBadge state={lead.state} />
+          </CardHeader>
+          <CardBody className="flex flex-col gap-4 p-5">
+            <MessageTimeline messages={messages} />
+            <ManualReplyBox
+              lead={lead}
+              tenantId={tenantId}
+              token={authToken}
+              onSent={handleManualReplySent}
+            />
+          </CardBody>
+        </Card>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-base font-semibold text-text">Acciones</h2>
-        </CardHeader>
-        <CardBody className="flex flex-wrap gap-2">
-          <ContactedToggle lead={lead} tenantId={tenantId} token={authToken} onUpdated={setLead} />
-          <ReleaseHandoffButton lead={lead} tenantId={tenantId} token={authToken} onReleased={fetchLead} />
-          <OptOutButton lead={lead} tenantId={tenantId} token={authToken} onUpdated={setLead} />
-          <SuppressLeadButton tenantId={tenantId} leadId={lead.id} token={authToken} />
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <h2 className="text-base font-semibold text-text">Asignación</h2>
-        </CardHeader>
-        <CardBody>
-          {assignableApi.error && (
-            <div data-testid="assignable-users-error" role="alert" className="mb-2 text-sm text-danger">
-              No se pudo cargar la lista de personas asignables.
+      {/* Right Column: Metadata, Actions, Notes (Sidebar) */}
+      <div className="space-y-6 lg:col-span-1">
+        <Card className="shadow-sm">
+          <CardHeader className="border-b border-border/80 px-5 py-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">Datos del lead</h2>
+          </CardHeader>
+          <CardBody className="flex flex-col gap-3 text-sm text-text p-5">
+            <div>
+              <span className="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Nombre</span>
+              <span className="text-sm font-semibold">{lead.name ?? 'Sin nombre'}</span>
             </div>
-          )}
-          <AssignmentControl
-            lead={lead}
-            assignableUsers={assignableUsers}
-            tenantId={tenantId}
-            leadId={lead.id}
-            token={authToken}
-            onUpdated={setLead}
-          />
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader
-          data-testid="messages-card-header"
-          className={`flex items-center justify-between ${MODE_HEADER_CLASSES[resolveLeadMode(lead.state)]}`}
-        >
-          <h2 className="text-base font-semibold text-text">Mensajes</h2>
-          <LeadModeBadge state={lead.state} />
-        </CardHeader>
-        <CardBody className="flex flex-col gap-4">
-          <MessageTimeline messages={messages} />
-          <ManualReplyBox
-            lead={lead}
-            tenantId={tenantId}
-            token={authToken}
-            onSent={handleManualReplySent}
-          />
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <h2 className="text-base font-semibold text-text">Notas internas</h2>
-        </CardHeader>
-        <CardBody>
-          {notesApi.error && (
-            <div data-testid="notes-error" role="alert" className="mb-2 text-sm text-danger">
-              No se pudieron cargar las notas.
+            <div>
+              <span className="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Teléfono</span>
+              <span className="text-sm font-semibold">{lead.phone}</span>
             </div>
-          )}
-          <LeadNotes notes={notes} />
-          <NoteForm
-            tenantId={tenantId}
-            leadId={lead.id}
-            token={authToken}
-            onCreated={(note) => setNotes((prev) => [note, ...prev])}
-          />
-        </CardBody>
-      </Card>
+            <div>
+              <span className="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Estado</span>
+              <span className="text-sm font-semibold">{lead.state}</span>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="border-b border-border/80 px-5 py-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">Acciones</h2>
+          </CardHeader>
+          <CardBody className="flex flex-col gap-2 p-5">
+            <ContactedToggle lead={lead} tenantId={tenantId} token={authToken} onUpdated={setLead} />
+            <ReleaseHandoffButton lead={lead} tenantId={tenantId} token={authToken} onReleased={fetchLead} />
+            <OptOutButton lead={lead} tenantId={tenantId} token={authToken} onUpdated={setLead} />
+            <SuppressLeadButton tenantId={tenantId} leadId={lead.id} token={authToken} />
+          </CardBody>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="border-b border-border/80 px-5 py-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">Asignación</h2>
+          </CardHeader>
+          <CardBody className="p-5">
+            {assignableApi.error && (
+              <div data-testid="assignable-users-error" role="alert" className="mb-2 text-sm text-danger">
+                No se pudo cargar la lista de personas asignables.
+              </div>
+            )}
+            <AssignmentControl
+              lead={lead}
+              assignableUsers={assignableUsers}
+              tenantId={tenantId}
+              leadId={lead.id}
+              token={authToken}
+              onUpdated={setLead}
+            />
+          </CardBody>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader className="border-b border-border/80 px-5 py-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">Notas internas</h2>
+          </CardHeader>
+          <CardBody className="p-5 space-y-4">
+            {notesApi.error && (
+              <div data-testid="notes-error" role="alert" className="mb-2 text-sm text-danger">
+                No se pudieron cargar las notas.
+              </div>
+            )}
+            <LeadNotes notes={notes} />
+            <div className="pt-2 border-t border-border/40">
+              <NoteForm
+                tenantId={tenantId}
+                leadId={lead.id}
+                token={authToken}
+                onCreated={(note) => setNotes((prev) => [note, ...prev])}
+              />
+            </div>
+          </CardBody>
+        </Card>
+      </div>
     </div>
   );
 }

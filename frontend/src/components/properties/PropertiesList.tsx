@@ -80,10 +80,10 @@ function MobileLabel({ children }: { children: string }): JSX.Element {
 }
 
 const rowClassName =
-  'flex flex-col gap-2 rounded-card border border-border bg-surface p-3 shadow-sm ' +
-  'md:table-row md:flex-none md:gap-0 md:rounded-none md:border-0 md:border-b md:bg-transparent md:p-0 md:shadow-none md:hover:bg-bg';
+  'flex flex-col gap-3 rounded-xl border border-border/80 bg-surface p-4.5 shadow-xs mb-3 transition-all duration-200 hover:shadow-md hover:border-text/10 ' +
+  'md:table-row md:flex-none md:gap-0 md:rounded-none md:border-0 md:border-b md:border-border/60 md:bg-transparent md:p-0 md:shadow-none md:mb-0 md:hover:bg-stone-50/70';
 
-const cellClassName = 'flex items-center justify-between gap-2 py-0.5 md:table-cell md:justify-start md:px-3 md:py-2';
+const cellClassName = 'flex items-center justify-between gap-2 py-0.5 md:table-cell md:justify-start md:px-4 md:py-3.5';
 
 export function PropertiesList({
   items,
@@ -149,7 +149,7 @@ export function PropertiesList({
                   <MobileLabel>Ambientes</MobileLabel>
                   <span>{property.rooms ?? '—'}</span>
                 </Td>
-                <Td className="flex flex-col gap-2 pt-1 md:table-cell md:px-3 md:py-2">
+                <Td className="flex flex-col gap-2 pt-1 md:table-cell md:px-4 md:py-3.5">
                   <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"

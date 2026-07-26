@@ -209,15 +209,15 @@ export function PropertiesPage(): JSX.Element {
   const properties: Property[] = data?.items ?? [];
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-5">
         <div>
-          <h1 className="text-2xl font-semibold text-text">Propiedades</h1>
-          <p className="text-sm text-text-muted">
+          <h1 className="text-2xl font-bold tracking-tight text-text">Propiedades</h1>
+          <p className="text-xs text-text-muted mt-1">
             Cargá, editá y gestioná el estado del inventario de tu inmobiliaria.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0">
           <Button type="button" onClick={handleOpenCreate}>
             Cargar propiedad
           </Button>

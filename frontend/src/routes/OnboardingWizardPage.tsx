@@ -67,7 +67,7 @@ import { ReadinessChecklist } from '../components/onboarding/ReadinessChecklist'
 import { WebhookStatusCard } from '../components/onboarding/WebhookStatusCard';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { Spinner } from '../components/Spinner';
-import { Button, Card, CardBody, CardHeader } from '../components/ui';
+import { Button, Card, CardBody, CardHeader, Input } from '../components/ui';
 
 type Step1Phase = 'form' | 'bootstrapping' | 'bootstrap-error' | 'logging-in' | 'login-error' | 'ready';
 
@@ -142,7 +142,10 @@ export function OnboardingWizardPage(): JSX.Element {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 p-4">
-      <h1 className="text-2xl font-semibold text-text">Alta de inmobiliaria</h1>
+      <div className="border-b border-border/80 pb-4">
+        <h1 className="text-2xl font-bold tracking-tight text-text">Alta de Inmobiliaria</h1>
+        <p className="text-xs text-text-muted mt-1">Configurá el sistema para tu agencia en 3 simples pasos</p>
+      </div>
 
       <WizardStepper currentStep={step} />
 
@@ -161,14 +164,13 @@ export function OnboardingWizardPage(): JSX.Element {
                   <label htmlFor="wizard-master-key" className="onboarding-form-label onboarding-form-required">
                     Master key
                   </label>
-                  <input
+                  <Input
                     id="wizard-master-key"
                     name="masterKey"
                     type="password"
                     autoComplete="off"
                     value={masterKey}
                     onChange={(e) => setMasterKey(e.target.value)}
-                    className="h-10 w-full rounded border border-border bg-surface px-3 text-sm text-text placeholder:text-text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     required
                   />
                 </div>

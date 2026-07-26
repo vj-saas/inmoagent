@@ -25,7 +25,7 @@ export const THead = forwardRef<
   HTMLTableSectionElement,
   HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn('bg-bg text-text-muted', className)} {...props} />
+  <thead ref={ref} className={cn('bg-stone-50 border-b border-border text-text-muted/85', className)} {...props} />
 ));
 THead.displayName = 'THead';
 
@@ -33,7 +33,7 @@ export const TBody = forwardRef<
   HTMLTableSectionElement,
   HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <tbody ref={ref} className={cn('divide-y divide-border', className)} {...props} />
+  <tbody ref={ref} className={cn('divide-y divide-border/60', className)} {...props} />
 ));
 TBody.displayName = 'TBody';
 
@@ -44,14 +44,14 @@ Tr.displayName = 'Tr';
 
 export const Th = forwardRef<HTMLTableCellElement, ThHTMLAttributes<HTMLTableCellElement>>(
   ({ className, ...props }, ref) => (
-    <th ref={ref} className={cn('px-3 py-2 text-left font-medium', className)} {...props} />
+    <th ref={ref} className={cn('px-4 py-3 text-left text-xs font-bold uppercase tracking-wider', className)} {...props} />
   )
 );
 Th.displayName = 'Th';
 
 export const Td = forwardRef<HTMLTableCellElement, TdHTMLAttributes<HTMLTableCellElement>>(
   ({ className, ...props }, ref) => (
-    <td ref={ref} className={cn('px-3 py-2 align-middle', className)} {...props} />
+    <td ref={ref} className={cn('px-4 py-3.5 align-middle', className)} {...props} />
   )
 );
 Td.displayName = 'Td';

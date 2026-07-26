@@ -67,11 +67,18 @@ export function LeadsPage(): JSX.Element {
   };
 
   return (
-    <div>
-      <h1 className="mb-4 text-2xl font-semibold text-text">Bandeja de leads</h1>
+    <div className="space-y-6">
+      <div className="border-b border-border/80 pb-5">
+        <h1 className="text-2xl font-bold tracking-tight text-text">Bandeja de Leads</h1>
+        <p className="text-xs text-text-muted mt-1">
+          Gestioná y contactá a los leads interesados en propiedades en tiempo real.
+        </p>
+      </div>
 
-      <div className="mb-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
-        <LeadStateFilter onChange={handleCategoryChange} />
+      <div className="flex flex-col items-stretch gap-3.5 sm:flex-row sm:items-center">
+        <div className="shrink-0">
+          <LeadStateFilter onChange={handleCategoryChange} />
+        </div>
         <LeadSearchInput onSearch={handleSearch} />
       </div>
 
@@ -85,15 +92,17 @@ export function LeadsPage(): JSX.Element {
         emptyMessage="Probá con otro filtro o cambiá los términos de búsqueda."
       >
         {data && data.leads.length > 0 && (
-          <>
+          <div className="space-y-4">
             <LeadsList leads={data.leads as Lead[]} />
-            <Pagination
-              total={data.total}
-              page={data.page}
-              pageSize={data.pageSize}
-              onPageChange={handlePageChange}
-            />
-          </>
+            <div className="pt-2 border-t border-border/40">
+              <Pagination
+                total={data.total}
+                page={data.page}
+                pageSize={data.pageSize}
+                onPageChange={handlePageChange}
+              />
+            </div>
+          </div>
         )}
       </AsyncSection>
     </div>

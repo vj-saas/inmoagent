@@ -99,10 +99,10 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
               data-testid={`message-bubble-${message.id}`}
               data-tone={tone}
               className={cn(
-                'max-w-[70%] break-words rounded-card p-3',
-                tone === 'incoming' && 'bg-border text-text',
-                tone === 'bot' && 'bg-primary text-white',
-                tone === 'human' && 'bg-warning text-white',
+                'max-w-[75%] break-words p-3.5 shadow-xs transition-transform duration-200 hover:scale-[1.01]',
+                tone === 'incoming' && 'bg-white text-text rounded-2xl rounded-tl-none border border-border/80',
+                tone === 'bot' && 'bg-primary text-white rounded-2xl rounded-tr-none',
+                tone === 'human' && 'bg-warning text-white rounded-2xl rounded-tr-none',
               )}
             >
               {/* Rótulo del autor humano */}
