@@ -291,3 +291,109 @@ describe('ConversationEngine — guardrails no tocados por T11', () => {
     expect(persistedState(prisma)).toBe(ConversationState.HUMAN_HANDOFF);
   });
 });
+
+/**
+ * AC-6 [CRÍTICO] — con el lead en `HUMAN_HANDOFF` el motor no invoca al LLM ni
+ * a los handlers de la FSM, y eso vale también cuando el handoff lo produjo el
+ * envío manual de un asesor (`AdminLeadMessagingService.sendManual`, T8) y no
+ * un pedido explícito del lead.
+ *
+ * DECISIÓN DOCUMENTADA: el AC no distingue "el lead pidió hablar con un
+ * humano" de "el asesor tomó la conversación". `sendManual` deja exactamente
+ * el mismo rastro que el guardrail `handoff` (`state = HUMAN_HANDOFF` +
+ * `handoffAt = <ahora>`), no hay marca de origen en el lead, y el gating del
+ * motor mira solo el estado. Los fixtures de acá replican el lead post-`send`.
+ */
+describe('ConversationEngine — AC-6: HUMAN_HANDOFF originado por `send` del asesor', () => {
+  /** Lead tal cual lo deja `sendManual`, tomado a mitad del flujo de búsqueda. */
+  function handoffBySendManual(overrides: Partial<Lead> = {}): Lead {
+    return lead({
+      state: ConversationState.HUMAN_HANDOFF,
+      handoffAt: new Date(),
+      lastSearchIds: ['prop-1', 'prop-2'],
+      fOperation: OperationType.RENT,
+      turnCount: 7,
+      ...overrides,
+    });
+  }
+
+  it('no invoca al LlmProvider ni a ningún handler de la FSM para el turno entrante', async () => {
+    const stored = handoffBySendManual();
+    const {
+      engine,
+      prisma,
+      messaging,
+      llm,
+      leadAlert,
+      greeting,
+      qualification,
+      searchMatch,
+      scheduling,
+    } = build(stored);
+
+    await engine.handleTurn(
+      TENANT.id,
+      stored.id,
+      'me interesa el segundo, cuánto son las expensas?',
+    );
+
+    // El LLM no ve el turno: ni extracción ni redacción.
+    expect(llm.extractIntent).not.toHaveBeenCalled();
+    expect(llm.composeReply).not.toHaveBeenCalled();
+    // Ningún handler de la FSM despacha el turno.
+    expect(greeting.handle).not.toHaveBeenCalled();
+    expect(qualification.handle).not.toHaveBeenCalled();
+    expect(searchMatch.handle).not.toHaveBeenCalled();
+    expect(scheduling.handle).not.toHaveBeenCalled();
+    // Y no sale nada por WhatsApp ni se toca el estado del lead: el turno
+    // queda para el asesor, que ya está escribiendo desde la bandeja.
+    expect(messaging.sendText).not.toHaveBeenCalled();
+    expect(messaging.sendImage).not.toHaveBeenCalled();
+    expect(prisma.lead.update).not.toHaveBeenCalled();
+    // Tampoco se re-alerta al tenant: el asesor ya tomó la conversación.
+    expect(leadAlert.notify).not.toHaveBeenCalled();
+  });
+
+  it('tampoco responde si el lead insiste con pedir un humano estando ya en modo manual', async () => {
+    const stored = handoffBySendManual();
+    const { engine, prisma, messaging, llm, leadAlert } = build(stored);
+
+    await engine.handleTurn(
+      TENANT.id,
+      stored.id,
+      'quiero hablar con una persona real',
+    );
+
+    expect(llm.extractIntent).not.toHaveBeenCalled();
+    expect(messaging.sendText).not.toHaveBeenCalled();
+    expect(leadAlert.notify).not.toHaveBeenCalled();
+    expect(prisma.lead.update).not.toHaveBeenCalled();
+  });
+
+  // AC-2: el silenciado del modo manual no puede tapar un pedido de baja.
+  it('"BAJA" durante el modo manual sigue pasando a OPTED_OUT sin invocar al LLM', async () => {
+    const stored = handoffBySendManual();
+    const { engine, prisma, llm, qualification, searchMatch } = build(stored);
+
+    await engine.handleTurn(TENANT.id, stored.id, 'BAJA');
+
+    expect(llm.extractIntent).not.toHaveBeenCalled();
+    expect(qualification.handle).not.toHaveBeenCalled();
+    expect(searchMatch.handle).not.toHaveBeenCalled();
+    expect(persistedState(prisma)).toBe(ConversationState.OPTED_OUT);
+  });
+
+  // Contracara del silenciado: pasadas las 48hs del `send`, el mismo lead sí
+  // vuelve al bot (mismo camino de release que el handoff pedido por el lead).
+  it('a las 48hs del `send` el bot retoma: llega al LLM y a la FSM', async () => {
+    const stored = handoffBySendManual({ handoffAt: FIFTY_HOURS_AGO });
+    const { engine, prisma, messaging, llm, searchMatch } = build(stored);
+
+    await engine.handleTurn(TENANT.id, stored.id, 'hola, siguen ahí?');
+
+    expect(llm.extractIntent).toHaveBeenCalledTimes(1);
+    expect(searchMatch.handle).toHaveBeenCalledTimes(1);
+    expect(messaging.sendText.mock.calls[0][2]).toBe(HANDOFF_TIMEOUT_APOLOGY);
+    expect(persistedState(prisma)).toBe(ConversationState.SEARCH_MATCH);
+  });
+});
