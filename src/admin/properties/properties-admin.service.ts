@@ -44,14 +44,39 @@ export class PropertiesAdminService {
     filters: {
       status?: PropertyStatus;
       operation?: CreatePropertyDto['operation'];
+      neighborhood?: string;
+      minPrice?: number;
+      maxPrice?: number;
+      rooms?: number;
+      q?: string;
       page?: number;
     },
   ) {
     const page = filters.page ?? 1;
+    const trimmedQ = filters.q?.trim();
     const where: Prisma.PropertyWhereInput = {
       tenantId,
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.operation ? { operation: filters.operation } : {}),
+      ...(filters.neighborhood
+        ? { neighborhood: normalizeNeighborhood(filters.neighborhood) }
+        : {}),
+      ...(filters.minPrice !== undefined || filters.maxPrice !== undefined
+        ? {
+            price: {
+              ...(filters.minPrice !== undefined
+                ? { gte: filters.minPrice }
+                : {}),
+              ...(filters.maxPrice !== undefined
+                ? { lte: filters.maxPrice }
+                : {}),
+            },
+          }
+        : {}),
+      ...(filters.rooms !== undefined ? { rooms: filters.rooms } : {}),
+      ...(trimmedQ
+        ? { title: { contains: trimmedQ, mode: 'insensitive' } }
+        : {}),
     };
 
     const [properties, total] = await Promise.all([
