@@ -30,6 +30,7 @@ import {
   releaseLead,
   removeProperty,
   resetPassword,
+  sendManualMessage,
   suppressLead,
   updateProperty,
   updatePropertyStatus,
@@ -152,6 +153,15 @@ describe('endpoints', () => {
     await getLeadMessages('t1', 'l1', 'tok');
     expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/leads/l1/messages', {
       method: 'GET',
+      token: 'tok',
+    });
+  });
+
+  it('sendManualMessage: POST /admin/tenants/:tenantId/leads/:leadId/send con body de texto', async () => {
+    await sendManualMessage('t1', 'l1', 'Hola, te escribe un asesor', 'tok');
+    expect(requestMock).toHaveBeenCalledWith('/admin/tenants/t1/leads/l1/send', {
+      method: 'POST',
+      body: { text: 'Hola, te escribe un asesor' },
       token: 'tok',
     });
   });

@@ -141,6 +141,8 @@ export interface Message {
   transcription: string | null;
   meta: unknown;
   createdAt: string;
+  sentByPersonId: string | null;
+  sentByPerson: { id: string; email: string } | null;
 }
 
 // Calcado de `enum ConversationState` en prisma/schema.prisma. No agregar
@@ -180,6 +182,7 @@ export interface Lead {
   handoffAt: string | null;
   optedOutAt: string | null;
   lastMessageAt: string | null;
+  lastInboundAt: string | null;
   greetedAt: string | null;
   lastSearchIds: string[];
   turnCount: number;
@@ -302,6 +305,32 @@ export function getLeadNotes(
     method: 'GET',
     token,
   });
+}
+
+// Calcado de `SendManualResult` (src/admin/leads/admin-lead-messaging.service.ts).
+export interface SendManualMessageResponse {
+  message: Message;
+  lead: Lead;
+}
+
+/**
+ * Envío manual de un asesor humano al lead (src/admin/leads/admin-leads.controller.ts,
+ * método `send`, T9). Requiere sesión de persona (no funciona con API key).
+ */
+export function sendManualMessage(
+  tenantId: string,
+  leadId: string,
+  text: string,
+  token: string,
+): Promise<SendManualMessageResponse> {
+  return request<SendManualMessageResponse>(
+    `/admin/tenants/${tenantId}/leads/${leadId}/send`,
+    {
+      method: 'POST',
+      body: { text },
+      token,
+    },
+  );
 }
 
 export function markContacted(tenantId: string, leadId: string, token: string): Promise<Lead> {
