@@ -22,8 +22,8 @@ actual real — esto puede haber avanzado si algo siguió corriendo en backgroun
 
 ## En progreso ahora mismo — Fase B2 (bandeja de leads, toma manual)
 
-`specs/V-B2-bandeja-manual/tasks.md` tiene 20 tareas (T1-T20). **9 de 20
-pusheadas a `main`** (todo el Grupo 1, que no tenía dependencias):
+`specs/V-B2-bandeja-manual/tasks.md` tiene 20 tareas (T1-T20). **13 de 20
+pusheadas a `main`** (Grupo 1 completo + Grupo 2 completo):
 
 | Tarea | Qué es | Commit |
 |---|---|---|
@@ -36,33 +36,39 @@ pusheadas a `main`** (todo el Grupo 1, que no tenía dependencias):
 | T7 | `SendManualMessageDto` | `7b4919b` |
 | T14 | `LeadModeBadge` + `resolveLeadMode` | `1ad9074` |
 | T17 | `ReleaseHandoffButton` con modal de confirmación | `adaf3b4` |
+| T19 | Badge por lead en `LeadRow.tsx` | `4058805` |
+| T10 | `release()` movido a `AdminLeadsService` con `resolveReleaseState` | `31bba35` |
+| T11 | `resolveGuardrail` usa `resolveReleaseState` en el timeout de 48hs | `8999cf5` |
+| T8 | `AdminLeadMessagingService.sendManual` (lock + tx + envío) | `f8b2bc2` |
 
-**Faltan 11 tareas, empezando por el Grupo 2** (`specs/V-B2-bandeja-manual/tasks.md`
-tiene el detalle completo de cada una; todas high/crítico salvo T19):
+Grupo 2 pasó `code-reviewer` sin hallazgos críticos ni de advertencia
+(veredicto: aprobado; dos sugerencias menores no bloqueantes sobre
+documentación de invariantes, no requieren cambio). Suite completa en verde:
+backend 45 suites / 353 tests, frontend 56 archivos / 404 tests.
 
-- **T8** — `AdminLeadMessagingService.sendManual` — **NO EXISTE**
-  (`src/admin/leads/admin-lead-messaging.service.ts` falta). Es el
-  orquestador crítico (lock + transacción + envío) que valida AC-1, AC-2
-  [CRÍTICO], AC-3, AC-7 [CRÍTICO], AC-12. Depende de T1/T2/T5/T6, que ya
-  están listas — se puede arrancar ya.
-- **T10** — mover `release()` del controller al service usando
-  `resolveReleaseState` (T3, ya lista) — **NO HECHO**. Verificado en
-  `src/admin/leads/admin-leads.controller.ts:103-118`: sigue hardcodeando
-  `QUALIFICATION` en vez de usar `resolveReleaseState`. AC-8/AC-9 [CRÍTICO].
-- **T11** — `ConversationEngine.resolveGuardrail` debe usar
-  `resolveReleaseState` en la rama `handoff_timeout_release` en vez del
-  `QUALIFICATION` hardcodeado — **NO HECHO** (verificado en
-  `src/conversation/conversation.engine.ts`, no hay referencia a
-  `resolveReleaseState`).
-- **T19** — badge por lead en `LeadRow.tsx` — **NO HECHO** (verificado, no
-  usa `LeadModeBadge` todavía aunque T14 ya está lista).
-- Resto de la cadena (T9, T12, T13, T15, T16, T18, T20) sin arrancar —
-  dependen de T8/T9 principalmente. Ver "Orden de ejecución sugerido" al
-  final de `tasks.md` para el orden correcto de despacho.
+**Faltan 7 tareas — Grupo 3 en adelante** (todas dependen de T8/T9):
 
-Para retomar: despachar `task-router` sobre `specs/V-B2-bandeja-manual/tasks.md`
-de nuevo, o despachar Grupo 2 (T8, T10, T11, T19) manualmente vía
-`implementer-high`/`implementer-medium` según corresponda.
+- **T9** — `POST :leadId/send`: controller + wiring de `AdminModule` +
+  exponer `lastInboundAt`/`sentByPerson` en `getOne`/`messages`. Depende de
+  T4, T7, T8 (las tres ya están listas) — **siguiente a despachar**.
+- **T12** — extender tests de `GuardrailsService`/`conversation.engine.spec.ts`
+  sobre `HUMAN_HANDOFF` originado por `send` (sin cambios de código). Depende
+  de T8 (listo) y T11 (listo).
+- **T13** — `frontend/src/api/endpoints.ts`: tipos + `sendManualMessage`.
+  Depende de T9.
+- **T15, T16** — `MessageTimeline.tsx` (tres tonos) y `ManualReplyBox.tsx`
+  (caja de envío). Dependen de T13 (T16 además de T14, ya lista).
+- **T18** — wiring de badge/header/`ManualReplyBox` en `LeadDetailPage.tsx`.
+  Integra T14, T15, T16, T17 (T14 y T17 ya listas).
+- **T20** — e2e completo `test/admin-lead-manual-reply.e2e-spec.ts`. Depende
+  de T9, T10, T12.
+
+Ver "Orden de ejecución sugerido" al final de `tasks.md` para el detalle:
+Grupo 3 (T9, T12) → Grupo 4 (T13, T20) → Grupo 5 (T15, T16) → Grupo 6 (T18).
+
+Para retomar: despachar `task-router` sobre el resto de `tasks.md`, o
+despachar T9 primero (bloquea casi todo lo demás) manualmente vía
+`implementer-medium`.
 
 ## Spec en espera de aprobación — Portal de gestión de propiedades (V-D)
 
@@ -107,10 +113,10 @@ de nuevo, o despachar Grupo 2 (T8, T10, T11, T19) manualmente vía
    confirmar qué quedó commiteado/pusheado realmente (este handoff puede
    estar desactualizado si algo terminó de correr en background después de
    escribirlo).
-3. Priorizar Grupo 2 de `specs/V-B2-bandeja-manual/tasks.md` (T8, T10, T11,
-   T19) — son la superficie crítica que falta para cerrar B2. Correr
-   `npm run test` (backend) y `npx vitest run` (frontend) antes de arrancar
-   para confirmar que no se rompió nada.
+3. Priorizar Grupo 3 de `specs/V-B2-bandeja-manual/tasks.md` (T9, empieza
+   ahí — bloquea T13/T15/T16/T18/T20) y T12. Correr `npm run test` (backend)
+   y `npx vitest run` (frontend) antes de arrancar para confirmar que no se
+   rompió nada.
 4. Los agentes en background NO sobreviven al cierre de la sesión/chat — no
    asumas que van a seguir corriendo ni que vas a recibir su notificación
    final en el chat nuevo.
