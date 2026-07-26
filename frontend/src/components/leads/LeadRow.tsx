@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Lead } from '../../api/endpoints';
 import { LeadChips } from './LeadChips';
+import { LeadModeBadge } from './LeadModeBadge';
 
 export interface LeadRowProps {
   lead: Lead;
@@ -33,6 +34,7 @@ export const LeadRow: React.FC<LeadRowProps> = ({ lead }) => {
               {lead.state}
             </div>
           </div>
+          <LeadModeBadge state={lead.state} />
         </div>
         <div>
           <LeadChips

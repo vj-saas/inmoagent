@@ -101,4 +101,19 @@ describe('LeadRow Component', () => {
     const link = screen.getByTestId('lead-row-lead-999');
     expect(link.getAttribute('href')).toBe('/leads/lead-999');
   });
+
+  it('renderiza LeadModeBadge con modo AI cuando el estado no es HUMAN_HANDOFF ni OPTED_OUT (AC-20)', () => {
+    renderLeadRow({ ...mockLead, state: 'GREETING' });
+    expect(screen.getByTestId('lead-mode-badge')).toHaveTextContent('Agente IA activo');
+  });
+
+  it('renderiza LeadModeBadge con modo MANUAL cuando el estado es HUMAN_HANDOFF (AC-20)', () => {
+    renderLeadRow({ ...mockLead, state: 'HUMAN_HANDOFF' });
+    expect(screen.getByTestId('lead-mode-badge')).toHaveTextContent('Respondiendo vos');
+  });
+
+  it('renderiza LeadModeBadge con modo OPTED_OUT cuando el estado es OPTED_OUT (AC-20)', () => {
+    renderLeadRow({ ...mockLead, state: 'OPTED_OUT' });
+    expect(screen.getByTestId('lead-mode-badge')).toHaveTextContent('Dado de baja');
+  });
 });
