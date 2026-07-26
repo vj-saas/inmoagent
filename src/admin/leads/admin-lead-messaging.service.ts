@@ -178,9 +178,11 @@ export class AdminLeadMessagingService {
 
   /**
    * Último `Message` entrante del lead (`direction = IN`), base de la ventana
-   * de servicio de 24hs. Filtrado por `tenantId` además de `leadId`.
+   * de servicio de 24hs. Filtrado por `tenantId` además de `leadId`. Público:
+   * lo reusa `AdminLeadsController.getOne` para exponer `lastInboundAt`
+   * (T9, AC-14) sin duplicar la query.
    */
-  private async findLastInboundAt(
+  async findLastInboundAt(
     tenantId: string,
     leadId: string,
   ): Promise<Date | null> {

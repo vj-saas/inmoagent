@@ -1,12 +1,16 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { TenantThrottlerGuard } from '../common/tenant-throttler.guard';
+import { MessagingModule } from '../messaging/messaging.module';
 import { PipelineModule } from '../pipeline/pipeline.module';
+import { TenantsModule } from '../tenants/tenants.module';
 import { MasterKeyGuard } from './guards/master-key.guard';
 import { PersonOrApiKeyGuard } from './guards/person-or-api-key.guard';
+import { PersonSessionRequiredGuard } from './guards/person-session-required.guard';
 import { TenantApiKeyGuard } from './guards/tenant-api-key.guard';
 import { AppointmentsAdminController } from './appointments/appointments-admin.controller';
 import { AppointmentsAdminService } from './appointments/appointments-admin.service';
+import { AdminLeadMessagingService } from './leads/admin-lead-messaging.service';
 import { AdminLeadsController } from './leads/admin-leads.controller';
 import { AdminLeadsService } from './leads/admin-leads.service';
 import { AdminMetricsController } from './metrics/admin-metrics.controller';
@@ -18,7 +22,7 @@ import { AdminTenantsController } from './tenants/admin-tenants.controller';
 import { TenantsAdminService } from './tenants/tenants-admin.service';
 
 @Module({
-  imports: [PipelineModule, AuthModule],
+  imports: [PipelineModule, AuthModule, MessagingModule, TenantsModule],
   controllers: [
     AdminLeadsController,
     AdminTenantsController,
@@ -32,10 +36,13 @@ import { TenantsAdminService } from './tenants/tenants-admin.service';
     // properties. Inyecta TenantApiKeyGuard (local) y PersonSessionGuard/
     // TenantScopeGuard (exportados por AuthModule). Registrado una sola vez.
     PersonOrApiKeyGuard,
+    // Guard marcador a nivel método (T4): solo se aplica al endpoint `send`.
+    PersonSessionRequiredGuard,
     MasterKeyGuard,
     TenantThrottlerGuard,
     TenantsAdminService,
     AdminLeadsService,
+    AdminLeadMessagingService,
     PropertiesAdminService,
     CsvImportService,
     MetricsService,

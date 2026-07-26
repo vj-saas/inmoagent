@@ -12,21 +12,37 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import type { Prisma } from '@prisma/client';
+import { MessageDirection, type Prisma } from '@prisma/client';
 import type { Request } from 'express';
 import { TenantThrottlerGuard } from '../../common/tenant-throttler.guard';
+import type { AuthenticatedPersonRequest } from '../../auth/authenticated-person-request';
 import { DebounceBufferService } from '../../pipeline/debounce-buffer.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { PersonOrApiKeyGuard } from '../guards/person-or-api-key.guard';
+import { PersonSessionRequiredGuard } from '../guards/person-session-required.guard';
+import { AdminLeadMessagingService } from './admin-lead-messaging.service';
 import { AdminLeadsService } from './admin-leads.service';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { PatchAssignmentDto } from './dto/patch-assignment.dto';
+import { SendManualMessageDto } from './dto/send-manual-message.dto';
 import { ListLeadsQueryDto } from './list-leads-query.dto';
 
 /** Request que puede traer `person` adjunta por PersonSessionGuard (null bajo API key). */
 type MaybePersonRequest = Request & { person?: { id: string } };
 
 const PAGE_SIZE = 20;
+
+/**
+ * Da forma idéntica al campo derivado `lastInboundAt` en `getOne` y
+ * `messages` (T9, AC-14): mismo nombre de campo, mismo tipo, sin mutar el
+ * `lead` original.
+ */
+function withLastInboundAt<T extends object>(
+  lead: T,
+  lastInboundAt: Date | null,
+): T & { lastInboundAt: Date | null } {
+  return { ...lead, lastInboundAt };
+}
 
 @Controller('admin/tenants/:tenantId/leads')
 @UseGuards(TenantThrottlerGuard, PersonOrApiKeyGuard)
@@ -36,6 +52,7 @@ export class AdminLeadsController {
     private readonly prisma: PrismaService,
     private readonly debounceBuffer: DebounceBufferService,
     private readonly adminLeads: AdminLeadsService,
+    private readonly leadMessaging: AdminLeadMessagingService,
   ) {}
 
   @Get()
@@ -81,7 +98,12 @@ export class AdminLeadsController {
     @Param('tenantId') tenantId: string,
     @Param('leadId') leadId: string,
   ) {
-    return this.adminLeads.findLeadOrThrow(tenantId, leadId);
+    const lead = await this.adminLeads.findLeadOrThrow(tenantId, leadId);
+    const lastInboundAt = await this.leadMessaging.findLastInboundAt(
+      tenantId,
+      leadId,
+    );
+    return withLastInboundAt(lead, lastInboundAt);
   }
 
   @Get(':leadId/messages')
@@ -94,8 +116,46 @@ export class AdminLeadsController {
     const messages = await this.prisma.message.findMany({
       where: { tenantId, leadId },
       orderBy: { createdAt: 'asc' },
+      include: { sentByPerson: { select: { id: true, email: true } } },
     });
-    return { lead, messages };
+
+    // Derivado del array ya cargado (último `direction=IN`), sin repetir la
+    // query de `findLastInboundAt`: coherente con `getOne` porque ambos
+    // pasan por el mismo helper `withLastInboundAt` (AC-14).
+    let lastInboundAt: Date | null = null;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].direction === MessageDirection.IN) {
+        lastInboundAt = messages[i].createdAt;
+        break;
+      }
+    }
+
+    return { lead: withLastInboundAt(lead, lastInboundAt), messages };
+  }
+
+  /**
+   * Envío manual de un asesor humano a un lead (spec V-B2). Requiere sesión de
+   * persona (`PersonSessionRequiredGuard`, T4): bajo API key no hay a quién
+   * atribuir el mensaje como `sentByPersonId`, así que este endpoint SOLO
+   * admite el guard de clase con la rama de sesión. Toda la lógica de negocio
+   * (opt-out, ventana de servicio, lock, transacción, encolado) vive en
+   * `AdminLeadMessagingService.sendManual` (T8) — este método solo adapta el
+   * request HTTP.
+   */
+  @Post(':leadId/send')
+  @UseGuards(PersonSessionRequiredGuard)
+  async send(
+    @Param('tenantId') tenantId: string,
+    @Param('leadId') leadId: string,
+    @Body() dto: SendManualMessageDto,
+    @Req() req: AuthenticatedPersonRequest,
+  ) {
+    return this.leadMessaging.sendManual(
+      tenantId,
+      leadId,
+      req.person.id,
+      dto.text,
+    );
   }
 
   /**
