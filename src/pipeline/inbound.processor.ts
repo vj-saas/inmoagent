@@ -1,6 +1,6 @@
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Logger } from '@nestjs/common';
-import { MessageType } from '@prisma/client';
+import { ConversationState, MessageType } from '@prisma/client';
 import type { Job } from 'bullmq';
 import { ConversationEngine } from '../conversation/conversation.engine';
 import { MessagingService } from '../messaging/messaging.service';
@@ -75,6 +75,27 @@ export class InboundProcessor extends WorkerHost {
     });
   }
 
+  /**
+   * Estados en los que el bot NO puede escribirle al lead bajo ninguna
+   * circunstancia (CLAUDE.md, reglas innegociables #6 y #7):
+   * - `OPTED_OUT`: baja pedida por el lead, no se le vuelve a escribir.
+   * - `HUMAN_HANDOFF`: bot silenciado hasta desbloqueo por admin o timeout.
+   *
+   * Es el mismo criterio que `GuardrailsService` aplica como `silenced` para
+   * los turnos de texto, pero acá se chequea directo sobre `lead.state` en vez
+   * de invocar `evaluate()`: ese método también decide `handoff_timeout_release`
+   * (liberar un handoff vencido) y `opt_out`/`handoff` a partir del TEXTO del
+   * turno, transiciones de FSM que sólo el `ConversationEngine` sabe persistir.
+   * Un sticker no tiene texto y no debe liberar ni transicionar nada: acá sólo
+   * se decide "responder o callarse".
+   */
+  private isSilenced(state: ConversationState): boolean {
+    return (
+      state === ConversationState.OPTED_OUT ||
+      state === ConversationState.HUMAN_HANDOFF
+    );
+  }
+
   private async respondUnsupported(
     tenantId: string,
     leadId: string,
@@ -87,6 +108,13 @@ export class InboundProcessor extends WorkerHost {
       this.logger.error(
         { tenantId, leadId },
         'Tenant o lead no encontrado para responder mensaje no soportado',
+      );
+      return;
+    }
+    if (this.isSilenced(lead.state)) {
+      this.logger.debug(
+        { tenantId, leadId, state: lead.state },
+        'Mensaje no soportado de un lead silenciado: no se responde',
       );
       return;
     }
