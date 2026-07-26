@@ -1,5 +1,7 @@
 # Memory index
 
+- [T4 (V-B2): PersonSessionRequiredGuard](person-session-required-guard-t4.md) — guard marcador, AuthenticatedPersonRequest vive en auth/authenticated-person-request.ts, precedencia API-key-gana de PersonOrApiKeyGuard
+
 - [Setup de vitest en frontend/](frontend-vitest-setup.md) — vitest no estaba instalado pese a tener config; agregarlo es mínimo, verificar con `npx vitest run`
 - [Vitest config compartido en frontend/](vitest-shared-config-frontend.md) — coordinar package.json/vitest.config.ts entre tareas paralelas de tests
 - [AuthContext: idempotencia ante 401 concurrentes](auth-context-401-idempotent.md) — patrón de ref-flag y cómo testear el callback de onUnauthorized sin fetch real
@@ -34,4 +36,12 @@
 - [T5 (onboarding): mock de Prisma compartido en tenants-admin.service.spec.ts](tenantsadmin-webhookstatus-mock-pattern.md) — extender build() existente, no crear factory nueva por método
 - [T4 (onboarding): updateConfig, PATCH vacío no debe pegarle a update](updateconfig-empty-dto-read-pattern.md) — data campo por campo, dto vacío -> findFirst en vez de update, no mueve updatedAt
 - [T6 (onboarding): DI check de módulos con BullMQ se cuelga sin Redis](bullmq-blocks-nest-testingmodule-compile-without-redis.md) — Test.createTestingModule().compile() no termina si PipelineModule está en el árbol y no hay Redis real
+- [userEvent.setup() pisa navigator.clipboard mockeado antes](usereventsetup-overwrites-navigator-clipboard.md) — mockear clipboard con spyOn DESPUÉS de userEvent.setup(), no con defineProperty antes
+- [T14 (onboarding): TenantConfigForm PATCH parcial + preview client-side](tenantconfigform-partial-patch-preview.md) — Set<field> tocado, preview no debe ser idéntica al backend; ReadinessChecklist con decisión alertsEnabled documentada
+- [T15 (onboarding): WebhookStatusCard umbral 24hs + disclaimer](webhookstatuscard-threshold-pattern.md) — heurística de UI documentada en comentario, disclaimer siempre presente en los 3 estados
+- [T17 (onboarding): OnboardingWizardPage orquestación](onboardingwizardpage-t17-orchestration.md) — CsvUploader/WebhookStatusCard no exponen callback de éxito, hay que duplicar la llamada en el padre
+- [T20 (onboarding): verificación AC-16 sin cambios](t20-ac16-regression-verification.md) — tarea de solo-correr-tests; 541 tests totales en verde tras T1-T19, no tocar código si pasan
+- [T18 (onboarding): TenantConfigPage sin GET de config](t18-tenantconfigpage-no-get-endpoint.md) — form arranca vacío, se completa tras primer submit; restricción de rol calcada de /people (solo nav-link)
+- [T17 (B2-bandeja-manual): ReleaseHandoffButton + Modal](releasehandoffbutton-t17-modal-pattern.md) — copiar patrón de SuppressLeadButton; grep del testid en toda la suite antes de cerrar, rompe LeadDetailPage.test.tsx si no
+- [T14 (B2-bandeja-manual): LeadModeBadge/resolveLeadMode](leadmodebadge-t14-pattern.md) — punto único de derivación de modo del lead; distinguir fallas propias vs. de tareas paralelas con git status
 
