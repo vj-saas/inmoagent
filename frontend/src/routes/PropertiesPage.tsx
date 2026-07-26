@@ -174,6 +174,7 @@ export function PropertiesPage(): JSX.Element {
   };
 
   const handleChangeStatus = (property: Property): void => {
+    setDeleteProperty(null);
     setStatusProperty(property);
   };
 
@@ -187,6 +188,7 @@ export function PropertiesPage(): JSX.Element {
   };
 
   const handleDelete = (property: Property): void => {
+    setStatusProperty(null);
     setDeleteProperty(property);
   };
 

@@ -201,6 +201,25 @@ describe('PropertiesPage', () => {
     expect(endpoints.listProperties).toHaveBeenCalledTimes(1);
   });
 
+  it('abrir "Cambiar estado" cierra el panel de borrado, y viceversa (sin dos cards a la vez)', async () => {
+    vi.spyOn(endpoints, 'listProperties').mockResolvedValue(buildResponse());
+
+    renderPropertiesPage();
+    await screen.findByTestId('property-row-prop-1');
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Borrar' }));
+    expect(screen.getByTestId('delete-property-button')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Cambiar estado' }));
+    expect(screen.queryByTestId('delete-property-button')).not.toBeInTheDocument();
+    expect(screen.getByTestId('property-status-control')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Borrar' }));
+    expect(screen.getByTestId('delete-property-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('property-status-control')).not.toBeInTheDocument();
+  });
+
   it('cerrar el modal de importar CSV dispara un refetch de la lista', async () => {
     vi.spyOn(endpoints, 'listProperties').mockResolvedValue(buildResponse());
 
