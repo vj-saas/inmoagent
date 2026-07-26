@@ -43,19 +43,51 @@ actual real — esto puede haber avanzado si algo siguió corriendo en backgroun
   filtros de bandeja) vería datos sucios en leads liberados por timeout. Si
   se quiere cerrar, es una tarea aparte con su propio test.
 
+- **V-D (portal de gestión de propiedades): CERRADA por completo**
+  (2026-07-26). Las 19 tareas de `specs/V-D-portal-propiedades/tasks.md`
+  (T1-T19) están implementadas, testeadas y pusheadas a `main`. Los 6
+  grupos pasaron `code-reviewer` de forma independiente; se encontraron y
+  corrigieron 2 hallazgos reales en el camino (no solo sugerencias):
+  un `<form>` anidado en `PhotoListEditor` que disparaba el guardado
+  completo de la propiedad al agregar una foto por URL (commit `5af014b`),
+  y dos paneles de acción ("Cambiar estado"/"Borrar") que podían quedar
+  visibles a la vez sin exclusión mutua (commit `c688c2c`). Estado final de
+  la suite: backend unit 49 suites / 428 tests, backend e2e 22 suites / 296
+  tests, frontend 64 archivos / 481 tests — todo en verde.
+
+  El backend ahora soporta filtros extendidos de listado
+  (`neighborhood`/`minPrice`/`maxPrice`/`rooms`/`q`, T1), bloquea el borrado
+  de una propiedad con citas agendadas (409, T2), sincroniza fotos en
+  `update` (T3), y expone upload de fotos por archivo
+  (`PropertyPhotoStorageService`, T5) aislado por tenant a nivel de
+  filesystem (segunda superficie de aislamiento multi-tenant, además de la
+  DB), servido como estático desde `useStaticAssets` (T6). El frontend tiene
+  una pantalla `/propiedades` completa (`PropertiesPage`, T16) visible para
+  `OWNER` y `AGENT` por igual (T17): listado con filtros, alta/edición
+  (`PropertyForm`, T13), cambio de estado, borrado con confirmación, editor
+  de fotos con upload o URL (`PhotoListEditor`, T12), e import CSV
+  reutilizado sin cambios.
+
+  **Requiere acción manual del usuario en Railway**: `railway.toml` declara
+  un volumen persistente (`T7`) para las fotos subidas, pero no se pudo
+  verificar desde este entorno si el proyecto real de Railway soporta ese
+  bloque de config-as-code. Si no lo toma solo en el próximo deploy, hay
+  que crear el volumen manualmente (`railway volume add`, mount path
+  `/data/uploads`, 5 GB iniciales — pasos documentados en
+  `docs/06-DEPLOY.md`) y mantener **una sola réplica** del backend mientras
+  se use ese volumen (el disco no se comparte entre réplicas).
+
+  Desvío conocido y aprobado por el usuario en el plan: el rechazo de un
+  archivo de foto demasiado grande (>5MB) responde **413**, no el 400 que
+  pedía la spec original (limitación de cómo Nest/multer manejan el límite
+  del interceptor) — el frontend trata ambos códigos igual.
+
 ## Sin arrancar — próxima spec candidata
 
-Con B2 cerrada y el hallazgo de `respondUnsupported` resuelto, la candidata
-para la próxima ronda es aprobar y planear V-D (portal de propiedades, ver
-abajo) — no hay más follow-ups sueltos pendientes.
-
-## Spec en espera de aprobación — Portal de gestión de propiedades (V-D)
-
-- `specs/V-D-portal-propiedades/spec.md` está escrita (302 líneas, incluye ya
-  la decisión de upload de fotos por archivo, commit `501a689`). **Todavía no
-  tiene `plan.md` ni `tasks.md` — no arrancar implementación sin aprobar la
-  spec primero** (despachar `planner` cuando el usuario confirme el alcance).
-- Backend CRUD ya existe (`src/admin/properties/`); falta solo el frontend.
+Con B2 y V-D cerradas, no hay ninguna spec en curso ni follow-up bloqueante
+pendiente. Revisar `docs/07-PLAN-VENTA.md` para elegir la próxima fase (D,
+E o F, ver abajo) o levantar una spec nueva si el usuario tiene un pedido
+puntual.
 
 ## Hallazgo resuelto (2026-07-26) — guardrail de mensajes no soportados
 
@@ -101,10 +133,11 @@ abajo) — no hay más follow-ups sueltos pendientes.
    confirmar qué quedó commiteado/pusheado realmente (este handoff puede
    estar desactualizado si algo terminó de correr en background después de
    escribirlo).
-3. B2 cerrada y el hallazgo de `respondUnsupported` resuelto. Siguiente
-   candidata: aprobar/planear V-D (portal de propiedades). Correr
-   `npm run test` (backend) y `npx vitest run` (frontend) antes de arrancar
-   para confirmar que no se rompió nada.
+3. B2 y V-D cerradas. No hay spec en curso. Antes de arrancar algo nuevo,
+   confirmar con el usuario si ya provisionó el volumen de Railway para las
+   fotos de propiedades (ver sección de V-D arriba). Correr `npm run test`
+   (backend) y `npx vitest run` (frontend) antes de arrancar cualquier
+   trabajo nuevo para confirmar que no se rompió nada.
 4. Los agentes en background NO sobreviven al cierre de la sesión/chat — no
    asumas que van a seguir corriendo ni que vas a recibir su notificación
    final en el chat nuevo.

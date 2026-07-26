@@ -62,4 +62,6 @@
 - [T3 (V-D-portal-propiedades): update() transaccional para fotos](t3-update-photos-transaction-pattern.md) — deleteMany+createMany dentro de $transaction, photoUrls undefined no toca fotos, [] borra todas
 - [T18 (V-D-portal-propiedades): e2e portal, normalización de neighborhood en fixtures](t18-admin-properties-portal-e2e-neighborhood-normalization.md) — enum en mayúsculas usado como barrio rompe el filtro si no se normaliza igual que `create()`
 - [T13 (V-D-portal-propiedades): PropertyForm.tsx, mapeo de error por substring](propertyform-t13-field-error-mapping.md) — ConflictError/ValidationError se importan de http-client.ts, no de endpoints.ts; PhotoListEditor anida <form>, solo warning
+- [Fix bug crítico: form anidado en PhotoListEditor disparaba guardado completo](photolisteditor-nested-form-bugfix.md) — nunca anidar <form>, usar button type="button"+onKeyDown; test debe montar dentro de form real
+- [T16 (V-D-portal-propiedades): PropertiesPage, paneles inline en vez de modal anidado](t16-propertiespage-inline-action-panels.md) — DeletePropertyButton ya trae su propio modal+ErrorBanner, no reenvolver
 
