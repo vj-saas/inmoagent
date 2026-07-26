@@ -18,6 +18,7 @@ import { MetricsService } from './metrics/metrics.service';
 import { AdminPropertiesController } from './properties/admin-properties.controller';
 import { CsvImportService } from './properties/csv-import.service';
 import { PropertiesAdminService } from './properties/properties-admin.service';
+import { PropertyPhotoStorageService } from './properties/property-photo-storage.service';
 import { AdminTenantsController } from './tenants/admin-tenants.controller';
 import { TenantsAdminService } from './tenants/tenants-admin.service';
 
@@ -45,6 +46,7 @@ import { TenantsAdminService } from './tenants/tenants-admin.service';
     AdminLeadMessagingService,
     PropertiesAdminService,
     CsvImportService,
+    PropertyPhotoStorageService,
     MetricsService,
     AppointmentsAdminService,
   ],

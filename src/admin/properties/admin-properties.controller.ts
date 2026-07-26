@@ -5,6 +5,9 @@ import {
   Delete,
   Get,
   HttpCode,
+  HttpException,
+  InternalServerErrorException,
+  Logger,
   Param,
   Patch,
   Post,
@@ -22,6 +25,11 @@ import { CreatePropertyDto } from './create-property.dto';
 import { CsvImportResult, CsvImportService } from './csv-import.service';
 import { ListPropertiesQueryDto } from './list-properties-query.dto';
 import { PropertiesAdminService } from './properties-admin.service';
+import {
+  MAX_PHOTO_BYTES,
+  PropertyPhotoStorageService,
+} from './property-photo-storage.service';
+import type { StoredPhoto } from './property-photo-storage.service';
 import { UpdatePropertyStatusDto } from './update-property-status.dto';
 import { UpdatePropertyDto } from './update-property.dto';
 
@@ -31,9 +39,12 @@ const MAX_CSV_BYTES = 5 * 1024 * 1024;
 @UseGuards(TenantThrottlerGuard, PersonOrApiKeyGuard)
 @Throttle({ default: { limit: 120, ttl: 60_000 } })
 export class AdminPropertiesController {
+  private readonly logger = new Logger(AdminPropertiesController.name);
+
   constructor(
     private readonly properties: PropertiesAdminService,
     private readonly csvImport: CsvImportService,
+    private readonly photoStorage: PropertyPhotoStorageService,
   ) {}
 
   @Get()
@@ -57,6 +68,52 @@ export class AdminPropertiesController {
       throw new BadRequestException('Falta el archivo CSV (campo "file")');
     }
     return this.csvImport.import(tenantId, file.buffer.toString('utf-8'));
+  }
+
+  /**
+   * Subida de una foto de propiedad. Sin `storage` explícito: multer usa
+   * `memoryStorage`, así que nada toca disco antes de validar tamaño y tipo
+   * real. Hereda los guards de clase (`TenantThrottlerGuard` +
+   * `PersonOrApiKeyGuard`), que ya acotan la subida al tenant de la URL.
+   */
+  @Post('photos')
+  @HttpCode(201)
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: MAX_PHOTO_BYTES } }),
+  )
+  async uploadPhoto(
+    @Param('tenantId') tenantId: string,
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ): Promise<StoredPhoto> {
+    if (!file) {
+      throw new BadRequestException(
+        'Falta el archivo de imagen (campo "file")',
+      );
+    }
+
+    try {
+      return await this.photoStorage.save(tenantId, {
+        buffer: file.buffer,
+        size: file.size,
+      });
+    } catch (error: unknown) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      const code = (error as NodeJS.ErrnoException | null)?.code;
+      this.logger.error(
+        { tenantId, code, err: error },
+        'Falló el guardado de la foto de propiedad',
+      );
+      if (code === 'ENOSPC') {
+        throw new InternalServerErrorException(
+          'No hay espacio disponible para guardar la foto. Contactá al soporte.',
+        );
+      }
+      throw new InternalServerErrorException(
+        'No se pudo guardar la foto. Intentá de nuevo en unos minutos.',
+      );
+    }
   }
 
   @Get(':propertyId')
