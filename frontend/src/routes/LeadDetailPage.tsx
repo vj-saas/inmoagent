@@ -40,10 +40,23 @@ import { AssignmentControl } from '../components/leads/AssignmentControl';
 import { ReleaseHandoffButton } from '../components/leads/ReleaseHandoffButton';
 import { OptOutButton } from '../components/leads/OptOutButton';
 import { SuppressLeadButton } from '../components/leads/SuppressLeadButton';
+import { LeadModeBadge, resolveLeadMode, type LeadMode } from '../components/leads/LeadModeBadge';
+import { ManualReplyBox } from '../components/leads/ManualReplyBox';
 
 function errorMessage(err: Error): string {
   return err.message || 'Ocurrió un error inesperado.';
 }
+
+/**
+ * Color de fondo del header de la card de mensajes, derivado del mismo
+ * `resolveLeadMode` que usa `LeadModeBadge` (AC-15, AC-20: mismo criterio en
+ * toda la ficha).
+ */
+const MODE_HEADER_CLASSES: Record<LeadMode, string> = {
+  MANUAL: 'bg-warning/10',
+  OPTED_OUT: 'bg-danger/10',
+  AI: 'bg-success/10',
+};
 
 export function LeadDetailPage(): JSX.Element {
   const { leadId } = useParams<{ leadId: string }>();
@@ -72,12 +85,22 @@ export function LeadDetailPage(): JSX.Element {
       .catch(() => {});
   };
 
+  const fetchMessages = (): void => {
+    messagesApi.run(tenantId, leadId ?? '', authToken).catch(() => {});
+  };
+
+  /** Refetch tras un envío manual exitoso (AC-16): el header cambia de color. */
+  const handleManualReplySent = (): void => {
+    fetchLead();
+    fetchMessages();
+  };
+
   useEffect(() => {
     if (!tenantId || !leadId) return;
 
     fetchLead();
 
-    messagesApi.run(tenantId, leadId, authToken).catch(() => {});
+    fetchMessages();
 
     notesApi
       .run(tenantId, leadId, authToken)
@@ -155,11 +178,21 @@ export function LeadDetailPage(): JSX.Element {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader
+          data-testid="messages-card-header"
+          className={`flex items-center justify-between ${MODE_HEADER_CLASSES[resolveLeadMode(lead.state)]}`}
+        >
           <h2 className="text-base font-semibold text-text">Mensajes</h2>
+          <LeadModeBadge state={lead.state} />
         </CardHeader>
-        <CardBody>
+        <CardBody className="flex flex-col gap-4">
           <MessageTimeline messages={messages} />
+          <ManualReplyBox
+            lead={lead}
+            tenantId={tenantId}
+            token={authToken}
+            onSent={handleManualReplySent}
+          />
         </CardBody>
       </Card>
 

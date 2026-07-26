@@ -33,6 +33,7 @@ function buildLead(overrides: Partial<Lead> = {}): Lead {
     handoffAt: null,
     optedOutAt: null,
     lastMessageAt: null,
+    lastInboundAt: null,
     greetedAt: null,
     lastSearchIds: [],
     turnCount: 1,
@@ -231,5 +232,99 @@ describe('LeadDetailPage', () => {
       expect(screen.queryByTestId('release-handoff-button')).not.toBeInTheDocument();
     });
     expect(getLeadSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('AC-15: muestra LeadModeBadge y colorea el header de mensajes según el modo (MANUAL)', async () => {
+    vi.spyOn(endpoints, 'getLead').mockResolvedValue(buildLead({ state: 'HUMAN_HANDOFF' }));
+    vi.spyOn(endpoints, 'getLeadMessages').mockResolvedValue({ lead: buildLead(), messages: [] });
+    vi.spyOn(endpoints, 'getLeadNotes').mockResolvedValue({ notes: [] });
+    vi.spyOn(endpoints, 'listAssignableUsers').mockResolvedValue({ users: [] });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('lead-mode-badge')).toBeInTheDocument();
+    });
+    expect(screen.getByText('Respondiendo vos')).toBeInTheDocument();
+    expect(screen.getByTestId('messages-card-header')).toHaveClass('bg-warning/10');
+    // El botón de liberar handoff también está visible en HUMAN_HANDOFF (T17).
+    expect(screen.getByTestId('release-handoff-button')).toBeInTheDocument();
+  });
+
+  it('AC-15: header de mensajes en verde (AI) cuando el lead no está en handoff ni opt-out', async () => {
+    vi.spyOn(endpoints, 'getLead').mockResolvedValue(buildLead({ state: 'QUALIFICATION' }));
+    vi.spyOn(endpoints, 'getLeadMessages').mockResolvedValue({ lead: buildLead(), messages: [] });
+    vi.spyOn(endpoints, 'getLeadNotes').mockResolvedValue({ notes: [] });
+    vi.spyOn(endpoints, 'listAssignableUsers').mockResolvedValue({ users: [] });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('messages-card-header')).toHaveClass('bg-success/10');
+    });
+    expect(screen.getByText('Agente IA activo')).toBeInTheDocument();
+    // Fuera de HUMAN_HANDOFF, el botón de liberar handoff no se muestra.
+    expect(screen.queryByTestId('release-handoff-button')).not.toBeInTheDocument();
+  });
+
+  it('AC-15: header de mensajes en rojo (OPTED_OUT) y ManualReplyBox deshabilitado', async () => {
+    vi.spyOn(endpoints, 'getLead').mockResolvedValue(buildLead({ state: 'OPTED_OUT' }));
+    vi.spyOn(endpoints, 'getLeadMessages').mockResolvedValue({ lead: buildLead(), messages: [] });
+    vi.spyOn(endpoints, 'getLeadNotes').mockResolvedValue({ notes: [] });
+    vi.spyOn(endpoints, 'listAssignableUsers').mockResolvedValue({ users: [] });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('messages-card-header')).toHaveClass('bg-danger/10');
+    });
+    expect(screen.getByText('Dado de baja')).toBeInTheDocument();
+    expect(screen.getByTestId('manual-reply-disabled-reason')).toBeInTheDocument();
+  });
+
+  it('AC-16: ManualReplyBox está cableado bajo el timeline y su envío refetchea lead + mensajes', async () => {
+    const user = userEvent.setup();
+    const recentInbound = new Date().toISOString();
+    const getLeadSpy = vi
+      .spyOn(endpoints, 'getLead')
+      .mockResolvedValueOnce(buildLead({ state: 'HUMAN_HANDOFF', lastInboundAt: recentInbound }))
+      .mockResolvedValueOnce(buildLead({ state: 'QUALIFICATION', lastInboundAt: recentInbound }));
+    const getLeadMessagesSpy = vi
+      .spyOn(endpoints, 'getLeadMessages')
+      .mockResolvedValue({ lead: buildLead(), messages: [] });
+    vi.spyOn(endpoints, 'getLeadNotes').mockResolvedValue({ notes: [] });
+    vi.spyOn(endpoints, 'listAssignableUsers').mockResolvedValue({ users: [] });
+    vi.spyOn(endpoints, 'sendManualMessage').mockResolvedValue({
+      message: {
+        id: 'msg-1',
+        leadId: LEAD_ID,
+        tenantId: TENANT_ID,
+        direction: 'OUT',
+        body: 'Hola, ¿en qué te puedo ayudar?',
+        sentByPersonId: 'person-1',
+        createdAt: '2026-07-01T12:00:00.000Z',
+      },
+      lead: buildLead({ state: 'HUMAN_HANDOFF' }),
+    } as unknown as Awaited<ReturnType<typeof endpoints.sendManualMessage>>);
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByTestId('manual-reply-box')).toBeInTheDocument();
+    });
+
+    await user.type(
+      screen.getByTestId('manual-reply-textarea'),
+      'Hola, ¿en qué te puedo ayudar?',
+    );
+    await user.click(screen.getByTestId('manual-reply-send'));
+
+    await waitFor(() => {
+      expect(getLeadSpy).toHaveBeenCalledTimes(2);
+    });
+    expect(getLeadMessagesSpy).toHaveBeenCalledTimes(2);
+    await waitFor(() => {
+      expect(screen.getByTestId('messages-card-header')).toHaveClass('bg-success/10');
+    });
   });
 });
