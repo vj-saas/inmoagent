@@ -64,6 +64,22 @@ describe('AppLayout', () => {
     expect(screen.getByText('Panel')).toBeInTheDocument();
   });
 
+  it('muestra el link de Propiedades para OWNER (V-D AC-14)', () => {
+    setSession({ token: 't1', role: 'OWNER', tenantId: 'tenant-1', email: 'owner@a.com' });
+
+    renderAppLayout();
+
+    expect(screen.getByText('Propiedades')).toBeInTheDocument();
+  });
+
+  it('muestra el link de Propiedades para AGENT (V-D AC-14)', () => {
+    setSession({ token: 't2', role: 'AGENT', tenantId: 'tenant-1', email: 'agent@a.com' });
+
+    renderAppLayout();
+
+    expect(screen.getByText('Propiedades')).toBeInTheDocument();
+  });
+
   it('muestra el link de gestion de personas para OWNER (AC-7)', () => {
     setSession({ token: 't1', role: 'OWNER', tenantId: 'tenant-1', email: 'owner@a.com' });
 

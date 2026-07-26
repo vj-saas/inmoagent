@@ -5,6 +5,9 @@
  *   `OWNER` y `AGENT` (AC-1; accesible desde el layout autenticado).
  * - Muestra el link de navegacion a "Panel" (dashboard) para ambos roles
  *   `OWNER` y `AGENT` (AC-8; accesible desde el layout autenticado).
+ * - Muestra el link de navegacion a "Propiedades" para ambos roles `OWNER`
+ *   y `AGENT`, sin condicional de rol (V-D, AC-14: ambos roles gestionan
+ *   propiedades por igual).
  * - Muestra el link de navegacion a "Gestion de personas" solo si
  *   `person.role === 'OWNER'` (AC-7); un AGENT no debe verlo (AC-8).
  * - Muestra el link de navegacion a "Configuracion" solo si
@@ -42,6 +45,7 @@ export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
           <Link to="/dashboard" className={navLinkClassName}>Panel</Link>
           <Link to="/agenda" className={navLinkClassName}>Agenda</Link>
           <Link to="/llamar-hoy" className={navLinkClassName}>Llamar hoy</Link>
+          <Link to="/propiedades" className={navLinkClassName}>Propiedades</Link>
           {person?.role === 'OWNER' && (
             <Link to="/people" className={navLinkClassName}>Gestión de personas</Link>
           )}
