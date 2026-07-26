@@ -36,6 +36,9 @@ lerna-debug.log*
 tmp/
 temp/
 
+# Directorio local de fotos de propiedades (no versionado en dev, se genera en prod con volumen)
+uploads/
+
 # Transcripts regenerables del simulador de personas (scripts/sim-personas.ts).
 # Se generan localmente; no se versionan. Ver docs/QA-SIMULACION-PERSONAS.md.
 scripts/sim-report*.md

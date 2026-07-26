@@ -34,12 +34,46 @@ healthcheck en `/health`, y reinicia el servicio ante fallas
    vez de copiar el valor a mano — así si rota la contraseña no hay que tocar
    nada acá).
 
-## 3. Variables de entorno del backend
+## 3. Volumen persistente para fotos
+
+Las fotos de propiedades se almacenan en el filesystem bajo `UPLOADS_DIR`
+(`/data/uploads` en producción). Para que persistan entre redeploys y reintentos
+automáticos, necesitás un volumen persistente.
+
+1. **Opción A (recomendada, si el schema de `railway.toml` lo soporta):**
+   El archivo `railway.toml` ya declara el volumen:
+   ```toml
+   [[deploy.volumes]]
+   mountPath = "/data/uploads"
+   name = "uploads"
+   ```
+   Railway crea el volumen automáticamente en el primer deploy. No hay pasos
+   manuales.
+
+2. **Opción B (si A no valida):** Desde la CLI de Railway o la consola web:
+   ```bash
+   railway volume add --name uploads --mount-path /data/uploads --size 5
+   ```
+   (crea un volumen de 5 GB con mount path `/data/uploads`).
+
+   En ese caso, configura en el `railway.toml` solo lo que sea soportado por
+   tu versión, y Railway reconocerá el volumen ya creado.
+
+**Restricción operativa:** mientras uses volumen local (no compartido entre
+réplicas), el backend debe correr **en una sola réplica**. En Railway: pestaña
+**Settings** del servicio → **Deployment** → **Processes** → `1` (default).
+Levantar más réplicas sin un filesystem compartido haría que cada una escribiera
+en su propio disco y se perdería coherencia. Si necesitás escalar horizontalmente,
+migrá a un almacenamiento externo (ej. S3, ver `docs/07-S3.md` si se agrega).
+
+## 4. Variables de entorno del backend
 
 En el servicio del backend, pestaña **Variables**, cargá (valores reales):
 
 - `DATABASE_URL` — referenciada del plugin de Postgres (§2)
 - `REDIS_URL` — referenciada del plugin de Redis (§2)
+- `UPLOADS_DIR` — path del volumen persistente para fotos; debe ser `/data/uploads`
+  (se monta en §3)
 - `META_APP_SECRET`, `META_VERIFY_TOKEN` — de la app de Meta (ver
   `05-OPERACIONES.md` §1)
 - `APP_ENCRYPTION_KEY` — 32 bytes hex:
@@ -51,14 +85,14 @@ En el servicio del backend, pestaña **Variables**, cargá (valores reales):
   `LLM_MODEL`, `STT_PROVIDER`, `DEBOUNCE_SECONDS`, `USD_ARS_RATE`,
   `WA_SANDBOX_AR_RECIPIENT=false`.
 
-## 4. Dominio público
+## 5. Dominio público
 
 1. En el servicio del backend: **Settings → Networking → Generate Domain**.
    Railway asigna una URL `https://<algo>.up.railway.app`.
 2. Copiá esa URL a `PUBLIC_BASE_URL` en Variables y hacé **Redeploy** (el valor
    se conoce recién después de generar el dominio).
 
-## 5. Deploy
+## 6. Deploy
 
 Railway despliega solo al conectar el repo y en cada push a la rama conectada
 (`main`). El `CMD` del `Dockerfile` corre `prisma migrate deploy` (aplica
@@ -79,7 +113,7 @@ DATABASE_URL="postgresql://...railway..." npx prisma db seed
 
 (Imprime la API key del tenant demo una única vez — guardala.)
 
-## 6. Conectar el webhook de Meta
+## 7. Conectar el webhook de Meta
 
 Con la app online, en la consola de Meta (WhatsApp → Configuration → Webhook):
 
@@ -90,7 +124,7 @@ Con la app online, en la consola de Meta (WhatsApp → Configuration → Webhook
 Meta hace un `GET` de verificación; el backend responde el `hub.challenge` si el
 token coincide. Detalle completo en `05-OPERACIONES.md` §1.
 
-## 7. Actualizaciones y costos
+## 8. Actualizaciones y costos
 
 - Railway redeploya automáticamente en cada push a `main`; una migración nueva
   se aplica sola al bootear. No hay paso manual.

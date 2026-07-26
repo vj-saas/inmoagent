@@ -69,6 +69,10 @@ export const envSchema = z.object({
     .string()
     .default('http://localhost:5173')
     .transform((value) => value.split(',').map((origin) => origin.trim())),
+
+  // Directorio para almacenar fotos de propiedades subidas (path relativo o absoluto).
+  // En desarrollo: ./uploads. En producción: punto de montaje de volumen persistente.
+  UPLOADS_DIR: z.string().min(1).default('./uploads'),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

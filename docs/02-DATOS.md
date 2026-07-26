@@ -114,7 +114,7 @@ model PropertyPhoto {
   id         String   @id @default(cuid())
   propertyId String
   property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
-  url        String                          // URL pública (https) accesible por Meta
+  url        String                          // URL pública (https) accesible por Meta. Puede apuntar a URLs externas o al propio backend (PUBLIC_BASE_URL + /uploads/...)
   position   Int      @default(0)
 
   @@index([propertyId, position])
