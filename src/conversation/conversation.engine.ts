@@ -34,6 +34,7 @@ import { GuardrailsService } from './guardrails/guardrails.service';
 import type { GuardrailAction } from './guardrails/guardrails.types';
 import { LeadAlertService } from './lead-alert.service';
 import { OutputValidatorService } from './output-validator.service';
+import { resolveReleaseState } from './release-state.util';
 import { SafeReplyService } from './safe-reply.service';
 import {
   buildHandoffFarewell,
@@ -89,7 +90,11 @@ export class ConversationEngine {
     }
 
     const guardrailAction = this.guardrails.evaluate(lead, turnText);
-    const guardrailOutcome = this.resolveGuardrail(tenant, guardrailAction);
+    const guardrailOutcome = this.resolveGuardrail(
+      tenant,
+      lead,
+      guardrailAction,
+    );
 
     if (guardrailAction.type === 'handoff') {
       // Handoff explícito recién iniciado (no un re-pedido sobre un lead ya en HUMAN_HANDOFF).
@@ -247,8 +252,15 @@ export class ConversationEngine {
     }
   }
 
+  /**
+   * Traduce la acción de los guardrails a un efecto sobre el turno. Recibe el
+   * `lead` porque la liberación por timeout de 48hs necesita saber hasta dónde
+   * había llegado la conversación (ver `handoff_timeout_release`); el resto de
+   * las ramas no dependen del lead y quedan igual que antes.
+   */
   private resolveGuardrail(
     tenant: Tenant,
+    lead: Lead,
     action: GuardrailAction,
   ): GuardrailOutcome {
     switch (action.type) {
@@ -273,11 +285,15 @@ export class ConversationEngine {
       case 'silenced':
         return { stop: true, replies: [], leadUpdate: {} };
       case 'handoff_timeout_release':
+        // El estado de retorno lo decide la FSM, no un hardcodeo: mismo criterio
+        // que el release manual del admin (`resolveReleaseState`, spec V-B2
+        // decisión 5 / AC-8). Un lead al que ya se le mostraron fichas vuelve a
+        // SEARCH_MATCH y no se le vuelve a preguntar todo de cero.
         return {
           stop: false,
           replies: [HANDOFF_TIMEOUT_APOLOGY],
           leadUpdate: {
-            state: ConversationState.QUALIFICATION,
+            state: resolveReleaseState(lead),
             handoffAt: null,
           },
         };
