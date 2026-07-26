@@ -51,8 +51,8 @@ export class InboundProcessor extends WorkerHost {
     leadId,
     messageId,
   }: MessageQueueJob): Promise<void> {
-    const message = await this.prisma.message.findUnique({
-      where: { id: messageId },
+    const message = await this.prisma.message.findFirst({
+      where: { id: messageId, tenantId },
     });
     if (!message) {
       this.logger.warn(

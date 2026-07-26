@@ -28,7 +28,7 @@ const LEAD = {
 
 function build(message: Partial<Message> | null, lead: Lead = LEAD) {
   const prisma = {
-    message: { findUnique: jest.fn().mockResolvedValue(message) },
+    message: { findFirst: jest.fn().mockResolvedValue(message) },
     lead: { findFirst: jest.fn().mockResolvedValue(lead) },
   } as unknown as PrismaService;
   const tenants = {
