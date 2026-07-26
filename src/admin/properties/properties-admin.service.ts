@@ -156,32 +156,51 @@ export class PropertiesAdminService {
     propertyId: string,
     dto: UpdatePropertyDto,
   ): Promise<Property> {
-    await this.getOne(tenantId, propertyId); // 404 si no existe / no es de este tenant
-    return this.prisma.property.update({
-      where: { id: propertyId },
-      data: {
-        title: dto.title,
-        description: dto.description,
-        operation: dto.operation,
-        propertyType: dto.propertyType,
-        price: dto.price,
-        currency: dto.currency,
-        expenses: dto.expenses,
-        neighborhood: dto.neighborhood
-          ? normalizeNeighborhood(dto.neighborhood)
-          : undefined,
-        city: dto.city,
-        address: dto.address,
-        rooms: dto.rooms,
-        bedrooms: dto.bedrooms,
-        bathrooms: dto.bathrooms,
-        areaM2: dto.areaM2,
-        garage: dto.garage,
-        petsAllowed: dto.petsAllowed,
-        features: dto.features,
-        listingUrl: dto.listingUrl,
-      },
-      include: PROPERTY_INCLUDE,
+    return this.prisma.$transaction(async (tx) => {
+      await this.findOneOrThrow(tx, tenantId, propertyId); // 404 si no existe / no es de este tenant
+
+      // AC-7: solo se actualizan los campos enviados. `photoUrls === undefined`
+      // no toca fotos; presente (incluido `[]`) hace reemplazo completo
+      // (divergencia deliberada de `upsertByExternalRef`, que no se toca).
+      if (dto.photoUrls !== undefined) {
+        await tx.propertyPhoto.deleteMany({ where: { propertyId } });
+        if (dto.photoUrls.length > 0) {
+          await tx.propertyPhoto.createMany({
+            data: dto.photoUrls.map((url, position) => ({
+              propertyId,
+              url,
+              position,
+            })),
+          });
+        }
+      }
+
+      return tx.property.update({
+        where: { id: propertyId },
+        data: {
+          title: dto.title,
+          description: dto.description,
+          operation: dto.operation,
+          propertyType: dto.propertyType,
+          price: dto.price,
+          currency: dto.currency,
+          expenses: dto.expenses,
+          neighborhood: dto.neighborhood
+            ? normalizeNeighborhood(dto.neighborhood)
+            : undefined,
+          city: dto.city,
+          address: dto.address,
+          rooms: dto.rooms,
+          bedrooms: dto.bedrooms,
+          bathrooms: dto.bathrooms,
+          areaM2: dto.areaM2,
+          garage: dto.garage,
+          petsAllowed: dto.petsAllowed,
+          features: dto.features,
+          listingUrl: dto.listingUrl,
+        },
+        include: PROPERTY_INCLUDE,
+      });
     });
   }
 

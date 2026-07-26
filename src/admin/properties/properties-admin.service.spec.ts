@@ -2,6 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { OperationType, PropertyStatus, type Prisma } from '@prisma/client';
 import type { PrismaService } from '../../prisma/prisma.service';
 import { PropertiesAdminService } from './properties-admin.service';
+import type { UpdatePropertyDto } from './update-property.dto';
 
 const TENANT = 'tenant-1';
 const PROPERTY_ID = 'property-1';
@@ -52,6 +53,45 @@ function buildForRemove(options: {
     propertyFindFirst,
     propertyDelete,
     appointmentFindFirst,
+  };
+}
+
+/**
+ * Mock de `PrismaService` para `update`: `$transaction` interactivo ejecuta el
+ * callback con un `tx` que expone `property.findFirst`/`update` y
+ * `propertyPhoto.deleteMany`/`createMany`.
+ */
+function buildForUpdate(options: { property?: unknown } = {}) {
+  const propertyFindFirst = jest
+    .fn()
+    .mockResolvedValue(
+      'property' in options
+        ? options.property
+        : { id: PROPERTY_ID, tenantId: TENANT },
+    );
+  const propertyUpdate = jest
+    .fn()
+    .mockResolvedValue({ id: PROPERTY_ID, tenantId: TENANT });
+  const photoDeleteMany = jest.fn().mockResolvedValue({ count: 0 });
+  const photoCreateMany = jest.fn().mockResolvedValue({ count: 0 });
+
+  const tx = {
+    property: { findFirst: propertyFindFirst, update: propertyUpdate },
+    propertyPhoto: {
+      deleteMany: photoDeleteMany,
+      createMany: photoCreateMany,
+    },
+  };
+
+  const prisma = {
+    $transaction: jest.fn((cb: (t: typeof tx) => unknown) => cb(tx)),
+  } as unknown as PrismaService;
+
+  return {
+    service: new PropertiesAdminService(prisma),
+    propertyUpdate,
+    photoDeleteMany,
+    photoCreateMany,
   };
 }
 
@@ -261,5 +301,71 @@ describe('PropertiesAdminService.remove — AC-9/AC-10', () => {
     expect(propertyDelete).toHaveBeenCalledWith({
       where: { id: PROPERTY_ID },
     });
+  });
+});
+
+describe('PropertiesAdminService.update — fotos (AC-7/AC-11/AC-12)', () => {
+  it('photoUrls presente: reemplazo completo, position = índice del array', async () => {
+    const { service, photoDeleteMany, photoCreateMany } = buildForUpdate();
+
+    await service.update(TENANT, PROPERTY_ID, {
+      photoUrls: [
+        'https://example.com/a.jpg',
+        'https://example.com/b.jpg',
+        'https://example.com/c.jpg',
+      ],
+    } as UpdatePropertyDto);
+
+    expect(photoDeleteMany).toHaveBeenCalledWith({
+      where: { propertyId: PROPERTY_ID },
+    });
+    expect(photoCreateMany).toHaveBeenCalledWith({
+      data: [
+        { propertyId: PROPERTY_ID, url: 'https://example.com/a.jpg', position: 0 },
+        { propertyId: PROPERTY_ID, url: 'https://example.com/b.jpg', position: 1 },
+        { propertyId: PROPERTY_ID, url: 'https://example.com/c.jpg', position: 2 },
+      ],
+    });
+  });
+
+  it('photoUrls: [] borra todas las fotos y no crea ninguna', async () => {
+    const { service, photoDeleteMany, photoCreateMany } = buildForUpdate();
+
+    await service.update(TENANT, PROPERTY_ID, {
+      photoUrls: [],
+    } as UpdatePropertyDto);
+
+    expect(photoDeleteMany).toHaveBeenCalledWith({
+      where: { propertyId: PROPERTY_ID },
+    });
+    expect(photoCreateMany).not.toHaveBeenCalled();
+  });
+
+  it('sin photoUrls: no toca fotos existentes', async () => {
+    const { service, photoDeleteMany, photoCreateMany, propertyUpdate } =
+      buildForUpdate();
+
+    await service.update(TENANT, PROPERTY_ID, {
+      title: 'Nuevo título',
+    } as UpdatePropertyDto);
+
+    expect(photoDeleteMany).not.toHaveBeenCalled();
+    expect(photoCreateMany).not.toHaveBeenCalled();
+    expect(propertyUpdate).toHaveBeenCalledWith({
+      where: { id: PROPERTY_ID },
+      data: expect.objectContaining({ title: 'Nuevo título' }),
+      include: expect.anything(),
+    });
+  });
+
+  it('propiedad inexistente / de otro tenant: NotFoundException, no toca fotos', async () => {
+    const { service, photoDeleteMany } = buildForUpdate({ property: null });
+
+    await expect(
+      service.update(TENANT, PROPERTY_ID, {
+        photoUrls: ['https://example.com/a.jpg'],
+      } as UpdatePropertyDto),
+    ).rejects.toThrow(NotFoundException);
+    expect(photoDeleteMany).not.toHaveBeenCalled();
   });
 });
