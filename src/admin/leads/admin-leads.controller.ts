@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -13,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { ConversationState, type Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import type { Request } from 'express';
 import { TenantThrottlerGuard } from '../../common/tenant-throttler.guard';
 import { DebounceBufferService } from '../../pipeline/debounce-buffer.service';
@@ -99,23 +98,18 @@ export class AdminLeadsController {
     return { lead, messages };
   }
 
-  /** Desbloquea un lead en HUMAN_HANDOFF: vuelve a QUALIFICATION y el bot retoma. */
+  /**
+   * Desbloquea un lead en HUMAN_HANDOFF y el bot retoma. El estado de retorno
+   * lo decide la FSM (`resolveReleaseState` dentro del service), no este
+   * controller: SEARCH_MATCH si ya se le mostraron fichas, QUALIFICATION si no.
+   */
   @Post(':leadId/release')
   @HttpCode(200)
   async release(
     @Param('tenantId') tenantId: string,
     @Param('leadId') leadId: string,
   ): Promise<{ released: true }> {
-    const lead = await this.adminLeads.findLeadOrThrow(tenantId, leadId);
-    if (lead.state !== ConversationState.HUMAN_HANDOFF) {
-      throw new BadRequestException('El lead no está en HUMAN_HANDOFF');
-    }
-
-    await this.prisma.lead.update({
-      where: { id: leadId },
-      data: { state: ConversationState.QUALIFICATION, handoffAt: null },
-    });
-    return { released: true };
+    return this.adminLeads.release(tenantId, leadId);
   }
 
   /** Derecho de supresión (Ley 25.326): borra el lead + mensajes + turnos pendientes en Redis. */

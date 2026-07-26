@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConversationState, type Lead, type Prisma } from '@prisma/client';
+import { resolveReleaseState } from '../../conversation/release-state.util';
 import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
@@ -103,6 +104,43 @@ export class AdminLeadsService {
         },
       });
       return this.findLeadOrThrow(tenantId, leadId, tx);
+    });
+  }
+
+  /**
+   * Libera un lead de `HUMAN_HANDOFF` y se lo devuelve al agente IA. El estado
+   * de retorno NO es fijo: lo resuelve `resolveReleaseState` (misma función que
+   * usa el timeout de 48hs del `ConversationEngine`), así que "salir de
+   * handoff" significa exactamente lo mismo por los dos caminos (AC-8 / AC-9).
+   *
+   * Corre en una transacción para que la lectura del lead (de donde sale
+   * `lastSearchIds`) y la escritura del estado no queden separadas por otra
+   * escritura del bot. El `updateMany` con `state: HUMAN_HANDOFF` en el WHERE
+   * hace que Postgres evalúe la condición y escriba en el mismo statement
+   * (mismo criterio que `optOut`): si entre el `findLeadOrThrow` y el write el
+   * bot o un segundo click sacaron al lead de `HUMAN_HANDOFF`, el update afecta
+   * 0 filas y se rechaza — nunca se pisa un `OPTED_OUT` ni se "re-libera" un
+   * lead ya liberado (AC-11). El 400 se lanza DENTRO de la tx: no hay nada que
+   * revertir (count 0 = no escribió), pero deja la transacción cerrada.
+   *
+   * No persiste autoría: el endpoint sigue admitiendo API key, donde no hay
+   * persona de sesión a la que atribuir la acción.
+   */
+  async release(tenantId: string, leadId: string): Promise<{ released: true }> {
+    return this.prisma.$transaction(async (tx) => {
+      // 404 antes que 400: un lead de otro tenant no existe para este caller
+      // (barrera anti-oráculo de findLeadOrThrow, que ya filtra por tenantId).
+      const lead = await this.findLeadOrThrow(tenantId, leadId, tx);
+      const nextState = resolveReleaseState(lead);
+
+      const { count } = await tx.lead.updateMany({
+        where: { id: leadId, tenantId, state: ConversationState.HUMAN_HANDOFF },
+        data: { state: nextState, handoffAt: null },
+      });
+      if (count === 0) {
+        throw new BadRequestException('El lead no está en HUMAN_HANDOFF');
+      }
+      return { released: true as const };
     });
   }
 
