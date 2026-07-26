@@ -1,8 +1,10 @@
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { OperationType, PropertyStatus, type Prisma } from '@prisma/client';
 import type { PrismaService } from '../../prisma/prisma.service';
 import { PropertiesAdminService } from './properties-admin.service';
 
 const TENANT = 'tenant-1';
+const PROPERTY_ID = 'property-1';
 
 /** Mock mínimo de `PrismaService.property` para testear el armado del `where` de `list`. */
 function build() {
@@ -13,6 +15,44 @@ function build() {
   } as unknown as PrismaService;
 
   return { service: new PropertiesAdminService(prisma), findMany, count };
+}
+
+/**
+ * Mock de `PrismaService` para `remove`: `$transaction` interactivo ejecuta el
+ * callback con un `tx` que expone `property.findFirst`/`delete` y
+ * `appointment.findFirst`.
+ */
+function buildForRemove(options: {
+  property?: unknown;
+  appointment?: { id: string } | null;
+}) {
+  const propertyFindFirst = jest
+    .fn()
+    .mockResolvedValue(
+      'property' in options
+        ? options.property
+        : { id: PROPERTY_ID, tenantId: TENANT },
+    );
+  const propertyDelete = jest.fn().mockResolvedValue(undefined);
+  const appointmentFindFirst = jest
+    .fn()
+    .mockResolvedValue(options.appointment ?? null);
+
+  const tx = {
+    property: { findFirst: propertyFindFirst, delete: propertyDelete },
+    appointment: { findFirst: appointmentFindFirst },
+  };
+
+  const prisma = {
+    $transaction: jest.fn((cb: (t: typeof tx) => unknown) => cb(tx)),
+  } as unknown as PrismaService;
+
+  return {
+    service: new PropertiesAdminService(prisma),
+    propertyFindFirst,
+    propertyDelete,
+    appointmentFindFirst,
+  };
 }
 
 function whereArg(findMany: jest.Mock): Prisma.PropertyWhereInput {
@@ -163,6 +203,63 @@ describe('PropertiesAdminService.list — filtros (AC-2)', () => {
       price: { gte: 50_000, lte: 300_000 },
       rooms: 3,
       title: { contains: 'luminoso', mode: 'insensitive' },
+    });
+  });
+});
+
+describe('PropertiesAdminService.remove — AC-9/AC-10', () => {
+  it('propiedad inexistente / de otro tenant: NotFoundException, no borra', async () => {
+    const { service, propertyDelete } = buildForRemove({ property: null });
+
+    await expect(service.remove(TENANT, PROPERTY_ID)).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(propertyDelete).not.toHaveBeenCalled();
+  });
+
+  it('con Appointment existente del mismo tenant: ConflictException, no borra', async () => {
+    const { service, appointmentFindFirst, propertyDelete } = buildForRemove({
+      appointment: { id: 'appointment-1' },
+    });
+
+    await expect(service.remove(TENANT, PROPERTY_ID)).rejects.toThrow(
+      new ConflictException(
+        'No se puede eliminar: la propiedad tiene visitas agendadas. Cambiá su estado a Pausada para sacarla de circulación.',
+      ),
+    );
+    expect(appointmentFindFirst).toHaveBeenCalledWith({
+      where: { tenantId: TENANT, propertyId: PROPERTY_ID },
+      select: { id: true },
+    });
+    expect(propertyDelete).not.toHaveBeenCalled();
+  });
+
+  it('sin citas: borra', async () => {
+    const { service, propertyDelete } = buildForRemove({ appointment: null });
+
+    await service.remove(TENANT, PROPERTY_ID);
+
+    expect(propertyDelete).toHaveBeenCalledWith({
+      where: { id: PROPERTY_ID },
+    });
+  });
+
+  it('con una cita del mismo propertyId pero de otro tenant: no bloquea, borra igual', async () => {
+    // El mock de appointment.findFirst simula el where { tenantId, propertyId }:
+    // como el where ya filtra por tenantId, una cita de otro tenant nunca
+    // aparece en el resultado — reproducimos ese comportamiento devolviendo null.
+    const { service, appointmentFindFirst, propertyDelete } = buildForRemove({
+      appointment: null,
+    });
+
+    await service.remove(TENANT, PROPERTY_ID);
+
+    expect(appointmentFindFirst).toHaveBeenCalledWith({
+      where: { tenantId: TENANT, propertyId: PROPERTY_ID },
+      select: { id: true },
+    });
+    expect(propertyDelete).toHaveBeenCalledWith({
+      where: { id: PROPERTY_ID },
     });
   });
 });

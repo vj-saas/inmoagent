@@ -94,7 +94,16 @@ export class PropertiesAdminService {
   }
 
   async getOne(tenantId: string, propertyId: string): Promise<Property> {
-    const property = await this.prisma.property.findFirst({
+    return this.findOneOrThrow(this.prisma, tenantId, propertyId);
+  }
+
+  /** 404 si la propiedad no existe o no es de este tenant. Parametrizado por cliente/tx para uso dentro de `$transaction`. */
+  private async findOneOrThrow(
+    client: Prisma.TransactionClient | PrismaService,
+    tenantId: string,
+    propertyId: string,
+  ): Promise<Property> {
+    const property = await client.property.findFirst({
       where: { id: propertyId, tenantId },
       include: PROPERTY_INCLUDE,
     });
@@ -191,8 +200,21 @@ export class PropertiesAdminService {
   }
 
   async remove(tenantId: string, propertyId: string): Promise<void> {
-    await this.getOne(tenantId, propertyId);
-    await this.prisma.property.delete({ where: { id: propertyId } });
+    await this.prisma.$transaction(async (tx) => {
+      await this.findOneOrThrow(tx, tenantId, propertyId);
+
+      const appointment = await tx.appointment.findFirst({
+        where: { tenantId, propertyId },
+        select: { id: true },
+      });
+      if (appointment) {
+        throw new ConflictException(
+          'No se puede eliminar: la propiedad tiene visitas agendadas. Cambiá su estado a Pausada para sacarla de circulación.',
+        );
+      }
+
+      await tx.property.delete({ where: { id: propertyId } });
+    });
   }
 
   /** Upsert por (tenantId, externalRef) — usado por el alta manual con externalRef y por el import CSV. */
