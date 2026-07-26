@@ -102,7 +102,7 @@ export class InboundProcessor extends WorkerHost {
   ): Promise<void> {
     const [tenant, lead] = await Promise.all([
       this.tenants.findById(tenantId),
-      this.prisma.lead.findUnique({ where: { id: leadId } }),
+      this.prisma.lead.findFirst({ where: { id: leadId, tenantId } }),
     ]);
     if (!tenant || !lead) {
       this.logger.error(
