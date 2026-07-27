@@ -25,6 +25,7 @@ import {
   delegatesZoneChoice,
   hasNewFilterData,
   mergeFilters,
+  normalizeKeycapDigits,
 } from './filters.util';
 import { GreetingHandler } from './handlers/greeting.handler';
 import { QualificationHandler } from './handlers/qualification.handler';
@@ -75,8 +76,9 @@ export class ConversationEngine {
   async handleTurn(
     tenantId: string,
     leadId: string,
-    turnText: string,
+    rawTurnText: string,
   ): Promise<void> {
+    const turnText = normalizeKeycapDigits(rawTurnText);
     const [tenant, lead] = await Promise.all([
       this.tenants.findById(tenantId),
       this.prisma.lead.findUnique({ where: { id: leadId } }),

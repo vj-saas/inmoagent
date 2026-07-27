@@ -3,6 +3,7 @@ import {
   delegatesZoneChoice,
   extractDayPreference,
   isPriceStale,
+  normalizeKeycapDigits,
   STALE_PRICE_TURNS,
 } from './filters.util';
 import type { LeadFilters } from './conversation.types';
@@ -22,6 +23,26 @@ function filters(overrides: Partial<LeadFilters> = {}): LeadFilters {
     ...overrides,
   };
 }
+
+describe('normalizeKeycapDigits (QA 2026-07-27: el LLM extrae mal "2️⃣ ambientes" como minRooms 3)', () => {
+  it('convierte un dígito keycap suelto a texto plano', () => {
+    expect(normalizeKeycapDigits('2️⃣ ambientes')).toBe('2 ambientes');
+  });
+
+  it('convierte varios dígitos keycap en el mismo mensaje', () => {
+    expect(normalizeKeycapDigits('me gustó el 1️⃣ y el 3️⃣')).toBe(
+      'me gustó el 1 y el 3',
+    );
+  });
+
+  it('convierte el emoji de "10"', () => {
+    expect(normalizeKeycapDigits('tengo 🔟 opciones')).toBe('tengo 10 opciones');
+  });
+
+  it('no toca texto sin emojis', () => {
+    expect(normalizeKeycapDigits('2 ambientes')).toBe('2 ambientes');
+  });
+});
 
 describe('confirmsPropertyChoice (guardrail contra falsos positivos de interés)', () => {
   it.each([

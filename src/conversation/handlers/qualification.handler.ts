@@ -17,6 +17,7 @@ import {
   buildSearchClosingQuestion,
   buildTeaserClosingQuestion,
   buildTeaserIntro,
+  buildZoneStillPendingMessage,
   buildZoneSuggestionMessage,
   SAME_RESULTS_MESSAGE,
   SEARCH_INTRO,
@@ -151,6 +152,24 @@ export class QualificationHandler {
           filterUpdates: { ...filters, fOfferedNeighborhoods: zones },
         };
       }
+    }
+
+    // Ya le ofrecimos zonas alternativas (fOfferedNeighborhoods pendiente) y
+    // este turno sigue sin resolver la zona: no repetir la pregunta genérica
+    // en loop (QA 2026-07-27, ver sim-personas "17-zona-fuera-cobertura") —
+    // ser honesto de nuevo y reofrecer, en vez de dejar que el LLM improvise
+    // sobre una zona que ya dijimos que no tenemos.
+    if (missing === 'neighborhood' && filters.fOfferedNeighborhoods.length > 0) {
+      return {
+        actions: [
+          {
+            kind: 'text',
+            text: buildZoneStillPendingMessage(filters.fOfferedNeighborhoods),
+          },
+        ],
+        nextState: ConversationState.QUALIFICATION,
+        filterUpdates: filters,
+      };
     }
 
     const question = await this.safeReply.compose(

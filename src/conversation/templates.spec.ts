@@ -9,6 +9,7 @@ import {
   buildSchedulingHandoffMessage,
   buildSearchClosingQuestion,
   buildTeaserClosingQuestion,
+  buildZoneStillPendingMessage,
   DEFAULT_HANDOFF_INTRO,
   DEFAULT_INTRO,
   OPERATION_QUESTION,
@@ -52,6 +53,19 @@ describe('buildDelegatedZoneMessage', () => {
     expect(buildDelegatedZoneMessage(['palermo'])).toBe(
       '¡Dale, te ayudo! Donde más opciones tenemos hoy es en *Palermo*. ¿Arrancamos por ahí?',
     );
+  });
+});
+
+describe('buildZoneStillPendingMessage', () => {
+  it('es honesto (no repregunta la zona) y reofrece lo ya sugerido, con dos zonas', () => {
+    const text = buildZoneStillPendingMessage(['palermo', 'caballito']);
+    expect(text).toContain('no tenemos nada disponible');
+    expect(text).toContain('*Palermo* o *Caballito*');
+    expect(text).not.toMatch(/qué (zona|barrio)/i);
+  });
+
+  it('funciona con una sola zona ofrecida', () => {
+    expect(buildZoneStillPendingMessage(['palermo'])).toContain('*Palermo*');
   });
 });
 

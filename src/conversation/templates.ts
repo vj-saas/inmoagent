@@ -202,6 +202,19 @@ export function buildZoneSuggestionMessage(
 }
 
 /**
+ * El lead ya rechazó (implícita o explícitamente) las zonas alternativas
+ * ofrecidas en `buildZoneSuggestionMessage` y sigue sin darnos una zona con
+ * stock real (§4, QA 2026-07-27: evita el loop de re-preguntar "¿qué zona?"
+ * sobre una zona que ya le dijimos que no tenemos).
+ */
+export function buildZoneStillPendingMessage(offeredZones: string[]): string {
+  const named = offeredZones.map((z) => `*${capitalize(z)}*`);
+  const list =
+    named.length === 2 ? `${named[0]} o ${named[1]}` : (named[0] ?? 'otra zona');
+  return `Entiendo, pero por esa zona no tenemos nada disponible por ahora. Te tomo nota igual para avisarte apenas entre algo. Mientras tanto, ¿querés que te muestre lo que hay en ${list}?`;
+}
+
+/**
  * Zonas acumuladas donde ALGUNAS tienen stock y otras no (p.ej. el lead ya
  * tenía Caballito/Belgrano y agrega Munro, que no tiene nada): a diferencia
  * de `buildZoneSuggestionMessage` (todas sin stock), acá no hay que ofrecer

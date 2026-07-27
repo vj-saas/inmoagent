@@ -203,3 +203,16 @@ export function hasNewFilterData(extraction: ExtractionResult): boolean {
     extraction.wantsPetsAllowed !== null
   );
 }
+
+const KEYCAP_DIGIT = /([0-9])️?⃣/gu;
+
+/**
+ * Convierte dígitos en formato "keycap" de WhatsApp (1️⃣, 2️⃣...) y el emoji
+ * "🔟" a texto plano ANTES de mandarle el turno al LLM. El LLM extrae mal
+ * cantidades cuando vienen en emoji (ej. "2️⃣ ambientes" → minRooms 3 en vez
+ * de 2), y estos mismos emojis son los que usa la app para numerar fichas de
+ * propiedades, así que es plausible que el lead los reutilice al responder.
+ */
+export function normalizeKeycapDigits(text: string): string {
+  return text.replace(KEYCAP_DIGIT, '$1').replace(/🔟/gu, '10');
+}

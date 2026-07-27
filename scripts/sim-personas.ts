@@ -240,6 +240,31 @@ const PERSONAS: Persona[] = [
       'va, mándame lo que tengas',
     ],
   },
+  {
+    name: '20-relajacion-implicita-sin-numero',
+    description:
+      'Pide aflojar filtros ya dados sin decir un número nuevo: "me puedo estirar", "algo más grande", "más caro hay?".',
+    turns: [
+      'hola quiero alquilar en palermo, 2 ambientes, hasta 700 mil',
+      'mah, me puedo estirar un poco si hace falta, no hay algo mas grande?',
+      'y mas caro que eso no tenes nada?',
+    ],
+  },
+  {
+    name: '21-emoji-ambientes-regresion',
+    description:
+      'Regresión del fix de dígitos keycap: pedir "2️⃣ ambientes" debe dar minRooms 2, no 3.',
+    turns: ['hola busco alquiler en palermo', '2️⃣ ambientes'],
+  },
+  {
+    name: '22-zona-insistida-regresion',
+    description:
+      'Regresión del fix de zona sin cobertura: tras el rechazo, insistir en la misma zona no debe volver a preguntar "qué barrio" en loop.',
+    turns: [
+      'hola buscaba depto en alquiler en villa urquiza',
+      'no me sirve otra zona, tiene que ser ahi porque trabajo cerca',
+    ],
+  },
 ];
 
 function formatFilters(lead: Lead): string {
