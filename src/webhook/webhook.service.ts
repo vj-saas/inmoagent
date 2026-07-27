@@ -131,27 +131,6 @@ export class WebhookService {
     return true;
   }
 
-  /** Devuelve `true` si es la primera vez que vemos este wa_message_id. */
-  private async recordWebhookEvent(
-    waMessageId: string,
-    tenantId: string,
-  ): Promise<boolean> {
-    try {
-      await this.prisma.webhookEvent.create({
-        data: { waMessageId, tenantId },
-      });
-      return true;
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        return false;
-      }
-      throw error;
-    }
-  }
-
   /**
    * Procesa el payload completo del webhook. Nunca lanza: cualquier error se
    * loguea y se sigue con el resto, para que el controller pueda responder
