@@ -61,15 +61,15 @@ function Trend({ value, previousValue }: { value: number; previousValue: number 
 
 export const MetricCard: React.FC<MetricCardProps> = ({ label, value, previousValue }) => {
   const normalizedLabel = label.toLowerCase().trim();
-  const config = iconMap[normalizedLabel] || { icon: UserPlus, color: 'text-primary', bg: 'bg-primary/10' };
+  const config = iconMap[normalizedLabel] || { icon: UserPlus, color: 'text-accent', bg: 'bg-accent/10' };
   const IconComponent = config.icon;
 
   return (
     <Card tone="raised" data-testid="metric-card" className="transition-all duration-200">
       <CardBody className="p-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="space-y-1">
-            <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 space-y-1">
+            <span className="block text-xs font-bold uppercase tracking-wider text-text-muted">
               {label}
             </span>
             <div className="text-3xl font-extrabold tracking-tight text-text">

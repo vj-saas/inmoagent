@@ -56,7 +56,10 @@ export function LeadsTrendChart({ data }: LeadsTrendChartProps) {
                   fontSize: 12,
                 }}
               />
-              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Legend
+                wrapperStyle={{ fontSize: 12 }}
+                formatter={(value) => <span style={{ color: 'var(--color-text-muted)' }}>{value}</span>}
+              />
               <Bar dataKey="previous" name="Período anterior" fill="var(--color-chart-muted)" radius={[4, 4, 0, 0]} />
               <Bar dataKey="current" name="Este período" fill="var(--color-chart-primary)" radius={[4, 4, 0, 0]} />
             </BarChart>

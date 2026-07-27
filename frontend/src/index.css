@@ -25,7 +25,7 @@
   --color-border-strong: #363c48;
   --color-text: #e8eaed;
   --color-text-muted: #9aa2b1;
-  --color-text-faint: #6b7280;
+  --color-text-faint: #8a93a6;
 
   --color-primary: #2c374a;
   --color-primary-hover: #384259;
@@ -63,7 +63,7 @@
     --color-border-strong: #363c48;
     --color-text: #e8eaed;
     --color-text-muted: #9aa2b1;
-    --color-text-faint: #6b7280;
+    --color-text-faint: #8a93a6;
 
     --color-primary: #2c374a;
     --color-primary-hover: #384259;
@@ -181,7 +181,7 @@
   }
 
   .onboarding-step--active .onboarding-step-label {
-    @apply text-primary font-semibold;
+    @apply text-accent font-semibold;
   }
 
   .onboarding-step--completed .onboarding-step-label {
@@ -327,7 +327,7 @@
   }
 
   .onboarding-checklist-item-checkbox {
-    @apply h-5 w-5 mt-0.5 rounded border border-border bg-surface text-primary accent-primary cursor-pointer transition-colors;
+    @apply h-5 w-5 mt-0.5 rounded border border-border bg-surface text-accent accent-accent cursor-pointer transition-colors;
   }
 
   .onboarding-checklist-item--checked .onboarding-checklist-item-checkbox {
