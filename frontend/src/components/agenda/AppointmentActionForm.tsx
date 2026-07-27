@@ -67,10 +67,8 @@ export const AppointmentActionForm: React.FC<AppointmentActionFormProps> = ({
     setValidationError(null);
 
     const data: AppointmentActionFormSubmitData = { scheduledAt: date.toISOString() };
-    if (mode === 'confirm') {
-      if (assignedUserId) data.assignedUserId = assignedUserId;
-      if (notes.trim()) data.notes = notes.trim();
-    }
+    if (mode === 'confirm' && assignedUserId) data.assignedUserId = assignedUserId;
+    if (notes.trim()) data.notes = notes.trim();
 
     onSubmit(data);
   };
@@ -118,7 +116,7 @@ export const AppointmentActionForm: React.FC<AppointmentActionFormProps> = ({
         </>
       )}
 
-      {mode === 'confirm' && (
+      {(mode === 'confirm' || mode === 'reschedule') && (
         <>
           <label htmlFor="appointment-action-form-notes" className="text-sm font-medium text-text">
             Notas

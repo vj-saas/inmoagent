@@ -296,6 +296,7 @@ export function PropertiesPage(): JSX.Element {
         onClose={handleCloseFormModal}
         title={formModal?.mode === 'edit' ? 'Editar propiedad' : 'Cargar propiedad'}
         data-testid="property-form-modal"
+        className="max-w-lg"
       >
         {formModal && (
           <PropertyForm

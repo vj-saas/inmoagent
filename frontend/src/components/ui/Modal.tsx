@@ -76,13 +76,15 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
           aria-modal="true"
           aria-label={typeof title === 'string' ? title : undefined}
           className={cn(
-            'w-full max-w-md rounded-card border border-border bg-surface p-4 shadow-md',
+            'flex w-full max-w-md max-h-[90vh] flex-col rounded-card border border-border bg-surface p-4 shadow-md',
             className
           )}
           {...props}
         >
-          {title && <div className="mb-3 text-lg font-semibold text-text">{title}</div>}
-          {children}
+          {title && (
+            <div className="mb-3 shrink-0 text-lg font-semibold text-text">{title}</div>
+          )}
+          <div className="overflow-y-auto">{children}</div>
         </div>
       </div>
     );

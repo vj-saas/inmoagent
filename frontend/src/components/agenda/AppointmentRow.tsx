@@ -91,11 +91,19 @@ export const AppointmentRow: React.FC<AppointmentRowProps> = ({
   };
 
   const handleMarkDone = (): void => {
-    void runAction(() => markAppointmentDone(tenantId, appointment.id, {}, token));
+    // eslint-disable-next-line no-alert
+    const outcome = window.prompt('Notas sobre la visita (opcional)')?.trim();
+    void runAction(() =>
+      markAppointmentDone(tenantId, appointment.id, outcome ? { notes: outcome } : {}, token),
+    );
   };
 
   const handleMarkNoShow = (): void => {
-    void runAction(() => markAppointmentNoShow(tenantId, appointment.id, {}, token));
+    // eslint-disable-next-line no-alert
+    const reason = window.prompt('Motivo del no-show (opcional)')?.trim();
+    void runAction(() =>
+      markAppointmentNoShow(tenantId, appointment.id, reason ? { notes: reason } : {}, token),
+    );
   };
 
   return (
