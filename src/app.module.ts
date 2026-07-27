@@ -1,5 +1,6 @@
 import { Module, ValidationPipe } from '@nestjs/common';
 import { APP_GUARD, APP_PIPE } from '@nestjs/core';
+import { PushNotificationsModule } from './push-notifications/push-notifications.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { LoggerModule } from 'nestjs-pino';
 import { AppController } from './app.controller';
@@ -44,6 +45,7 @@ import { MaintenanceModule } from './maintenance/maintenance.module';
     AdminModule,
     AuthModule,
     MaintenanceModule,
+    PushNotificationsModule,
   ],
   controllers: [AppController],
   providers: [

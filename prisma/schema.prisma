@@ -82,12 +82,27 @@ model Person {
   assignedAppointments Appointment[] @relation("AppointmentAssignee")
   authoredNotes        LeadNote[]
   sentMessages         Message[]     @relation("MessageSender")
+  pushSubscriptions    PushSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([tenantId])
   @@index([tenantId, role, active]) // chequeo "último owner activo" (AC-21) y listado (AC-19)
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  tenantId  String
+  personId  String
+  person    Person   @relation(fields: [personId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([personId])
 }
 
 model Session {

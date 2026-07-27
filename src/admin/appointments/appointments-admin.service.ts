@@ -3,6 +3,7 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import {
   AppointmentStatus,
@@ -10,6 +11,7 @@ import {
   type Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
+import { PushNotificationService } from '../../push-notifications/push-notification.service';
 import { CancelAppointmentDto } from './dto/cancel-appointment.dto';
 import { CloseAppointmentDto } from './dto/close-appointment.dto';
 import { ConfirmAppointmentDto } from './dto/confirm-appointment.dto';
@@ -35,7 +37,12 @@ const VALID_ORIGINS: Record<TransitionAction, Set<AppointmentStatus>> = {
 
 @Injectable()
 export class AppointmentsAdminService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(AppointmentsAdminService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly pushNotificationService: PushNotificationService,
+  ) {}
 
   /**
    * Espejo de `AdminLeadsService.findLeadOrThrow`: centraliza el patrón
@@ -136,7 +143,17 @@ export class AppointmentsAdminService {
       'confirm',
     );
 
-    return this.findAppointmentOrThrow(tenantId, aid);
+    const updated = await this.findAppointmentOrThrow(tenantId, aid);
+
+    if (updated.assignedUserId) {
+      this.pushNotificationService
+        .notifyAppointmentAssigned(tenantId, updated.assignedUserId, updated)
+        .catch((err) => {
+          this.logger.error(`Error al disparar push notifyAppointmentAssigned: ${err.message}`);
+        });
+    }
+
+    return updated;
   }
 
   /** CONFIRMED → CONFIRMED: actualiza `scheduledAt` sin tocar `status`. */

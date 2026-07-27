@@ -1,14 +1,23 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext';
 import { Sidebar } from '../components/layout/Sidebar';
 import { Logo } from '../components/ui/Logo';
+import { registerPushSubscriptionOnce } from '../push/register-push-subscription';
 
 export function AppLayout({ children }: { children?: ReactNode }): JSX.Element {
-  const { logout } = useAuth();
+  const { logout, token, person } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    if (token && person?.tenantId) {
+      registerPushSubscriptionOnce(token, person.tenantId).catch((err) => {
+        console.error('Error registering push subscription', err);
+      });
+    }
+  }, [token, person?.tenantId]);
 
   const handleLogout = async (): Promise<void> => {
     await logout();

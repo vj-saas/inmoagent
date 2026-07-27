@@ -11,6 +11,10 @@ function validEnv(overrides: Record<string, unknown> = {}) {
     GROQ_API_KEY: 'gsk-test',
     ADMIN_MASTER_KEY: 'master-key',
     PUBLIC_BASE_URL: 'https://example.com',
+    // Spec B.4 (push notifications): requeridas por AC-13.
+    VAPID_PUBLIC_KEY: 'vapid-public-test',
+    VAPID_PRIVATE_KEY: 'vapid-private-test',
+    VAPID_SUBJECT: 'mailto:soporte@example.com',
     ...overrides,
   };
 }
@@ -79,5 +83,39 @@ describe('validateEnv', () => {
     expect(() => validateEnv(validEnv({ STT_PROVIDER: 'azure' }))).toThrow(
       /STT_PROVIDER/,
     );
+  });
+
+  // ── Spec B.4 — AC-13: VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT ──
+
+  describe('AC-13: variables VAPID de push notifications', () => {
+    it.each(['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT'])(
+      'falla el arranque con un mensaje claro que menciona %s cuando falta',
+      (missingKey) => {
+        const env = validEnv();
+        delete (env as Record<string, unknown>)[missingKey];
+
+        expect(() => validateEnv(env)).toThrow(new RegExp(missingKey));
+      },
+    );
+
+    it('rechaza VAPID_SUBJECT que no sea "mailto:" ni una URL', () => {
+      expect(() =>
+        validateEnv(validEnv({ VAPID_SUBJECT: 'no-es-mailto-ni-url' })),
+      ).toThrow(/VAPID_SUBJECT/);
+    });
+
+    it('acepta VAPID_SUBJECT en formato mailto:', () => {
+      const config = validateEnv(
+        validEnv({ VAPID_SUBJECT: 'mailto:ops@inmobilapp.com' }),
+      );
+      expect(config.VAPID_SUBJECT).toBe('mailto:ops@inmobilapp.com');
+    });
+
+    it('acepta VAPID_SUBJECT en formato URL', () => {
+      const config = validateEnv(
+        validEnv({ VAPID_SUBJECT: 'https://inmobilapp.com' }),
+      );
+      expect(config.VAPID_SUBJECT).toBe('https://inmobilapp.com');
+    });
   });
 });

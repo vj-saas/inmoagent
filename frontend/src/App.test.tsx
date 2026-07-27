@@ -96,7 +96,7 @@ describe('AppRoutes', () => {
     renderApp('/leads/lead-42');
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /ficha del lead/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /lead de prueba/i })).toBeInTheDocument();
     });
     expect(screen.getByText(/5491100000000/)).toBeInTheDocument();
   });

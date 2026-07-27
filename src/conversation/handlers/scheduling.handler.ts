@@ -6,12 +6,14 @@ import { extractDayPreference } from '../filters.util';
 import { LeadAlertService } from '../lead-alert.service';
 import { buildSchedulingHandoffMessage } from '../templates';
 import type { HandlerContext, HandlerResult } from '../conversation.types';
+import { PushNotificationService } from '../../push-notifications/push-notification.service';
 
 @Injectable()
 export class SchedulingHandler {
   constructor(
     private readonly appointments: AppointmentsService,
     private readonly leadAlert: LeadAlertService,
+    private readonly pushNotifications: PushNotificationService,
   ) {}
 
   /** Crea el Appointment (PROPOSED), notifica al tenant, y cierra con el asesor humano. */
@@ -19,11 +21,13 @@ export class SchedulingHandler {
     ctx: HandlerContext,
     property: PropertyWithPhotos | null,
   ): Promise<HandlerResult> {
-    await this.appointments.propose(
+    const appointment = await this.appointments.propose(
       ctx.tenant.id,
       ctx.lead.id,
       property?.id ?? null,
     );
+
+    await this.pushNotifications.notifyAppointmentProposed(ctx.tenant.id, appointment).catch(() => {});
 
     // La preferencia de día (§5.2) es un dato operativo para el asesor: se
     // parsea determinísticamente (no vía LLM) y se cuela en el parámetro de

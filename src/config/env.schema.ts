@@ -73,6 +73,17 @@ export const envSchema = z.object({
   // Directorio para almacenar fotos de propiedades subidas (path relativo o absoluto).
   // En desarrollo: ./uploads. En producción: punto de montaje de volumen persistente.
   UPLOADS_DIR: z.string().min(1).default('./uploads'),
+
+  // VAPID Web Push
+  VAPID_PUBLIC_KEY: z.string().min(1, 'VAPID_PUBLIC_KEY es requerido'),
+  VAPID_PRIVATE_KEY: z.string().min(1, 'VAPID_PRIVATE_KEY es requerido'),
+  VAPID_SUBJECT: z
+    .string()
+    .min(1, 'VAPID_SUBJECT es requerido')
+    .refine(
+      (val) => val.startsWith('mailto:') || val.startsWith('http://') || val.startsWith('https://'),
+      { message: 'VAPID_SUBJECT debe ser mailto: o una URL' }
+    ),
 });
 
 export type EnvConfig = z.infer<typeof envSchema>;

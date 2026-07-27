@@ -910,3 +910,37 @@ export function getWebhookStatus(
     token,
   });
 }
+
+// ---------------------------------------------------------------------------
+// admin/tenants/:tenantId/push-subscriptions (src/admin/push — spec B.4)
+// ---------------------------------------------------------------------------
+
+export interface CreatePushSubscriptionRequest {
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+}
+
+export function createPushSubscription(
+  tenantId: string,
+  dto: CreatePushSubscriptionRequest,
+  token: string,
+): Promise<{ id: string }> {
+  return request<{ id: string }>(`/admin/tenants/${tenantId}/push-subscriptions`, {
+    method: 'POST',
+    body: dto,
+    token,
+  });
+}
+
+export function deletePushSubscription(
+  tenantId: string,
+  dto: { endpoint: string },
+  token: string,
+): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>(`/admin/tenants/${tenantId}/push-subscriptions`, {
+    method: 'DELETE',
+    body: dto,
+    token,
+  });
+}

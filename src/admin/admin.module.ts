@@ -22,14 +22,19 @@ import { PropertyPhotoStorageService } from './properties/property-photo-storage
 import { AdminTenantsController } from './tenants/admin-tenants.controller';
 import { TenantsAdminService } from './tenants/tenants-admin.service';
 
+import { AdminPushSubscriptionsController } from './push/admin-push-subscriptions.controller';
+
+import { PushNotificationsModule } from '../push-notifications/push-notifications.module';
+
 @Module({
-  imports: [PipelineModule, AuthModule, MessagingModule, TenantsModule],
+  imports: [PipelineModule, AuthModule, MessagingModule, TenantsModule, PushNotificationsModule],
   controllers: [
     AdminLeadsController,
     AdminTenantsController,
     AdminPropertiesController,
     AdminMetricsController,
     AppointmentsAdminController,
+    AdminPushSubscriptionsController,
   ],
   providers: [
     TenantApiKeyGuard,

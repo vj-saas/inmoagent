@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AppointmentsModule } from '../appointments/appointments.module';
 import { LlmModule } from '../llm/llm.module';
 import { MessagingModule } from '../messaging/messaging.module';
+import { PushNotificationsModule } from '../push-notifications/push-notifications.module';
 import { PropertiesModule } from '../properties/properties.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { ConversationEngine } from './conversation.engine';
@@ -21,6 +22,7 @@ import { SafeReplyService } from './safe-reply.service';
     PropertiesModule,
     TenantsModule,
     AppointmentsModule,
+    PushNotificationsModule,
   ],
   providers: [
     ConversationEngine,
