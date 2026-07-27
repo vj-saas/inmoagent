@@ -16,6 +16,7 @@ import {
 } from '../queues/queues.constants';
 import type { MessageQueueJob } from '../queues/queues.types';
 import { TenantsService } from '../tenants/tenants.service';
+import { PushNotificationService } from '../push-notifications/push-notification.service';
 import type {
   MetaMessageType,
   MetaWebhookMessage,
@@ -39,11 +40,117 @@ export class WebhookService {
     private readonly prisma: PrismaService,
     private readonly tenants: TenantsService,
     private readonly leads: LeadsService,
+    private readonly pushNotifications: PushNotificationService,
     @InjectQueue(QUEUE_INBOUND)
     private readonly inboundQueue: Queue<MessageQueueJob>,
     @InjectQueue(QUEUE_MEDIA)
     private readonly mediaQueue: Queue<MessageQueueJob>,
   ) {}
+
+  /**
+   * Procesa la notificación de cita agendada por Calendly.
+   */
+  async handleCalendlyPayload(body: any): Promise<boolean> {
+    if (body.event !== 'invitee.created') {
+      this.logger.log(`Evento de Calendly ignorado: ${body.event}`);
+      return false;
+    }
+
+    const invitee = body.payload?.invitee;
+    const email = invitee?.email?.toLowerCase()?.trim();
+    const phone = invitee?.text_reminder_number || invitee?.phone;
+
+    if (!email && !phone) {
+      this.logger.warn('Calendly webhook recibido sin email ni teléfono del destinatario');
+      return false;
+    }
+
+    // Buscamos un lead que coincida con el email o el teléfono
+    const conditions: Prisma.LeadWhereInput[] = [];
+    if (email) {
+      conditions.push({ fNotes: { contains: email } }); // El email a veces se guarda en fNotes o campos del lead
+    }
+    if (phone) {
+      // Limpiar formato del teléfono (quitar +, espacios, etc) para cruce
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      conditions.push({ phone: { contains: cleanPhone } });
+    }
+
+    if (conditions.length === 0) return false;
+
+    const lead = await this.prisma.lead.findFirst({
+      where: {
+        OR: conditions,
+      },
+    });
+
+    if (!lead) {
+      this.logger.warn(`No se encontró ningún lead que coincida con Calendly email: ${email} o teléfono: ${phone}`);
+      return false;
+    }
+
+    // Buscamos la última cita en estado PROPOSED para este lead
+    const appointment = await this.prisma.appointment.findFirst({
+      where: {
+        leadId: lead.id,
+        status: 'PROPOSED',
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    if (!appointment) {
+      this.logger.warn(`No hay cita propuesta (PROPOSED) pendiente para el lead ${lead.id}`);
+      return false;
+    }
+
+    const startTime = body.payload?.start_time ? new Date(body.payload.start_time) : new Date();
+
+    // Confirmamos la cita con la fecha y hora seleccionada
+    const updatedAppt = await this.prisma.appointment.update({
+      where: { id: appointment.id },
+      data: {
+        status: 'CONFIRMED',
+        scheduledAt: startTime,
+        notes: `Confirmado vía Calendly por ${invitee?.name || 'Cliente'}`,
+      },
+    });
+
+    this.logger.log(`Cita ${appointment.id} confirmada automáticamente vía Calendly para el lead ${lead.id}`);
+
+    // Si la cita tiene un usuario asignado (asesor), le notificamos vía push
+    if (updatedAppt.assignedUserId) {
+      await this.pushNotifications
+        .notifyAppointmentAssigned(updatedAppt.tenantId, updatedAppt.assignedUserId, updatedAppt)
+        .catch((err) => {
+          this.logger.error(`Error enviando push de cita confirmada por Calendly: ${err.message}`);
+        });
+    }
+
+    return true;
+  }
+
+  /** Devuelve `true` si es la primera vez que vemos este wa_message_id. */
+  private async recordWebhookEvent(
+    waMessageId: string,
+    tenantId: string,
+  ): Promise<boolean> {
+    try {
+      await this.prisma.webhookEvent.create({
+        data: { waMessageId, tenantId },
+      });
+      return true;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        return false;
+      }
+      throw error;
+    }
+  }
 
   /**
    * Procesa el payload completo del webhook. Nunca lanza: cualquier error se

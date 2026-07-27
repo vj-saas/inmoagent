@@ -46,14 +46,19 @@ function build() {
     add: jest.fn().mockResolvedValue({}),
   } as unknown as Queue;
 
+  const pushNotifications = {
+    notifyAppointmentAssigned: jest.fn().mockResolvedValue({}),
+  } as unknown as any;
+
   const service = new WebhookService(
     prisma,
     tenants,
     leads,
+    pushNotifications,
     inboundQueue,
     mediaQueue,
   );
-  return { service, prisma, tenants, leads, inboundQueue, mediaQueue };
+  return { service, prisma, tenants, leads, inboundQueue, mediaQueue, pushNotifications };
 }
 
 function textPayload(

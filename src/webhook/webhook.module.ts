@@ -7,8 +7,10 @@ import { MetaSignatureGuard } from './meta-signature.guard';
 import { WebhookController } from './webhook.controller';
 import { WebhookService } from './webhook.service';
 
+import { PushNotificationsModule } from '../push-notifications/push-notifications.module';
+
 @Module({
-  imports: [QueuesModule, TenantsModule, LeadsModule],
+  imports: [QueuesModule, TenantsModule, LeadsModule, PushNotificationsModule],
   controllers: [WebhookController],
   providers: [WebhookService, MetaSignatureGuard, TenantThrottlerGuard],
 })

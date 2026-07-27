@@ -56,4 +56,12 @@ export class WebhookController {
     await this.webhookService.handlePayload(body);
     return { received: true };
   }
+
+  @Post('calendly')
+  @HttpCode(200)
+  async receiveCalendly(@Body() body: any): Promise<{ processed: boolean }> {
+    this.logger.log(`Recibiendo webhook de Calendly: ${body.event}`);
+    const processed = await this.webhookService.handleCalendlyPayload(body);
+    return { processed };
+  }
 }
