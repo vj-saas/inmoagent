@@ -1,13 +1,5 @@
 import { createPushSubscription } from '../api/endpoints';
 
-/**
- * Convierte un ArrayBuffer a String en base64url compatible con VAPID.
- */
-function arrayBufferToBase64Url(buffer: ArrayBuffer): string {
-  const binary = String.fromCharCode(...new Uint8Array(buffer));
-  const base64 = btoa(binary);
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
 
 /**
  * Pide permiso para recibir notificaciones (si está en 'default') y registra la
@@ -39,7 +31,7 @@ export async function registerPushSubscriptionOnce(
   }
 
   try {
-    let permission = Notification.permission;
+    let permission: NotificationPermission = Notification.permission;
     if (permission === 'default') {
       permission = await Notification.requestPermission();
     }
