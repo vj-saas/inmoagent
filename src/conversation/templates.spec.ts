@@ -291,7 +291,7 @@ describe('buildSchedulingHandoffMessage — fuera del alcance de handoffIntro', 
     expect(conIntro).toBe(sinIntro);
     expect(conIntro).not.toContain('Marcela');
     expect(conIntro).toBe(
-      `¡Genial! La visita es sin compromiso y dura unos 20 minutos. Te dejo con un asesor de ${TENANT_NAME}, que conoce la propiedad y te puede mostrar más opciones de la zona en la misma salida. Te escribe a la brevedad (horario de atención: Lun a Vie de 9 a 18).`,
+      `Cuando elijas el horario en el link, un asesor de ${TENANT_NAME} se va a comunicar para confirmar la visita y contarte más opciones de la zona. Es sin compromiso y dura unos 20 minutos (horario de atención: Lun a Vie de 9 a 18).`,
     );
   });
 });

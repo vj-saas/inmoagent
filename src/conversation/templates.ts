@@ -92,7 +92,7 @@ export function buildSchedulingHandoffMessage(tenant: Tenant): string {
   const hoursLine = tenant.humanHours
     ? ` (horario de atención: ${tenant.humanHours})`
     : '';
-  return `¡Genial! La visita es sin compromiso y dura unos 20 minutos. Te dejo con un asesor de ${tenant.name}, que conoce la propiedad y te puede mostrar más opciones de la zona en la misma salida. Te escribe a la brevedad${hoursLine}.`;
+  return `Cuando elijas el horario en el link, un asesor de ${tenant.name} se va a comunicar para confirmar la visita y contarte más opciones de la zona. Es sin compromiso y dura unos 20 minutos${hoursLine}.`;
 }
 
 export const HANDOFF_TIMEOUT_APOLOGY =
