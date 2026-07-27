@@ -944,3 +944,34 @@ export function deletePushSubscription(
     token,
   });
 }
+
+// ---------------------------------------------------------------------------
+// appointments/public (built-in public scheduling)
+// ---------------------------------------------------------------------------
+
+export interface PublicAppointmentDetails {
+  id: string;
+  tenantName: string;
+  leadName: string;
+  workHoursStart: string;
+  workHoursEnd: string;
+}
+
+export function getPublicAppointmentDetails(appointmentId: string): Promise<PublicAppointmentDetails> {
+  return request<PublicAppointmentDetails>(`/appointments/public/${appointmentId}`, {
+    method: 'GET',
+  });
+}
+
+export function getPublicAvailableSlots(appointmentId: string, date: string): Promise<{ slots: string[] }> {
+  return request<{ slots: string[] }>(`/appointments/public/${appointmentId}/available-slots?date=${date}`, {
+    method: 'GET',
+  });
+}
+
+export function confirmPublicAppointment(appointmentId: string, scheduledAt: string): Promise<{ success: boolean; status: string; scheduledAt: string }> {
+  return request<{ success: boolean; status: string; scheduledAt: string }>(`/appointments/public/${appointmentId}/confirm`, {
+    method: 'POST',
+    body: { scheduledAt },
+  });
+}

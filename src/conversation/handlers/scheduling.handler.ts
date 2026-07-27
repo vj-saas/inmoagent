@@ -44,12 +44,13 @@ export class SchedulingHandler {
     await this.leadAlert.notify(ctx.tenant, ctx.lead, propertyTitleForAlert);
 
     const actions: HandlerResult['actions'] = [];
-    if (ctx.tenant.schedulingLink) {
-      actions.push({
-        kind: 'text',
-        text: `Buenísimo, coordiná el horario que te quede mejor acá: ${ctx.tenant.schedulingLink}`,
-      });
-    }
+    const baseUrl = process.env.PUBLIC_BASE_URL || 'http://localhost:5173';
+    const scheduleUrl = `${baseUrl}/agenda/publica/${appointment.id}`;
+    
+    actions.push({
+      kind: 'text',
+      text: `Buenísimo, coordiná el horario que te quede mejor acá: ${scheduleUrl}`,
+    });
     actions.push({
       kind: 'text',
       text: buildSchedulingHandoffMessage(ctx.tenant),

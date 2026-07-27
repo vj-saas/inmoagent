@@ -35,6 +35,7 @@ import { CallQueuePage } from './routes/CallQueuePage';
 import { TenantConfigPage } from './routes/TenantConfigPage';
 import { OnboardingWizardPage } from './routes/OnboardingWizardPage';
 import { PropertiesPage } from './routes/PropertiesPage';
+import { PublicSchedulingPage } from './routes/PublicSchedulingPage';
 import { ToastProvider } from './components/ui';
 
 export function AppRoutes(): JSX.Element {
@@ -42,6 +43,7 @@ export function AppRoutes(): JSX.Element {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/onboarding" element={<OnboardingWizardPage />} />
+      <Route path="/agenda/publica/:appointmentId" element={<PublicSchedulingPage />} />
       <Route
         path="/"
         element={

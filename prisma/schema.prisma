@@ -44,6 +44,10 @@ model Tenant {
   alertPhone    String? // número interno de la inmobiliaria (wa_id) que recibe las alertas
   alertsEnabled Boolean @default(false) // activar una vez que el template `lead_alert` esté aprobado en el WABA
 
+  // Disponibilidad de agenda interna (ej: "09:00-18:00")
+  workHoursStart String @default("09:00")
+  workHoursEnd   String @default("18:00")
+
   // Admin
   apiKeyHash String // argon2 de la API key del tenant
 
