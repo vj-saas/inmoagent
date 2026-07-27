@@ -186,6 +186,60 @@ const PERSONAS: Persona[] = [
       'ah tambien vi uno en munro que me interesa',
     ],
   },
+  {
+    name: '14-regateo-descuento',
+    description:
+      'Negocia precio citando la competencia y pide descuento antes de calificar del todo.',
+    turns: [
+      'hola, vi el depto de 2 ambientes en belgrano en venta',
+      'en zonaprop vi uno igual a 130 mil, me hacen descuento si pago de contado?',
+      'bueno pero dejenme algo de margen para escriturar, no tienen nada mas barato en la zona?',
+    ],
+  },
+  {
+    name: '15-cambio-de-operacion',
+    description:
+      'Arranca buscando alquiler y a mitad de conversación cambia a compra (debe resetear el filtro de operación, no acumularlo).',
+    turns: [
+      'hola quiero alquilar algo en caballito, 2 ambientes',
+      'mah, pensandolo mejor mejor compro directamente, que tenes a la venta por ahi',
+      'tengo unos 140 mil dolares',
+    ],
+  },
+  {
+    name: '16-emoji-minimalista',
+    description: 'Todo con emojis y frases de una o dos palabras.',
+    turns: ['holaa 👋', 'depto 🏠 palermo', 'alquiler', '2️⃣ ambientes', '👍👍'],
+  },
+  {
+    name: '17-zona-fuera-cobertura',
+    description:
+      'Pide una zona que ni siquiera está en coverageAreas del tenant (no es "sin stock puntual", es zona no operada).',
+    turns: [
+      'hola buscaba depto en alquiler en villa urquiza',
+      'no me sirve otra zona, tiene que ser ahi porque trabajo cerca',
+    ],
+  },
+  {
+    name: '18-correccion-de-dato',
+    description:
+      'Da un filtro y después lo corrige explícitamente ("dije X pero en realidad Y"): el filtro final debe ganar, no acumularse.',
+    turns: [
+      'hola busco alquiler en flores, 2 ambientes, hasta 700 mil',
+      'perdon me equivoque, en realidad necesito 3 ambientes no 2',
+      'y el presupuesto mejor hasta 900 mil, me olvide de las expensas',
+    ],
+  },
+  {
+    name: '19-jerga-no-rioplatense',
+    description:
+      'Español no rioplatense (mexicano): "renta", "depa", "lana" en vez de alquilar/depto/plata.',
+    turns: [
+      'hola, ando buscando un depa en renta por caballito',
+      'ando con un presupuesto de 600 mil pesos de lana, dos recámaras',
+      'va, mándame lo que tengas',
+    ],
+  },
 ];
 
 function formatFilters(lead: Lead): string {
