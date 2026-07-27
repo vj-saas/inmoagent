@@ -1,12 +1,101 @@
 @import "tailwindcss";
 @import "./styles/theme.css";
 
+/*
+ * Dark mode: soportamos toggle manual (`[data-theme="dark"]`, controlado por
+ * el theme toggle en el sidebar) y preferencia de sistema (`prefers-color-scheme`)
+ * cuando el usuario no eligió explícitamente un modo. No es una simple inversión:
+ * fondo azul-carbón (no negro puro), texto off-white (no blanco puro), y el
+ * acento/primary se reajustan de luminancia para mantener contraste AA sobre
+ * fondo oscuro y seguir funcionando con el `text-white` ya usado en varios
+ * componentes (botones, stepper de onboarding, badges).
+ */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --color-bg: #0b0d12;
+  --color-surface: #14171e;
+  --color-surface-raised: #1a1e26;
+  --color-border: #262b35;
+  --color-border-strong: #363c48;
+  --color-text: #e8eaed;
+  --color-text-muted: #9aa2b1;
+  --color-text-faint: #6b7280;
+
+  --color-primary: #2c374a;
+  --color-primary-hover: #384259;
+
+  --color-accent: #d97a4a;
+  --color-accent-hover: #e8916a;
+
+  --color-info: #38bdf8;
+  --color-danger: #f87171;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+
+  --color-focus-ring: #d97a4a;
+  --color-overlay: rgba(3, 4, 6, 0.6);
+
+  --color-chart-primary: #d97a4a;
+  --color-chart-secondary: #9aa2b1;
+  --color-chart-grid: #262b35;
+  --color-chart-muted: #363c48;
+
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.24);
+  --shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.36), 0 2px 6px -1px rgba(0, 0, 0, 0.24);
+  --shadow-lg: 0 10px 30px -3px rgba(0, 0, 0, 0.48), 0 4px 12px -2px rgba(0, 0, 0, 0.32);
+  --shadow-focus: 0 0 0 3px rgba(217, 122, 74, 0.32);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+
+    --color-bg: #0b0d12;
+    --color-surface: #14171e;
+    --color-surface-raised: #1a1e26;
+    --color-border: #262b35;
+    --color-border-strong: #363c48;
+    --color-text: #e8eaed;
+    --color-text-muted: #9aa2b1;
+    --color-text-faint: #6b7280;
+
+    --color-primary: #2c374a;
+    --color-primary-hover: #384259;
+
+    --color-accent: #d97a4a;
+    --color-accent-hover: #e8916a;
+
+    --color-info: #38bdf8;
+    --color-danger: #f87171;
+    --color-success: #4ade80;
+    --color-warning: #fbbf24;
+
+    --color-focus-ring: #d97a4a;
+    --color-overlay: rgba(3, 4, 6, 0.6);
+
+    --color-chart-primary: #d97a4a;
+    --color-chart-secondary: #9aa2b1;
+    --color-chart-grid: #262b35;
+    --color-chart-muted: #363c48;
+
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.24);
+    --shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.36), 0 2px 6px -1px rgba(0, 0, 0, 0.24);
+    --shadow-lg: 0 10px 30px -3px rgba(0, 0, 0, 0.48), 0 4px 12px -2px rgba(0, 0, 0, 0.32);
+    --shadow-focus: 0 0 0 3px rgba(217, 122, 74, 0.32);
+  }
+}
+
 @layer base {
   :root {
     font-family: var(--font-family);
     line-height: var(--line-height);
     font-weight: var(--font-weight-normal);
-    color-scheme: light;
     color: var(--color-text);
     background-color: var(--color-bg);
     -webkit-font-smoothing: antialiased;
@@ -15,7 +104,7 @@
 
   * {
     box-sizing: border-box;
-    transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color var(--duration-normal) var(--easing-default), border-color var(--duration-normal) var(--easing-default), box-shadow var(--duration-normal) var(--easing-default);
   }
 
   body {

@@ -100,7 +100,7 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
               data-tone={tone}
               className={cn(
                 'max-w-[75%] break-words p-3.5 shadow-xs transition-transform duration-200 hover:scale-[1.01]',
-                tone === 'incoming' && 'bg-white text-text rounded-2xl rounded-tl-none border border-border/80',
+                tone === 'incoming' && 'bg-surface text-text rounded-2xl rounded-tl-none border border-border',
                 tone === 'bot' && 'bg-primary text-white rounded-2xl rounded-tr-none',
                 tone === 'human' && 'bg-warning text-white rounded-2xl rounded-tr-none',
               )}

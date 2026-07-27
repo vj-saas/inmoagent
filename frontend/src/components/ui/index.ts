@@ -1,7 +1,9 @@
 export { Button, buttonVariants, type ButtonProps } from './Button';
 export { Input, type InputProps } from './Input';
 export { Select, type SelectProps } from './Select';
-export { Card, CardHeader, CardBody } from './Card';
+export { Card, CardHeader, CardBody, cardVariants, type CardProps } from './Card';
+export { Logo, type LogoProps } from './Logo';
+export { ThemeToggle, type ThemeToggleProps } from './ThemeToggle';
 export { TableScroll, Table, THead, TBody, Tr, Th, Td } from './Table';
 export { Badge, badgeVariants, type BadgeProps } from './Badge';
 export {

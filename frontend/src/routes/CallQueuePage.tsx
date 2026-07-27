@@ -75,8 +75,13 @@ export function CallQueuePage(): JSX.Element {
   const assignableUsers = assignableApi.data?.users ?? [];
 
   return (
-    <div>
-      <h1 className="mb-4 text-2xl font-semibold text-text">Llamar hoy</h1>
+    <div className="space-y-6">
+      <div className="border-b border-border pb-5">
+        <h1 className="text-2xl font-bold tracking-tight text-text">Llamar hoy</h1>
+        <p className="mt-1 text-xs text-text-muted">
+          Leads que pidieron un humano o quedaron tibios en calificación, priorizados para contactar.
+        </p>
+      </div>
 
       <AsyncSection
         loading={leadsApi.loading}

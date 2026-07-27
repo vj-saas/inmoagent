@@ -25,7 +25,7 @@ export const THead = forwardRef<
   HTMLTableSectionElement,
   HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn('bg-stone-50 border-b border-border text-text-muted/85', className)} {...props} />
+  <thead ref={ref} className={cn('bg-bg border-b border-border text-text-muted/85', className)} {...props} />
 ));
 THead.displayName = 'THead';
 

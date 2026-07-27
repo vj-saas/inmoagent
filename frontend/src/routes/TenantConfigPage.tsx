@@ -39,7 +39,12 @@ export function TenantConfigPage(): JSX.Element {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-semibold text-text">Configuración</h1>
+      <div className="mb-6 border-b border-border pb-5">
+        <h1 className="text-2xl font-bold tracking-tight text-text">Configuración</h1>
+        <p className="mt-1 text-xs text-text-muted">
+          Datos del tenant, credenciales de Meta y estado del webhook.
+        </p>
+      </div>
 
       <div className="flex flex-col gap-6">
         <TenantConfigForm

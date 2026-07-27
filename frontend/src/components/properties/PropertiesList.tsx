@@ -81,7 +81,7 @@ function MobileLabel({ children }: { children: string }): JSX.Element {
 
 const rowClassName =
   'flex flex-col gap-3 rounded-xl border border-border/80 bg-surface p-4.5 shadow-xs mb-3 transition-all duration-200 hover:shadow-md hover:border-text/10 ' +
-  'md:table-row md:flex-none md:gap-0 md:rounded-none md:border-0 md:border-b md:border-border/60 md:bg-transparent md:p-0 md:shadow-none md:mb-0 md:hover:bg-stone-50/70';
+  'md:table-row md:flex-none md:gap-0 md:rounded-none md:border-0 md:border-b md:border-border/60 md:bg-transparent md:p-0 md:shadow-none md:mb-0 md:hover:bg-bg';
 
 const cellClassName = 'flex items-center justify-between gap-2 py-0.5 md:table-cell md:justify-start md:px-4 md:py-3.5';
 

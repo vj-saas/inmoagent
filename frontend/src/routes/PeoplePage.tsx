@@ -195,7 +195,12 @@ export function PeoplePage(): JSX.Element {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-semibold text-text">Gestión de personas</h1>
+      <div className="mb-6 border-b border-border pb-5">
+        <h1 className="text-2xl font-bold tracking-tight text-text">Gestión de personas</h1>
+        <p className="mt-1 text-xs text-text-muted">
+          Usuarios con acceso al panel de este tenant.
+        </p>
+      </div>
 
       <div className="mb-6">
         <AsyncSection

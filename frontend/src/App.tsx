@@ -50,7 +50,7 @@ export function AppRoutes(): JSX.Element {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Navigate to="/leads" replace />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="leads" element={<LeadsPage />} />
         <Route path="leads/:leadId" element={<LeadDetailPage />} />
         <Route path="dashboard" element={<DashboardPage />} />

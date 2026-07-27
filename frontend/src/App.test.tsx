@@ -67,7 +67,7 @@ describe('AppRoutes', () => {
     expect(screen.getByRole('heading', { name: /iniciar sesión/i })).toBeInTheDocument();
   });
 
-  it('con sesion, / redirige a /leads', () => {
+  it('con sesion, / redirige a /dashboard', () => {
     setSession({
       token: 'token-123',
       role: 'OWNER',
@@ -77,7 +77,7 @@ describe('AppRoutes', () => {
 
     renderApp('/');
 
-    expect(screen.getByRole('heading', { name: /bandeja de leads/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /panel de control/i })).toBeInTheDocument();
   });
 
   it('con sesion, navegar a /leads/:leadId renderiza LeadDetailPage con el id correcto', async () => {

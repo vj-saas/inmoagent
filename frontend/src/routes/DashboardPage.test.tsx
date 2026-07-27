@@ -47,7 +47,9 @@ describe('DashboardPage', () => {
 
     renderDashboardPage();
 
-    await waitFor(() => expect(endpoints.getMetrics).toHaveBeenCalledTimes(1));
+    // Una llamada para el período seleccionado y otra para el período
+    // anterior de igual longitud (comparación real, sin serie diaria fabricada).
+    await waitFor(() => expect(endpoints.getMetrics).toHaveBeenCalledTimes(2));
 
     const [tenantId, query, token] = vi.mocked(endpoints.getMetrics).mock.calls[0];
     expect(tenantId).toBe('tenant-1');
@@ -58,6 +60,18 @@ describe('DashboardPage', () => {
     const diffDays = Math.round((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24));
     expect(diffDays).toBeGreaterThanOrEqual(29);
     expect(diffDays).toBeLessThanOrEqual(31);
+
+    const [previousTenantId, previousQuery] = vi.mocked(endpoints.getMetrics).mock.calls[1];
+    expect(previousTenantId).toBe('tenant-1');
+    const previousFrom = new Date(previousQuery.from);
+    const previousTo = new Date(previousQuery.to);
+    // El período anterior termina justo antes de que empiece el seleccionado.
+    expect(previousTo.getTime()).toBeLessThan(from.getTime());
+    const previousDiffDays = Math.round(
+      (previousTo.getTime() - previousFrom.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    expect(previousDiffDays).toBeGreaterThanOrEqual(29);
+    expect(previousDiffDays).toBeLessThanOrEqual(31);
   });
 
   it('muestra Spinner mientras loading', async () => {
@@ -119,7 +133,7 @@ describe('DashboardPage', () => {
     vi.spyOn(endpoints, 'getMetrics').mockResolvedValue(buildMetrics());
 
     renderDashboardPage();
-    await waitFor(() => expect(endpoints.getMetrics).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(endpoints.getMetrics).toHaveBeenCalledTimes(2));
 
     const fromInput = screen.getByTestId('date-range-from');
     fireEvent.change(fromInput, { target: { value: '2099-01-01' } });
@@ -128,7 +142,7 @@ describe('DashboardPage', () => {
       await screen.findByText('La fecha desde no puede ser posterior a la fecha hasta'),
     ).toBeInTheDocument();
 
-    expect(endpoints.getMetrics).toHaveBeenCalledTimes(1);
+    expect(endpoints.getMetrics).toHaveBeenCalledTimes(2);
     expect(screen.queryAllByTestId('metric-card')).toHaveLength(0);
   });
 });

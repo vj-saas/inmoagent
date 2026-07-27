@@ -16,7 +16,8 @@
  */
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import {
   getLead,
   getLeadMessages,
@@ -133,8 +134,17 @@ export function LeadDetailPage(): JSX.Element {
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
       {/* Left Column: Chat / Messages (Primary) */}
       <div className="lg:col-span-2 space-y-6">
-        <div className="flex items-center gap-3 border-b border-border/80 pb-4">
-          <h1 className="text-2xl font-bold tracking-tight text-text">Ficha del lead</h1>
+        <div className="space-y-2 border-b border-border pb-4">
+          <Link
+            to="/leads"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-text-muted transition-colors hover:text-text"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Volver
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight text-text">
+            {lead.name || lead.phone}
+          </h1>
         </div>
 
         <Card className="shadow-sm">

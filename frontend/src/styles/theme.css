@@ -1,49 +1,114 @@
-@theme {
-  --color-bg: #fcfbf9;
-  --color-surface: #ffffff;
-  --color-border: #e7e5e4;
-  --color-text: #1c1917;
-  --color-text-muted: #78716c;
-  --color-primary: #0f172a;
-  --color-primary-hover: #1e293b;
-  --color-accent: #b45309;
-  --color-accent-hover: #92400e;
-  --color-info: #0284c7;
-  --color-danger: #e11d48;
-  --color-success: #16a34a;
-  --color-warning: #ea580c;
+/**
+ * Design tokens — InmobilApp frontend
+ *
+ * Filosofía: Swiss / Editorial (ver .design/frontend-redesign/DESIGN_BRIEF.md)
+ * Base cool-neutral + acento cálido terracota, tipografía Archivo/IBM Plex Mono.
+ *
+ * IMPORTANTE: los nombres de token existentes (--color-text, --color-bg,
+ * --color-primary, --color-accent, --color-info/danger/success/warning,
+ * --color-surface, --color-border, --color-text-muted) se mantienen sin
+ * cambios porque cientos de clases Tailwind ya generadas (bg-primary,
+ * text-danger, border-border, etc.) dependen de ese nombre exacto en todo
+ * el codebase. Esta fase EXTIENDE los tokens (nuevos valores, dark mode,
+ * tipografía, motion, tokens de layout) sin renombrar nada existente.
+ */
 
-  --radius: 10px;
-  --radius-sm: 6px;
-  --radius-card: 14px;
+@theme {
+  /* ---- Color: light mode (valores por defecto) ---- */
+  --color-bg: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-border: #e2e4e9;
+  --color-border-strong: #cbd0d8;
+  --color-text: #12151b;
+  --color-text-muted: #4b5563;
+  --color-text-faint: #8a919c;
+
+  --color-primary: #10182a;
+  --color-primary-hover: #1e2a44;
+
+  --color-accent: #a1481e;
+  --color-accent-hover: #833a17;
+
+  --color-info: #0369a1;
+  --color-danger: #b91c1c;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+
+  --color-focus-ring: #a1481e;
+  --color-overlay: rgba(16, 21, 30, 0.48);
+
+  /* ---- Chart series (dashboard: sparklines, tendencias) ---- */
+  --color-chart-primary: #a1481e;
+  --color-chart-secondary: #10182a;
+  --color-chart-grid: #e2e4e9;
+  --color-chart-muted: #cbd0d8;
+
+  /* ---- Radius (más cerrado que antes: look Swiss/editorial, menos "soft") ---- */
+  --radius-sm: 4px;
+  --radius: 8px;
+  --radius-card: 12px;
   --radius-pill: 9999px;
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  --shadow-md: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.03);
-  --shadow-lg: 0 10px 30px -3px rgba(0, 0, 0, 0.07), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
+  /* ---- Shadow (se mantiene la sutileza, se agrega shadow-focus) ---- */
+  --shadow-sm: 0 1px 2px 0 rgba(16, 21, 30, 0.04);
+  --shadow-md: 0 4px 20px -2px rgba(16, 21, 30, 0.06), 0 2px 6px -1px rgba(16, 21, 30, 0.04);
+  --shadow-lg: 0 10px 30px -3px rgba(16, 21, 30, 0.09), 0 4px 12px -2px rgba(16, 21, 30, 0.05);
+  --shadow-focus: 0 0 0 3px rgba(161, 72, 30, 0.25);
 
-  --font-family: 'Plus Jakarta Sans', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* ---- Typography ---- */
+  --font-family: 'Archivo', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --font-family-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
   --font-size-lg: 1.125rem;
   --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.5rem;
 
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
 
   --line-height: 1.5;
+  --line-height-tight: 1.2;
+  --line-height-relaxed: 1.65;
 
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-wide: 0.04em;
+
+  /* ---- Spacing (base 4px, extendido) ---- */
   --spacing-0: 0;
   --spacing-1: 0.25rem;
   --spacing-2: 0.5rem;
   --spacing-3: 0.75rem;
   --spacing-4: 1rem;
+  --spacing-5: 1.25rem;
   --spacing-6: 1.5rem;
+  --spacing-7: 1.75rem;
   --spacing-8: 2rem;
   --spacing-10: 2.5rem;
   --spacing-12: 3rem;
+  --spacing-14: 3.5rem;
   --spacing-16: 4rem;
+  --spacing-20: 5rem;
+  --spacing-24: 6rem;
+
+  /* ---- Motion (sutil y funcional, ver brief) ---- */
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-out: cubic-bezier(0, 0, 0.2, 1);
+
+  /* ---- Layout: nav ---- */
+  --sidebar-width: 248px;
+  --sidebar-width-collapsed: 64px;
+  --header-height-mobile: 56px;
+  --max-width-page: 1280px;
 }

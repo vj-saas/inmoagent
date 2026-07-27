@@ -5,12 +5,15 @@
  *   sola vez en el init de `useState`.
  * - Invoca `getMetrics(tenantId, { from, to }, token)` vía `useApi` al montar
  *   y cada vez que `DateRangePicker` emite un rango válido nuevo
- *   (`onChange`).
+ *   (`onChange`), y en paralelo invoca el mismo endpoint con el período
+ *   inmediatamente anterior de igual longitud (dato real, no estimado) para
+ *   poder mostrar una comparación honesta en vez de fabricar una tendencia
+ *   diaria que el backend no expone.
  * - `DateRangePicker` señaliza inválido/válido vía `onValidityChange`; cuando
  *   es inválido no se invoca el endpoint y se muestra el mensaje de
  *   validación en español en vez de la grilla.
  * - Render mutuamente excluyente: mensaje de validación | Spinner | ErrorBanner
- *   | grilla de cinco `MetricCard`.
+ *   | grilla de cinco `MetricCard` + gráfico de comparación.
  * - `tenantId`/`token` vienen siempre de `AuthContext`, nunca hardcodeados.
  * - Pantalla de solo lectura: no importa ninguna función de escritura de
  *   `endpoints.ts`.
@@ -23,6 +26,7 @@ import { useApi } from '../hooks/useApi';
 import { AsyncSection } from '../components/ui';
 import { DateRangePicker } from '../components/dashboard/DateRangePicker';
 import { MetricCard } from '../components/dashboard/MetricCard';
+import { LeadsTrendChart, type TrendDatum } from '../components/dashboard/LeadsTrendChart';
 
 function errorMessage(err: Error): string {
   return err.message || 'Ocurrió un error inesperado.';
@@ -42,6 +46,16 @@ function defaultRange(): { from: string; to: string } {
   return { from: toDay(thirtyDaysAgo), to: toDay(today) };
 }
 
+/** Período inmediatamente anterior, de igual longitud que `range`. */
+function previousRange(range: { from: string; to: string }): { from: string; to: string } {
+  const fromDate = new Date(range.from);
+  const toDate = new Date(range.to);
+  const spanMs = toDate.getTime() - fromDate.getTime();
+  const prevTo = new Date(fromDate.getTime() - 1);
+  const prevFrom = new Date(prevTo.getTime() - spanMs);
+  return { from: prevFrom.toISOString(), to: prevTo.toISOString() };
+}
+
 export function DashboardPage(): JSX.Element {
   const { person, token } = useAuth();
   const tenantId = person?.tenantId ?? '';
@@ -53,27 +67,54 @@ export function DashboardPage(): JSX.Element {
   const { loading, error, data, run } = useApi<MetricsResult>(
     getMetrics as (...args: unknown[]) => Promise<MetricsResult>,
   );
+  const { loading: previousLoading, data: previousData, run: runPrevious } = useApi<MetricsResult>(
+    getMetrics as (...args: unknown[]) => Promise<MetricsResult>,
+  );
 
   const handleChange = (newRange: { from: string; to: string }): void => {
     setRange(newRange);
     run(tenantId, newRange, token ?? '').catch(() => {});
+    runPrevious(tenantId, previousRange(newRange), token ?? '').catch(() => {});
   };
 
   const handleValidityChange = (valid: boolean): void => {
     setIsRangeValid(valid);
   };
 
+  const trendData: TrendDatum[] | null =
+    data && previousData
+      ? [
+          { label: 'Leads nuevos', current: data.newLeads, previous: previousData.newLeads },
+          {
+            label: 'Conversaciones activas',
+            current: data.activeConversations,
+            previous: previousData.activeConversations,
+          },
+          { label: 'Handoffs', current: data.handoffs, previous: previousData.handoffs },
+          {
+            label: 'Citas propuestas',
+            current: data.appointments.proposed,
+            previous: previousData.appointments.proposed,
+          },
+          {
+            label: 'Citas confirmadas',
+            current: data.appointments.confirmed,
+            previous: previousData.appointments.confirmed,
+          },
+        ]
+      : null;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-5">
+      <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-text">Panel de Control</h1>
-          <p className="text-xs text-text-muted mt-1">
+          <p className="mt-1 text-xs text-text-muted">
             Estadísticas de leads, conversaciones y citas programadas en tiempo real.
           </p>
         </div>
 
-        <div className="flex items-center shrink-0">
+        <div className="flex shrink-0 items-center">
           <DateRangePicker
             initialFrom={initialRange.from}
             initialTo={initialRange.to}
@@ -84,7 +125,7 @@ export function DashboardPage(): JSX.Element {
       </div>
 
       {!isRangeValid && (
-        <div className="rounded-lg bg-danger/10 p-4 border border-danger/20">
+        <div className="rounded-lg border border-danger/20 bg-danger/10 p-4">
           <p data-testid="range-validation-error" className="text-sm font-semibold text-danger">
             La fecha desde no puede ser posterior a la fecha hasta
           </p>
@@ -93,17 +134,33 @@ export function DashboardPage(): JSX.Element {
 
       {isRangeValid && (
         <AsyncSection
-          loading={loading}
+          loading={loading || previousLoading}
           error={error ? errorMessage(error) : null}
           loadingLabel="Cargando métricas..."
         >
           {data && (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-              <MetricCard label="Leads nuevos" value={data.newLeads} />
-              <MetricCard label="Conversaciones activas" value={data.activeConversations} />
-              <MetricCard label="Handoffs" value={data.handoffs} />
-              <MetricCard label="Citas propuestas" value={data.appointments.proposed} />
-              <MetricCard label="Citas confirmadas" value={data.appointments.confirmed} />
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+                <MetricCard label="Leads nuevos" value={data.newLeads} previousValue={previousData?.newLeads} />
+                <MetricCard
+                  label="Conversaciones activas"
+                  value={data.activeConversations}
+                  previousValue={previousData?.activeConversations}
+                />
+                <MetricCard label="Handoffs" value={data.handoffs} previousValue={previousData?.handoffs} />
+                <MetricCard
+                  label="Citas propuestas"
+                  value={data.appointments.proposed}
+                  previousValue={previousData?.appointments.proposed}
+                />
+                <MetricCard
+                  label="Citas confirmadas"
+                  value={data.appointments.confirmed}
+                  previousValue={previousData?.appointments.confirmed}
+                />
+              </div>
+
+              {trendData && <LeadsTrendChart data={trendData} />}
             </div>
           )}
         </AsyncSection>
