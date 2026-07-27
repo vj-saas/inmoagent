@@ -310,6 +310,9 @@ export class QualificationHandler {
         minRooms: filters.fMinRooms,
         garage: filters.fGarage,
         petsAllowed: filters.fPetsAllowed,
+        // Señal de ESTE turno, no un filtro persistido (igual que roomsInferred):
+        // solo tiene efecto si el lead lo dijo ahora, no se arrastra a turnos futuros.
+        priceFlexible: ctx.extraction.priceFlexible,
       },
     );
 

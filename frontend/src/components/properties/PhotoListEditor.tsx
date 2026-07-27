@@ -20,7 +20,7 @@
 
 import { useState, type ChangeEvent, type KeyboardEvent } from 'react';
 import { uploadPropertyPhoto } from '../../api/endpoints';
-import { Button } from '../ui';
+import { Button, Input } from '../ui';
 import { ErrorBanner } from '../ErrorBanner';
 
 export interface PhotoListEditorProps {
@@ -131,59 +131,92 @@ export function PhotoListEditor({
   }
 
   return (
-    <div data-testid="photo-list-editor">
-      <ul data-testid="photo-list">
-        {photoUrls.map((url, index) => (
-          <li key={`${url}-${index}`} data-testid="photo-list-item">
-            <span data-testid="photo-list-item-url">{url}</span>
-            <button
-              type="button"
-              onClick={() => handleMoveUp(index)}
-              disabled={index === 0}
-              aria-label="Subir foto"
+    <div data-testid="photo-list-editor" className="flex flex-col gap-3">
+      {photoUrls.length > 0 && (
+        <ul data-testid="photo-list" className="flex flex-col gap-2">
+          {photoUrls.map((url, index) => (
+            <li
+              key={`${url}-${index}`}
+              data-testid="photo-list-item"
+              className="flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2"
             >
-              ↑
-            </button>
-            <button
-              type="button"
-              onClick={() => handleMoveDown(index)}
-              disabled={index === photoUrls.length - 1}
-              aria-label="Bajar foto"
-            >
-              ↓
-            </button>
-            <button
-              type="button"
-              onClick={() => handleRemove(index)}
-              aria-label="Quitar foto"
-            >
-              Quitar
-            </button>
-          </li>
-        ))}
-      </ul>
+              <span
+                data-testid="photo-list-item-url"
+                className="min-w-0 flex-1 truncate text-sm text-text-muted"
+                title={url}
+              >
+                {url}
+              </span>
+              <div className="flex shrink-0 gap-1">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => handleMoveUp(index)}
+                  disabled={index === 0}
+                  aria-label="Subir foto"
+                >
+                  ↑
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  onClick={() => handleMoveDown(index)}
+                  disabled={index === photoUrls.length - 1}
+                  aria-label="Bajar foto"
+                >
+                  ↓
+                </Button>
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  onClick={() => handleRemove(index)}
+                  aria-label="Quitar foto"
+                >
+                  Quitar
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <div>
-        <label htmlFor="photo-list-editor-url-input">Agregar por URL</label>
-        <input
-          id="photo-list-editor-url-input"
-          type="text"
-          value={urlInput}
-          onChange={(event) => {
-            setUrlInput(event.target.value);
-            setUrlError(null);
-          }}
-          onKeyDown={handleUrlInputKeyDown}
-          placeholder="https://..."
-        />
-        <Button type="button" onClick={handleAddUrl}>
-          Agregar URL
-        </Button>
+        <label
+          htmlFor="photo-list-editor-url-input"
+          className="mb-1 block text-sm font-medium text-text"
+        >
+          Agregar por URL
+        </label>
+        <div className="flex gap-2">
+          <Input
+            id="photo-list-editor-url-input"
+            type="text"
+            value={urlInput}
+            onChange={(event) => {
+              setUrlInput(event.target.value);
+              setUrlError(null);
+            }}
+            onKeyDown={handleUrlInputKeyDown}
+            placeholder="https://..."
+            invalid={Boolean(urlError)}
+          />
+          <Button type="button" variant="secondary" onClick={handleAddUrl}>
+            Agregar URL
+          </Button>
+        </div>
+        {urlError && <ErrorBanner message={urlError} />}
       </div>
-      {urlError && <ErrorBanner message={urlError} />}
 
       <div>
-        <label htmlFor="photo-list-editor-file-input">Subir archivo</label>
+        <label
+          htmlFor="photo-list-editor-file-input"
+          className="mb-1 block text-sm font-medium text-text"
+        >
+          Subir archivo
+        </label>
         <input
           id="photo-list-editor-file-input"
           type="file"
@@ -191,10 +224,15 @@ export function PhotoListEditor({
           onChange={handleFileChange}
           disabled={uploading}
           data-testid="photo-list-editor-file-input"
+          className="block w-full text-sm text-text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-sm file:font-medium file:text-white file:hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
         />
-        {uploading && <span data-testid="photo-list-editor-uploading">Subiendo...</span>}
+        {uploading && (
+          <span data-testid="photo-list-editor-uploading" className="mt-1 block text-sm text-text-muted">
+            Subiendo...
+          </span>
+        )}
+        {fileError && <ErrorBanner message={fileError} />}
       </div>
-      {fileError && <ErrorBanner message={fileError} />}
     </div>
   );
 }

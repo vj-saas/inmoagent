@@ -56,6 +56,7 @@ describe('QualificationHandler — zona insistida tras oferta rechazada', () => 
         wantsGarage: null,
         wantsPetsAllowed: null,
         roomsInferred: false,
+        priceFlexible: false,
         extraRequirements: null,
         interestedPropertyIndex: null,
       },

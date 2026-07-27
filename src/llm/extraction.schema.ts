@@ -24,6 +24,8 @@ export const rawExtractionSchema = z.object({
   wantsPetsAllowed: z.boolean().nullable(),
   /** true = minRooms se dedujo de la composición familiar, no de un número explícito (§6). */
   roomsInferred: z.boolean(),
+  /** true = el lead dijo que puede pagar más SIN dar una cifra nueva (ej. "me puedo estirar", "y más caro no tenés?"). */
+  priceFlexible: z.boolean(),
   extraRequirements: z.string().nullable(),
   interestedPropertyIndex: z.number().int().positive().nullable(),
 });
@@ -42,6 +44,8 @@ export interface ExtractionResult {
   wantsGarage: boolean | null;
   wantsPetsAllowed: boolean | null;
   roomsInferred: boolean;
+  /** true = el lead ofreció flexibilidad de presupuesto este turno sin dar una cifra nueva. */
+  priceFlexible: boolean;
   /** Incluye lo que puso el LLM más los barrios no reconocidos (en texto libre). */
   extraRequirements: string | null;
   interestedPropertyIndex: number | null;
@@ -90,6 +94,7 @@ export function sanitizeExtraction(
     wantsGarage: raw.wantsGarage,
     wantsPetsAllowed: raw.wantsPetsAllowed,
     roomsInferred: raw.roomsInferred,
+    priceFlexible: raw.priceFlexible,
     extraRequirements: extraRequirements ? extraRequirements : null,
     interestedPropertyIndex: raw.interestedPropertyIndex,
   };

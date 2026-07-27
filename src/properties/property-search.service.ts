@@ -20,6 +20,8 @@ export interface SearchFilters {
   minRooms: number | null;
   garage: boolean | null;
   petsAllowed: boolean | null;
+  /** El lead dijo este turno que puede pagar más sin dar una cifra nueva (§6.1). */
+  priceFlexible?: boolean;
 }
 
 /**
@@ -42,6 +44,14 @@ export interface SearchOutcome {
 const RESULT_LIMIT = 3;
 const PRICE_TOLERANCE = 1.1; // +10% silencioso (sin avisar)
 const PRICE_RELAX_CAP = 1.25; // +25% máximo cuando se avisa "amplié el presupuesto"
+/**
+ * Tope MAYOR que se prueba antes de relajar ambientes, pero SOLO cuando el
+ * propio lead dijo este turno que puede estirar el presupuesto sin dar una
+ * cifra nueva (`priceFlexible`, §6.1 QA 2026-07-27). Sin esa señal explícita
+ * nunca se usa este tope: relajar más de +25% en silencio sería mostrarle
+ * algo bastante más caro de lo que pidió sin que lo haya habilitado.
+ */
+const PRICE_RELAX_CAP_FLEXIBLE = 1.5;
 /** Universo acotado para ordenar en memoria cuando hay que comparar precio sin moneda de referencia. */
 const CANDIDATE_LIMIT = 100;
 
@@ -96,6 +106,18 @@ export class PropertySearchService {
         includeRooms: true,
         label: 'price',
       });
+      // El lead mismo ofreció estirar el presupuesto este turno (sin cifra
+      // nueva): probamos un tope mayor ANTES de relajar ambientes, para no
+      // terminar mostrándole algo más chico cuando lo que pidió fue algo más
+      // grande y dijo que podía pagarlo (QA 2026-07-27, sim-personas
+      // "20-relajacion-implicita-sin-numero").
+      if (filters.priceFlexible) {
+        attempts.push({
+          priceFactor: PRICE_RELAX_CAP_FLEXIBLE,
+          includeRooms: true,
+          label: 'price',
+        });
+      }
     }
     if (filters.minRooms) {
       attempts.push({

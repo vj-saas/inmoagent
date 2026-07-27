@@ -265,6 +265,16 @@ const PERSONAS: Persona[] = [
       'no me sirve otra zona, tiene que ser ahi porque trabajo cerca',
     ],
   },
+  {
+    name: '23-pregunta-antes-de-agendar',
+    description:
+      'Reporte real de WhatsApp (2026-07-27): "me interesa el segundo, de cuanto son las expensas?" saltaba directo a agendar sin contestar. No debe agendar hasta que la pregunta esté respondida y el lead confirme.',
+    turns: [
+      'hola busco depto en alquiler en palermo',
+      'me interesa el segundo, de cuanto son las expensas?',
+      'buenisimo, si dale, quiero agendar la visita',
+    ],
+  },
 ];
 
 function formatFilters(lead: Lead): string {

@@ -15,6 +15,7 @@ function raw(overrides: Partial<RawExtraction> = {}): RawExtraction {
     wantsGarage: null,
     wantsPetsAllowed: null,
     roomsInferred: false,
+    priceFlexible: false,
     extraRequirements: null,
     interestedPropertyIndex: null,
     ...overrides,

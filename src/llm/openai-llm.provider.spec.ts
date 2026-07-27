@@ -53,6 +53,7 @@ describe('OpenAiLlmProvider', () => {
     wantsGarage: null,
     wantsPetsAllowed: null,
     roomsInferred: false,
+    priceFlexible: false,
     extraRequirements: null,
     interestedPropertyIndex: null,
   });
