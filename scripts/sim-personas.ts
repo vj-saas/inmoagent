@@ -275,6 +275,15 @@ const PERSONAS: Persona[] = [
       'buenisimo, si dale, quiero agendar la visita',
     ],
   },
+  {
+    name: '24-pregunta-monoambiente-fichas-iguales',
+    description:
+      'Reporte real de WhatsApp (2026-07-27): tras mostrar 2 opciones en Caballito, preguntar "monoambiente hay?" (no lo hay) debe avisar honestamente, no repetir el genérico "ya te mostré todo" solo porque las fichas más cercanas coinciden con las ya vistas.',
+    turns: [
+      'hola busco depto en alquiler en caballito',
+      'monoambiente hay?',
+    ],
+  },
 ];
 
 function formatFilters(lead: Lead): string {

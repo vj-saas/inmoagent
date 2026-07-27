@@ -113,3 +113,122 @@ describe('QualificationHandler — zona insistida tras oferta rechazada', () => 
     });
   });
 });
+
+/**
+ * QA 2026-07-27 (WhatsApp real): tras mostrar 2 opciones en Caballito (2amb y
+ * 3amb), el lead preguntó "monoambiente hay?" — no había, así que la búsqueda
+ * relajó ambientes y el más cercano resultó ser (por casualidad) el mismo par
+ * ya mostrado. `sameAsBefore` solo comparaba las fichas resultantes, así que
+ * disparó el genérico "ya te mostré todo" en vez del mensaje honesto de
+ * relajación ("no tengo monoambiente, esto es lo más parecido") — el lead
+ * nunca se enteró de que no había monoambientes.
+ */
+describe('QualificationHandler.triggerSearch — relajación vs. "mismas fichas"', () => {
+  const tenant = { id: 'tenant-1' } as HandlerContext['tenant'];
+  const property2amb = { id: 'prop-2amb' };
+  const property3amb = { id: 'prop-3amb' };
+
+  let propertySearch: {
+    zonesWithStock: jest.Mock;
+    topStockZones: jest.Mock;
+    teaserSearch: jest.Mock;
+    searchAndRecordForLead: jest.Mock;
+  };
+  let safeReply: { compose: jest.Mock };
+  let handler: QualificationHandler;
+
+  beforeEach(() => {
+    propertySearch = {
+      zonesWithStock: jest.fn().mockResolvedValue(['caballito']),
+      topStockZones: jest.fn(),
+      teaserSearch: jest.fn(),
+      searchAndRecordForLead: jest.fn(),
+    };
+    safeReply = { compose: jest.fn() };
+    handler = new QualificationHandler(
+      propertySearch as unknown as PropertySearchService,
+      safeReply as unknown as SafeReplyService,
+    );
+  });
+
+  function ctx(turnText: string, minRooms: number | null): HandlerContext {
+    return {
+      tenant,
+      lead: {
+        id: 'lead-1',
+        state: ConversationState.SEARCH_MATCH,
+        lastSearchIds: ['prop-2amb', 'prop-3amb'],
+        turnCount: 3,
+      },
+      turnText,
+      extraction: {
+        intent: 'ask_question',
+        operation: null,
+        neighborhoods: [],
+        maxPrice: null,
+        currency: null,
+        minRooms,
+        wantsGarage: null,
+        wantsPetsAllowed: null,
+        roomsInferred: false,
+        priceFlexible: false,
+        extraRequirements: null,
+        interestedPropertyIndex: null,
+      },
+      recentMessages: [],
+    } as unknown as HandlerContext;
+  }
+
+  function filters(overrides: Partial<LeadFilters> = {}): LeadFilters {
+    return {
+      fOperation: 'RENT' as LeadFilters['fOperation'],
+      fNeighborhoods: ['caballito'],
+      fMaxPrice: null,
+      fCurrency: null,
+      fMinRooms: null,
+      fGarage: null,
+      fPetsAllowed: null,
+      fNotes: null,
+      fOfferedNeighborhoods: [],
+      fPriceMentionedAtTurn: null,
+      ...overrides,
+    };
+  }
+
+  it('si hubo que relajar (no hay monoambiente) muestra el mensaje honesto, aunque las fichas coincidan con las de antes', async () => {
+    propertySearch.searchAndRecordForLead.mockResolvedValue({
+      properties: [property2amb, property3amb],
+      relaxed: 'rooms',
+    });
+
+    const result = await handler.handle(
+      ctx('monoambiente hay?', 1),
+      filters({ fMinRooms: 1 }),
+    );
+
+    expect(result.actions[0]).toMatchObject({
+      kind: 'text',
+      text: expect.stringContaining('no tengo nada con esos ambientes'),
+    });
+    expect(result.actions[0]).not.toMatchObject({
+      text: expect.stringContaining('todas las opciones que tengo hoy'),
+    });
+  });
+
+  it('"mostrame" sin cambiar nada (sin relajar) sí muestra el genérico "ya te mostré todo" — no regresión', async () => {
+    propertySearch.searchAndRecordForLead.mockResolvedValue({
+      properties: [property2amb, property3amb],
+      relaxed: null,
+    });
+
+    const result = await handler.handle(
+      ctx('mostrame de nuevo', null),
+      filters({ fMinRooms: 2 }),
+    );
+
+    expect(result.actions[0]).toMatchObject({
+      kind: 'text',
+      text: expect.stringContaining('todas las opciones que tengo hoy'),
+    });
+  });
+});

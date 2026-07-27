@@ -318,8 +318,16 @@ export class QualificationHandler {
 
     // El lead pidió "mostrame" de nuevo sin cambiar nada y el resultado es
     // idéntico al último enviado: no re-mandamos las mismas fichas (QA §8).
+    // `outcome.relaxed === null` es clave (QA 2026-07-27, WhatsApp real): si
+    // hubo que relajar algo para llegar a este resultado (ej. pidió
+    // "monoambiente" y no hay, así que se relajan ambientes y da la casualidad
+    // de que el más cercano es el mismo que ya se había mostrado), el lead
+    // hizo una pregunta nueva y necesita la respuesta honesta de por qué
+    // ("no tengo monoambiente, esto es lo más parecido"), no el genérico
+    // "ya te mostré todo" — aunque las fichas resultantes coincidan.
     const sameAsBefore =
       ctx.lead.state === ConversationState.SEARCH_MATCH &&
+      outcome.relaxed === null &&
       outcome.properties.length > 0 &&
       outcome.properties.length === previousSearchIds.length &&
       outcome.properties.every((p, i) => p.id === previousSearchIds[i]);
