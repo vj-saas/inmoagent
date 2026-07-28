@@ -248,6 +248,28 @@ model Lead {
   // le vuelve a preguntar (mismo patrón que `greetedAt`).
   nameAskedAt DateTime?
 
+  // ── Calificación comercial (spec 09, T1.2) ──────────────────────────────
+  // Valores normalizados a un conjunto cerrado por código (nunca texto crudo
+  // del LLM): ver `sanitizeCommercialField` en llm/extraction.schema.ts.
+  qTimeline          String? // "inmediato" | "1-3 meses" | "3-6 meses" | "explorando"
+  qGuarantee         String? // "propietaria" | "caucion" | "recibo" | "no_tiene" | "no_sabe" (alquiler)
+  qPaymentMethod     String? // "contado" | "credito" | "mixto" | "no_sabe" (venta)
+  qHasPropertyToSell Boolean? // true = tiene que vender/rescindir algo antes (también es una captación)
+  qMotive            String? // texto libre normalizado, no alimenta el score
+  qVisitAvailability String? // texto libre ("tardes después de las 18"), no alimenta el score
+  // Anti-repregunta: controla el cupo de 2 preguntas comerciales en
+  // COMMERCIAL_QUALIFICATION (T1.4). Guarda el NOMBRE del campo ya preguntado
+  // ("qGuarantee", "qTimeline", etc.), no el valor.
+  qAskedFields String[] @default([])
+  // Se recalcula SIEMPRE en código al final de cada turno (lead-score.util.ts,
+  // T1.5) — nunca lo decide el LLM.
+  qScore      Int? // 0-100
+  qScoreLabel String? // "frio" | "tibio" | "caliente"
+  // Último turno con una señal de compra fuerte detectada por regex (T3.1;
+  // descuento/contado/financiación/etc.), no por el LLM.
+  qBuyingSignalAt  DateTime?
+  qWantsStockAlert Boolean   @default(false) // pidió aviso cuando entre stock (T3.3)
+
   assignedUserId String?
   assignedUser   Person? @relation("LeadAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
 
