@@ -565,7 +565,7 @@ el handoff entre chats.
 | T1.2 | Schema comercial | high | ✅ hecho | 11 campos nuevos en `Lead` (migración manual, misma limitación de DB local que T1.1/T2.4). Puramente aditivo — sin código que los use todavía, cero regresión |
 | T1.3 | Extracción comercial | high | ✅ hecho | timeline/guarantee/paymentMethod/hasPropertyToSell/visitAvailability en la misma llamada de extracción; sanitizeClosedValue descarta cualquier valor fuera del conjunto cerrado (AC-25). ⚠️ AC-26 (re-correr sim-personas.ts) NO se pudo validar: no hay Postgres local corriendo en este entorno (mismo bloqueo que las migraciones de T1.1/T1.2/T2.4). Pendiente antes de deployar. |
 | T1.4 | Estado COMMERCIAL_QUALIFICATION | high | ✅ hecho (código+tests) | 🔴 **crítico — tocó la FSM. Implementado bajo instrucción explícita de avanzar sin pausar por aprobación; igual queda señalado acá para que se revise.** Nuevo estado + `CommercialQualificationHandler` + `pendingPropertyId`. `search-match.handler.ts` ya no llama a `scheduling.enterScheduling` directo — entra a este estado primero. 3 tests e2e existentes actualizados (no se pudieron ejecutar, ver nota DB) |
-| T1.5 | Score del lead | medium | ⬜ pendiente | |
+| T1.5 | Score del lead | medium | ✅ hecho | `lead-score.util.ts` (función pura, pesos exportados); recalculado SIEMPRE al final de cada turno en `persistLeadUpdate`, sobre el lead ya con los cambios de ESE turno aplicados. `summarizeLeadFilters` (alerta interna) ahora antepone etiqueta+urgencia+capacidad de pago — resuelve la decisión pendiente del template Meta usando el mismo workaround ya usado para `preferredDay`. **Cierra la Fase 1.** |
 | T3.1 | Señales de compra | high | ⬜ pendiente | 🔴 crítico — aprobación humana |
 | T3.2 | Match reasoning | medium | ⬜ pendiente | |
 | T3.3 | Rescate sin stock | medium | ⬜ pendiente | |
@@ -647,10 +647,12 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecho · ⏸️ pausado · ❌ de
 - **Idioma:** el bot responde siempre en español rioplatense, incluso a leads que
   escriben en inglés (ya detectado en QA previos). Sigue siendo decisión de
   producto abierta y **fuera del alcance de esta spec**.
-- **Alerta `lead_alert`:** el template tiene 4 parámetros fijos ya aprobados en
-  Meta. Meter score y urgencia exige o bien re-aprobar el template, o bien
-  seguir el workaround de concatenar en un parámetro existente
-  (`scheduling.handler.ts:37`). **Decidir antes de T1.5.**
+- ~~**Alerta `lead_alert`:**~~ **Resuelta en T1.5.** Se usó el workaround
+  (concatenar en el parámetro libre de `summarizeLeadFilters`, mismo criterio
+  que `scheduling.handler.ts:37` con `preferredDay`) en vez de pedir
+  re-aprobación del template a Meta. Si el volumen justifica un template
+  dedicado con más parámetros más adelante, es un cambio aislado a
+  `lead-alert.service.ts` + `templates.ts`.
 
 ---
 

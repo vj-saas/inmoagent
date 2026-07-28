@@ -1,4 +1,4 @@
-import type { Tenant } from '@prisma/client';
+import type { Lead, Tenant } from '@prisma/client';
 
 import {
   buildDayPreferenceQuestion,
@@ -21,6 +21,7 @@ import {
   DEFAULT_HANDOFF_INTRO,
   DEFAULT_INTRO,
   OPERATION_QUESTION,
+  summarizeLeadFilters,
 } from './templates';
 
 /** Cuenta signos de pregunta en un texto (AC-8: máx. uno por mensaje, salvo teaser). */
@@ -148,6 +149,72 @@ describe('buildTeaserIntro', () => {
 
   it('cae a "esa zona" sin barrios', () => {
     expect(buildTeaserIntro([], 'lead-10:0')).toContain('esa zona');
+  });
+});
+
+describe('summarizeLeadFilters — resumen para la alerta interna (T1.5, AC-39)', () => {
+  function leadFixture(overrides: Partial<Lead> = {}): Lead {
+    return {
+      id: 'lead-1',
+      name: null,
+      fOperation: null,
+      fNeighborhoods: [],
+      fMaxPrice: null,
+      fCurrency: null,
+      fMinRooms: null,
+      qAskedFields: [],
+      qTimeline: null,
+      qGuarantee: null,
+      qPaymentMethod: null,
+      qBuyingSignalAt: null,
+      ...overrides,
+    } as unknown as Lead;
+  }
+
+  it('AC-39: incluye la etiqueta de temperatura', () => {
+    const text = summarizeLeadFilters(leadFixture({ qAskedFields: ['guarantee'] }));
+    expect(text).toMatch(/tibio/i);
+  });
+
+  it('AC-39: incluye la urgencia (qTimeline) cuando está seteada', () => {
+    const text = summarizeLeadFilters(
+      leadFixture({ qTimeline: 'inmediato' }),
+    );
+    expect(text).toMatch(/urgencia inmediata/i);
+  });
+
+  it('AC-39: incluye la garantía en un lead de alquiler', () => {
+    const text = summarizeLeadFilters(
+      leadFixture({ fOperation: 'RENT', qGuarantee: 'no_tiene' }),
+    );
+    expect(text).toMatch(/sin garantía/i);
+  });
+
+  it('AC-39: incluye la forma de pago en un lead de compra', () => {
+    const text = summarizeLeadFilters(
+      leadFixture({ fOperation: 'SALE', qPaymentMethod: 'contado' }),
+    );
+    expect(text).toMatch(/paga contado/i);
+  });
+
+  it('no mezcla garantía de RENT con un lead de SALE, ni viceversa', () => {
+    const text = summarizeLeadFilters(
+      leadFixture({
+        fOperation: 'SALE',
+        qGuarantee: 'propietaria', // dato ajeno a SALE, no debería aparecer
+        qPaymentMethod: 'contado',
+      }),
+    );
+    expect(text).not.toMatch(/garantía/i);
+    expect(text).toMatch(/contado/i);
+  });
+
+  it('sin ningún dato comercial, sigue mostrando solo la etiqueta y los filtros (regresión)', () => {
+    const text = summarizeLeadFilters(
+      leadFixture({ fOperation: 'RENT', fNeighborhoods: ['caballito'] }),
+    );
+    expect(text).toContain('Caballito');
+    expect(text).toMatch(/frío/i);
   });
 });
 

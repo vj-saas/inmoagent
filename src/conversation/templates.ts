@@ -2,6 +2,35 @@ import type { Lead, Tenant } from '@prisma/client';
 import type { PropertyWithPhotos } from '../properties/property-search.service';
 import type { MissingFilter } from './filters.util';
 import { pickVariant } from './copy-variants.util';
+import { calculateLeadScore } from './lead-score.util';
+
+const SCORE_LABEL_DISPLAY: Record<string, string> = {
+  caliente: '🔥 Caliente',
+  tibio: '🟡 Tibio',
+  frio: '🔵 Frío',
+};
+
+const TIMELINE_LABEL: Record<string, string> = {
+  inmediato: 'urgencia inmediata',
+  '1-3 meses': 'se muda en 1-3 meses',
+  '3-6 meses': 'se muda en 3-6 meses',
+  explorando: 'todavía explorando',
+};
+
+const GUARANTEE_LABEL: Record<string, string> = {
+  propietaria: 'garantía propietaria',
+  caucion: 'garantía de caución',
+  recibo: 'garantiza con recibo de sueldo',
+  no_tiene: 'sin garantía',
+  no_sabe: 'no sabe qué garantía puede dar',
+};
+
+const PAYMENT_METHOD_LABEL: Record<string, string> = {
+  contado: 'paga contado',
+  credito: 'necesita crédito',
+  mixto: 'contado + crédito',
+  no_sabe: 'no sabe cómo va a pagar',
+};
 
 const OPERATION_LABEL: Record<string, string> = {
   SALE: 'compra',
@@ -34,7 +63,17 @@ function formatFiltersSummary(source: FilterSummarySource): string[] {
   return parts;
 }
 
-/** Resumen legible de los filtros del lead, para la notificación interna al tenant. */
+/**
+ * Resumen legible para la notificación interna al tenant (spec 09, T1.5,
+ * AC-39): etiqueta de temperatura + filtros de búsqueda + urgencia y
+ * capacidad de pago, en ese orden. Todo derivado de campos persistidos
+ * (nunca del LLM) — mismo criterio que `calculateLeadScore`.
+ *
+ * Va como parámetro libre del template `lead_alert` (que tiene 4 parámetros
+ * fijos ya aprobados en Meta, ver docs/09 §9 decisión pendiente): es el
+ * único lugar del mensaje con espacio para meter esta info sin pedir
+ * re-aprobación del template.
+ */
 export function summarizeLeadFilters(lead: Lead): string {
   const parts = formatFiltersSummary({
     fOperation: lead.fOperation,
@@ -43,7 +82,25 @@ export function summarizeLeadFilters(lead: Lead): string {
     fCurrency: lead.fCurrency,
     fMinRooms: lead.fMinRooms,
   });
-  return parts.length > 0 ? parts.join(', ') : 'sin filtros definidos todavía';
+  const filtersText =
+    parts.length > 0 ? parts.join(', ') : 'sin filtros definidos todavía';
+
+  const { label } = calculateLeadScore(lead);
+  const scoreText = SCORE_LABEL_DISPLAY[label] ?? label;
+
+  const extras: string[] = [];
+  if (lead.qTimeline) {
+    extras.push(TIMELINE_LABEL[lead.qTimeline] ?? lead.qTimeline);
+  }
+  if (lead.fOperation === 'RENT' && lead.qGuarantee) {
+    extras.push(GUARANTEE_LABEL[lead.qGuarantee] ?? lead.qGuarantee);
+  }
+  if (lead.fOperation === 'SALE' && lead.qPaymentMethod) {
+    extras.push(PAYMENT_METHOD_LABEL[lead.qPaymentMethod] ?? lead.qPaymentMethod);
+  }
+  const extrasText = extras.length > 0 ? ` · ${extras.join(', ')}` : '';
+
+  return `${scoreText} · ${filtersText}${extrasText}`;
 }
 
 /**

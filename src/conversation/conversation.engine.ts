@@ -29,6 +29,7 @@ import {
 } from './filters.util';
 import { leadSeed } from './copy-variants.util';
 import { applyFormality } from './formality.util';
+import { calculateLeadScore } from './lead-score.util';
 import { CommercialQualificationHandler } from './handlers/commercial-qualification.handler';
 import { GreetingHandler } from './handlers/greeting.handler';
 import { QualificationHandler } from './handlers/qualification.handler';
@@ -423,6 +424,34 @@ export class ConversationEngine {
     ) {
       data.handoffAt = new Date();
     }
+
+    // Score (spec 09, T1.5, AC-38): se recalcula SIEMPRE en código al final
+    // del turno, sobre el lead YA con los cambios de este turno aplicados
+    // (para que, p.ej., una garantía recién contestada cuente en el mismo
+    // turno en que se guarda, no recién en el siguiente).
+    const scoreResult = calculateLeadScore({
+      ...lead,
+      name: (data.name as string | null | undefined) ?? lead.name,
+      fOperation:
+        (data.fOperation as Lead['fOperation'] | undefined) ??
+        lead.fOperation,
+      fMaxPrice:
+        (data.fMaxPrice as Lead['fMaxPrice'] | undefined) ?? lead.fMaxPrice,
+      qAskedFields:
+        (data.qAskedFields as string[] | undefined) ?? lead.qAskedFields,
+      qTimeline:
+        (data.qTimeline as string | null | undefined) ?? lead.qTimeline,
+      qGuarantee:
+        (data.qGuarantee as string | null | undefined) ?? lead.qGuarantee,
+      qPaymentMethod:
+        (data.qPaymentMethod as string | null | undefined) ??
+        lead.qPaymentMethod,
+      qBuyingSignalAt:
+        (data.qBuyingSignalAt as Date | null | undefined) ??
+        lead.qBuyingSignalAt,
+    });
+    data.qScore = scoreResult.score;
+    data.qScoreLabel = scoreResult.label;
 
     await this.prisma.lead.update({ where: { id: lead.id }, data });
   }

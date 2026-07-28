@@ -556,3 +556,44 @@ describe('ConversationEngine — dispatch a COMMERCIAL_QUALIFICATION (T1.4)', ()
     expect(update.mock.calls[0][0].data.pendingPropertyId).toBeNull();
   });
 });
+
+// spec 09, T1.5, AC-38: el score se recalcula SIEMPRE en código al final de
+// cada turno, ya sobre el lead con los cambios de ESTE turno aplicados.
+describe('ConversationEngine — persistencia del score (T1.5)', () => {
+  it('AC-38: persiste qScore y qScoreLabel en cada turno, aunque el handler no diga nada de score', async () => {
+    const stored = lead({ state: ConversationState.QUALIFICATION });
+    const { engine, prisma } = build(stored);
+
+    await engine.handleTurn(TENANT.id, stored.id, 'hola');
+
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    expect(typeof update.mock.calls[0][0].data.qScore).toBe('number');
+    expect(update.mock.calls[0][0].data.qScoreLabel).toBe('frio');
+  });
+
+  it('el score sube en el MISMO turno en que se contesta una pregunta comercial (no recién en el siguiente)', async () => {
+    const stored = lead({
+      state: ConversationState.COMMERCIAL_QUALIFICATION,
+      fOperation: OperationType.RENT,
+      qAskedFields: ['guarantee'],
+    });
+    const { engine, commercialQualification, prisma } = build(stored);
+    commercialQualification.handle.mockResolvedValue({
+      actions: [],
+      nextState: ConversationState.COMMERCIAL_QUALIFICATION,
+      commercialUpdate: { qGuarantee: 'propietaria' },
+    });
+
+    await engine.handleTurn(TENANT.id, stored.id, 'tengo garantía propietaria');
+
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    // 30 (ya había interés, qAskedFields no vacío) + 20 (garantía propietaria, RENT)
+    expect(update.mock.calls[0][0].data.qScore).toBe(50);
+  });
+});
