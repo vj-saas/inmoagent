@@ -21,26 +21,36 @@ function resolveMessageTone(message: Message): MessageTone {
   return message.sentByPersonId ? 'human' : 'bot';
 }
 
+/** Rótulo del autor, en mono, arriba de cada bloque. */
+const TONE_LABEL: Record<MessageTone, string> = {
+  incoming: 'Lead',
+  bot: 'Agente IA',
+  human: 'Vos',
+};
+
 /**
- * Renderiza el timeline de mensajes de un lead en orden cronológico.
+ * Timeline de mensajes en orden cronológico.
  *
- * - Los mensajes se renderizan en el orden recibido (createdAt ascendente).
- * - Los mensajes IN (del lead) se alinean a la izquierda, tono 'incoming'.
- * - Los mensajes OUT se alinean a la derecha, con dos tonos posibles:
- *   'bot' (agente IA) o 'human' (asesor humano, tiene `sentByPersonId`), cada
- *   uno con su propia paleta para que se distingan a simple vista (AC-14).
- * - Las burbujas 'human' muestran el email del autor (`sentByPerson.email`).
- * - Muestra el contenido (body o transcription para audios), el tipo si es relevante, y la fecha.
- * - Valida AC-4 y AC-14.
+ * Se conserva la metáfora de chat (alineación izquierda/derecha) pero no la
+ * burbuja: acá son BLOQUES rectos. Los tres tonos ya no se distinguen por
+ * pastel sino por peso — el lead es papel con hairline, el bot es el bloque
+ * invertido, y la respuesta humana es el bloque de acento, que es lo que
+ * tiene que saltar a la vista cuando alguien del equipo intervino.
+ *
+ * Cada bloque abre con una línea meta en monoespaciada (autor + hora): el
+ * timeline se lee como una transcripción, no como un WhatsApp maquetado.
+ *
+ * Valida AC-4 y AC-14.
  */
 export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) => {
   if (messages.length === 0) {
     return (
-      <div className="p-4 text-center text-sm text-text-muted">Sin mensajes aún</div>
+      <div className="u-hatch flex min-h-32 items-center justify-center border border-border">
+        <span className="u-meta bg-bg px-3 py-2 text-text-muted">Sin mensajes aún</span>
+      </div>
     );
   }
 
-  // Función para formatear la fecha en español
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
     const formatter = new Intl.DateTimeFormat('es-AR', {
@@ -55,7 +65,6 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
     return formatter.format(date);
   };
 
-  // Función para obtener el contenido del mensaje
   const getMessageContent = (message: Message): string => {
     if (message.type === 'AUDIO' && message.transcription) {
       return message.transcription;
@@ -63,7 +72,6 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
     return message.body || '(sin contenido)';
   };
 
-  // Función para obtener la etiqueta del tipo
   const getTypeLabel = (type: string): string => {
     const labels: Record<string, string> = {
       TEXT: 'Texto',
@@ -79,7 +87,7 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
   return (
     <div
       data-testid="message-timeline"
-      className="flex min-h-52 flex-col gap-3 rounded-card bg-bg p-4"
+      className="flex min-h-52 flex-col gap-4 border border-border bg-bg p-4"
     >
       {messages.map((message, index) => {
         const isIncoming = message.direction === 'IN';
@@ -90,56 +98,47 @@ export const MessageTimeline: React.FC<MessageTimelineProps> = ({ messages }) =>
             key={`${message.id}-${index}`}
             data-testid={`message-${message.id}`}
             data-direction={message.direction}
-            className={cn(
-              'mb-2 flex items-start',
-              isIncoming ? 'justify-start' : 'justify-end',
-            )}
+            className={cn('flex items-start', isIncoming ? 'justify-start' : 'justify-end')}
           >
             <div
               data-testid={`message-bubble-${message.id}`}
               data-tone={tone}
               className={cn(
-                'max-w-[75%] break-words p-3.5 shadow-xs transition-transform duration-200 hover:scale-[1.01]',
-                tone === 'incoming' && 'bg-surface text-text rounded-2xl rounded-tl-none border border-border',
-                tone === 'bot' && 'bg-primary text-white rounded-2xl rounded-tr-none',
-                tone === 'human' && 'bg-warning text-white rounded-2xl rounded-tr-none',
+                'max-w-[78%] break-words px-4 py-3',
+                tone === 'incoming' && 'border border-border border-l-2 border-l-border-strong bg-surface text-text',
+                tone === 'bot' && 'bg-invert text-on-invert',
+                tone === 'human' && 'bg-accent-loud text-on-accent',
               )}
             >
-              {/* Rótulo del autor humano */}
-              {tone === 'human' && message.sentByPerson && (
-                <div
-                  data-testid={`message-author-${message.id}`}
-                  className="mb-1 text-xs font-semibold opacity-90"
-                >
-                  {message.sentByPerson.email}
-                </div>
-              )}
+              <div
+                className={cn(
+                  'u-meta mb-2 flex flex-wrap items-baseline gap-x-2',
+                  tone === 'incoming' ? 'text-text-faint' : 'opacity-70',
+                )}
+              >
+                <span>{TONE_LABEL[tone]}</span>
+                {tone === 'human' && message.sentByPerson && (
+                  <span data-testid={`message-author-${message.id}`}>
+                    {message.sentByPerson.email}
+                  </span>
+                )}
+                <span data-testid={`message-timestamp-${message.id}`} className="u-num">
+                  {formatDate(message.createdAt)}
+                </span>
+              </div>
 
-              {/* Contenido del mensaje */}
               <div
                 data-testid={`message-content-${message.id}`}
-                className={cn('text-sm leading-normal', message.type !== 'TEXT' ? 'mb-2' : 'mb-0')}
+                className="text-sm leading-relaxed"
               >
                 {getMessageContent(message)}
               </div>
 
-              {/* Tipo de mensaje (si no es TEXT) */}
               {message.type !== 'TEXT' && (
-                <div
-                  data-testid={`message-type-${message.id}`}
-                  className="mb-2 text-xs italic opacity-80"
-                >
+                <div data-testid={`message-type-${message.id}`} className="u-meta mt-2 opacity-80">
                   [{getTypeLabel(message.type)}]
                 </div>
               )}
-
-              {/* Fecha y hora */}
-              <div
-                data-testid={`message-timestamp-${message.id}`}
-                className="mt-2 text-xs opacity-70"
-              >
-                {formatDate(message.createdAt)}
-              </div>
             </div>
           </div>
         );

@@ -1,44 +1,44 @@
 import { cn } from '../../lib/cn';
 
 /**
- * Isotipo propio: un techo a dos aguas con la esquina inferior derecha
- * recortada en punta, leyéndose a la vez como casa y como globo de
- * conversación (WhatsApp). Reemplaza el ícono genérico Building2 de
- * lucide-react usado antes en un cuadrado sin identidad propia.
+ * Isotipo: un sello impreso, no un ícono.
+ *
+ * Cuadrado macizo de tinta con esquina viva, un vano a dos aguas recortado en
+ * el papel (la casa) y la cola del globo de conversación resuelta como un
+ * bloque de acento en la esquina inferior izquierda (WhatsApp). Se construye
+ * por sustracción de bloques, igual que el resto del sistema: sin degradados,
+ * sin esquinas redondeadas, sin sombra.
+ *
+ * Usa `fill-primary` / `fill-on-invert`, así que se invierte solo en modo
+ * oscuro (sello de papel sobre tinta) sin duplicar el SVG.
  */
 function Mark({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 32 32"
-      fill="none"
-      className={className}
-      aria-hidden="true"
-    >
-      <rect width="32" height="32" rx="8" className="fill-primary" />
-      <path
-        d="M16 7L25 15.5V24C25 24.552 24.552 25 24 25H19.5V18.5H14V25H9C8.448 25 8 24.552 8 24V19L16 7Z"
-        className="fill-white"
-      />
-      <path d="M16 7L8 19V15.5L14.5 9.5C15.333 8.167 16.667 8.167 17.5 9.5L20 12.5L16 7Z" className="fill-accent" />
+    <svg viewBox="0 0 32 32" fill="none" className={className} aria-hidden="true">
+      <rect width="32" height="32" className="fill-primary" />
+      {/* Vano a dos aguas: el hueco de papel dentro del sello. */}
+      <path d="M16 6.5L26.5 17H22.5V25.5H9.5V17H5.5L16 6.5Z" className="fill-on-invert" />
+      {/* Cola del globo: el bloque de acento que lo vuelve conversación. */}
+      <path d="M5.5 32V25.5H12L5.5 32Z" className="fill-accent-loud" />
     </svg>
   );
 }
 
 export interface LogoProps {
-  /** `mark` = solo isotipo (sidebar colapsado, favicon). `full` = isotipo + wordmark. */
+  /** `mark` = solo el sello (rail colapsado, header mobile, favicon). */
   variant?: 'mark' | 'full';
   className?: string;
 }
 
 export function Logo({ variant = 'full', className }: LogoProps) {
   if (variant === 'mark') {
-    return <Mark className={cn('h-8 w-8', className)} />;
+    return <Mark className={cn('h-8 w-8 shrink-0', className)} />;
   }
 
   return (
     <span className={cn('inline-flex items-center gap-2.5', className)}>
       <Mark className="h-8 w-8 shrink-0" />
-      <span className="text-lg font-bold tracking-tight text-text">
+      <span className="u-display text-xl text-text">
         Inmo<span className="text-accent">Agent</span>
       </span>
     </span>

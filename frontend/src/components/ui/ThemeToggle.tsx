@@ -1,14 +1,7 @@
-import { Moon, Sun, Monitor } from 'lucide-react';
 import { useTheme, type ThemePreference } from '../../hooks/useTheme';
 import { cn } from '../../lib/cn';
 
 const ORDER: ThemePreference[] = ['light', 'dark', 'system'];
-
-const ICONS: Record<ThemePreference, typeof Sun> = {
-  light: Sun,
-  dark: Moon,
-  system: Monitor,
-};
 
 const LABELS: Record<ThemePreference, string> = {
   light: 'Tema claro',
@@ -16,19 +9,28 @@ const LABELS: Record<ThemePreference, string> = {
   system: 'Tema del sistema',
 };
 
+/**
+ * Marca del modo activo: tres celdas, la vigente en bloque macizo. No hay
+ * ícono de sol/luna — el estado se lee como un indicador de máquina, con las
+ * tres opciones siempre a la vista en vez de escondidas en un ciclo opaco.
+ */
+const CELLS: Record<ThemePreference, string> = {
+  light: 'CLR',
+  dark: 'OSC',
+  system: 'SIS',
+};
+
 export interface ThemeToggleProps {
-  /** Sidebar colapsado: solo ícono, sin label de texto. */
+  /** Rail colapsado: solo la celda activa. */
   compact?: boolean;
   className?: string;
 }
 
 export function ThemeToggle({ compact = false, className }: ThemeToggleProps) {
   const { preference, setTheme } = useTheme();
-  const Icon = ICONS[preference];
 
   function cycle() {
-    const next = ORDER[(ORDER.indexOf(preference) + 1) % ORDER.length];
-    setTheme(next);
+    setTheme(ORDER[(ORDER.indexOf(preference) + 1) % ORDER.length]);
   }
 
   return (
@@ -37,14 +39,24 @@ export function ThemeToggle({ compact = false, className }: ThemeToggleProps) {
       onClick={cycle}
       title={LABELS[preference]}
       aria-label={`${LABELS[preference]} — tocar para cambiar`}
-      className={cn(
-        'inline-flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2 text-sm font-medium text-text-muted transition-colors hover:bg-bg hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40',
-        compact && 'w-10 justify-center px-0 py-2',
-        className
-      )}
+      className={cn('inline-flex border border-border', className)}
     >
-      <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-      {!compact && <span>{LABELS[preference]}</span>}
+      {ORDER.map((option) => {
+        const active = option === preference;
+        if (compact && !active) return null;
+        return (
+          <span
+            key={option}
+            aria-hidden="true"
+            className={cn(
+              'u-meta px-2 py-1.5',
+              active ? 'bg-invert text-on-invert' : 'text-text-faint',
+            )}
+          >
+            {CELLS[option]}
+          </span>
+        );
+      })}
     </button>
   );
 }

@@ -32,7 +32,7 @@ import { useAuth } from '../auth/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { Spinner } from '../components/Spinner';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { Card, CardBody, CardHeader } from '../components/ui';
+import { Slab, SlabBody, SlabHead, Meta } from '../components/ui';
 import { MessageTimeline } from '../components/leads/MessageTimeline';
 import { LeadNotes } from '../components/leads/LeadNotes';
 import { NoteForm } from '../components/leads/NoteForm';
@@ -131,118 +131,183 @@ export function LeadDetailPage(): JSX.Element {
   const assignableUsers = assignableApi.data?.users ?? [];
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-      {/* Left Column: Chat / Messages (Primary) */}
-      <div className="lg:col-span-2 space-y-6">
-        <div className="space-y-2 border-b border-border pb-4">
-          <Link
-            to="/leads"
-            className="inline-flex items-center gap-1.5 text-sm font-medium text-text-muted transition-colors hover:text-text"
-          >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+    <div className="space-y-8">
+      {/*
+        Cabecera de ficha: "Volver" en mono (reemplaza al breadcrumb, ver IA),
+        el nombre a tamaño de titular y el teléfono como dato tabular debajo.
+      */}
+      <header className="border-b-2 border-border-strong pb-4">
+        <Link to="/leads" className="u-wipe group relative inline-flex items-center gap-1.5">
+          <ArrowLeft className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
+          <Meta muted={false} className="text-text-muted">
             Volver
-          </Link>
-          <h1 className="text-2xl font-bold tracking-tight text-text">
-            {lead.name || lead.phone}
-          </h1>
+          </Meta>
+          <span
+            aria-hidden="true"
+            className="u-wipe-line origin-left scale-x-0 transition-transform duration-200 ease-out group-hover:scale-x-100"
+          />
+        </Link>
+
+        <h1 className="u-display mt-3 text-[clamp(1.75rem,4.5vw,3rem)] text-text">
+          {lead.name || lead.phone}
+        </h1>
+        <p className="u-num mt-1 font-mono text-sm text-text-muted">{lead.phone}</p>
+      </header>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+        {/* Columna izquierda: la transcripción es la razón de estar acá. */}
+        <div className="space-y-6 lg:col-span-2">
+          <Slab rule="ink">
+            {/*
+              El fondo del encabezado codifica quién está respondiendo
+              (`MODE_HEADER_CLASSES`, mismo criterio que `LeadModeBadge`):
+              es contrato con LeadDetailPage.test.tsx, no decoración.
+            */}
+            <SlabHead
+              data-testid="messages-card-header"
+              className={`${MODE_HEADER_CLASSES[resolveLeadMode(lead.state)]} px-5 py-4`}
+            >
+              <h2 className="u-display text-base text-text">Mensajes</h2>
+              <LeadModeBadge state={lead.state} />
+            </SlabHead>
+            <SlabBody className="flex flex-col gap-4 p-5">
+              <MessageTimeline messages={messages} />
+              <ManualReplyBox
+                lead={lead}
+                tenantId={tenantId}
+                token={authToken}
+                onSent={handleManualReplySent}
+              />
+            </SlabBody>
+          </Slab>
         </div>
 
-        <Card className="shadow-sm">
-          <CardHeader
-            data-testid="messages-card-header"
-            className={`flex items-center justify-between ${MODE_HEADER_CLASSES[resolveLeadMode(lead.state)]} border-b border-border/80 px-5 py-4`}
-          >
-            <h2 className="text-base font-semibold text-text">Mensajes</h2>
-            <LeadModeBadge state={lead.state} />
-          </CardHeader>
-          <CardBody className="flex flex-col gap-4 p-5">
-            <MessageTimeline messages={messages} />
-            <ManualReplyBox
-              lead={lead}
-              tenantId={tenantId}
-              token={authToken}
-              onSent={handleManualReplySent}
-            />
-          </CardBody>
-        </Card>
-      </div>
+        {/* Columna derecha: contexto y acciones, sin competir con el timeline. */}
+        <div className="space-y-6 lg:col-span-1">
+          <Slab rule="hairline">
+            <SlabHead>
+              <h2 className="u-meta text-text">Datos del lead</h2>
+            </SlabHead>
+            <SlabBody className="divide-y divide-border p-0">
+              {/*
+                El teléfono no se repite acá: ya está en la cabecera, debajo
+                del nombre, que es donde se lo busca para llamar.
+              */}
+              {[
+                { label: 'Nombre', value: lead.name ?? 'Sin nombre', mono: false },
+                { label: 'Estado', value: lead.state, mono: true },
+                {
+                  label: 'Turnos',
+                  value: String(lead.turnCount ?? 0),
+                  mono: true,
+                },
+              ].map((field) => (
+                <div
+                  key={field.label}
+                  className="flex items-baseline justify-between gap-4 px-4 py-3"
+                >
+                  <Meta>{field.label}</Meta>
+                  <span
+                    className={
+                      field.mono
+                        ? 'u-num font-mono text-sm text-text'
+                        : 'text-sm font-semibold text-text'
+                    }
+                  >
+                    {field.value}
+                  </span>
+                </div>
+              ))}
+            </SlabBody>
+          </Slab>
 
-      {/* Right Column: Metadata, Actions, Notes (Sidebar) */}
-      <div className="space-y-6 lg:col-span-1">
-        <Card className="shadow-sm">
-          <CardHeader className="border-b border-border/80 px-5 py-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">Datos del lead</h2>
-          </CardHeader>
-          <CardBody className="flex flex-col gap-3 text-sm text-text p-5">
-            <div>
-              <span className="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Nombre</span>
-              <span className="text-sm font-semibold">{lead.name ?? 'Sin nombre'}</span>
-            </div>
-            <div>
-              <span className="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Teléfono</span>
-              <span className="text-sm font-semibold">{lead.phone}</span>
-            </div>
-            <div>
-              <span className="block text-[10px] font-bold text-text-muted uppercase tracking-wider">Estado</span>
-              <span className="text-sm font-semibold">{lead.state}</span>
-            </div>
-          </CardBody>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader className="border-b border-border/80 px-5 py-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">Acciones</h2>
-          </CardHeader>
-          <CardBody className="flex flex-col gap-2 p-5">
-            <ContactedToggle lead={lead} tenantId={tenantId} token={authToken} onUpdated={setLead} />
-            <ReleaseHandoffButton lead={lead} tenantId={tenantId} token={authToken} onReleased={fetchLead} />
-            <OptOutButton lead={lead} tenantId={tenantId} token={authToken} onUpdated={setLead} />
-            <SuppressLeadButton tenantId={tenantId} leadId={lead.id} token={authToken} />
-          </CardBody>
-        </Card>
-
-        <Card className="shadow-sm">
-          <CardHeader className="border-b border-border/80 px-5 py-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">Asignación</h2>
-          </CardHeader>
-          <CardBody className="p-5">
-            {assignableApi.error && (
-              <div data-testid="assignable-users-error" role="alert" className="mb-2 text-sm text-danger">
-                No se pudo cargar la lista de personas asignables.
+          {/*
+            Acciones en dos bloques con jerarquía explícita (handoff §4.5):
+            rutina arriba, y una zona de riesgo delimitada abajo para que
+            dar de baja o suprimir un lead no se confunda con marcarlo
+            contactado.
+          */}
+          <Slab rule="hairline">
+            <SlabHead>
+              <h2 className="u-meta text-text">Acciones</h2>
+            </SlabHead>
+            <SlabBody className="flex flex-col gap-2 p-4">
+              <ContactedToggle
+                lead={lead}
+                tenantId={tenantId}
+                token={authToken}
+                onUpdated={setLead}
+              />
+              <ReleaseHandoffButton
+                lead={lead}
+                tenantId={tenantId}
+                token={authToken}
+                onReleased={fetchLead}
+              />
+            </SlabBody>
+            <div className="border-t-2 border-danger/50 bg-danger/5 p-4">
+              <Meta as="div" className="mb-2 text-danger">
+                Zona de riesgo
+              </Meta>
+              <div className="flex flex-col gap-2">
+                <OptOutButton
+                  lead={lead}
+                  tenantId={tenantId}
+                  token={authToken}
+                  onUpdated={setLead}
+                />
+                <SuppressLeadButton tenantId={tenantId} leadId={lead.id} token={authToken} />
               </div>
-            )}
-            <AssignmentControl
-              lead={lead}
-              assignableUsers={assignableUsers}
-              tenantId={tenantId}
-              leadId={lead.id}
-              token={authToken}
-              onUpdated={setLead}
-            />
-          </CardBody>
-        </Card>
+            </div>
+          </Slab>
 
-        <Card className="shadow-sm">
-          <CardHeader className="border-b border-border/80 px-5 py-3">
-            <h2 className="text-xs font-bold uppercase tracking-wider text-text-muted">Notas internas</h2>
-          </CardHeader>
-          <CardBody className="p-5 space-y-4">
-            {notesApi.error && (
-              <div data-testid="notes-error" role="alert" className="mb-2 text-sm text-danger">
-                No se pudieron cargar las notas.
-              </div>
-            )}
-            <LeadNotes notes={notes} />
-            <div className="pt-2 border-t border-border/40">
-              <NoteForm
+          <Slab rule="hairline">
+            <SlabHead>
+              <h2 className="u-meta text-text">Asignación</h2>
+            </SlabHead>
+            <SlabBody className="p-4">
+              {assignableApi.error && (
+                <div
+                  data-testid="assignable-users-error"
+                  role="alert"
+                  className="mb-2 text-sm text-danger"
+                >
+                  No se pudo cargar la lista de personas asignables.
+                </div>
+              )}
+              <AssignmentControl
+                lead={lead}
+                assignableUsers={assignableUsers}
                 tenantId={tenantId}
                 leadId={lead.id}
                 token={authToken}
-                onCreated={(note) => setNotes((prev) => [note, ...prev])}
+                onUpdated={setLead}
               />
-            </div>
-          </CardBody>
-        </Card>
+            </SlabBody>
+          </Slab>
+
+          <Slab rule="hairline">
+            <SlabHead>
+              <h2 className="u-meta text-text">Notas internas</h2>
+            </SlabHead>
+            <SlabBody className="space-y-4 p-4">
+              {notesApi.error && (
+                <div data-testid="notes-error" role="alert" className="mb-2 text-sm text-danger">
+                  No se pudieron cargar las notas.
+                </div>
+              )}
+              <LeadNotes notes={notes} />
+              <div className="border-t border-border pt-4">
+                <NoteForm
+                  tenantId={tenantId}
+                  leadId={lead.id}
+                  token={authToken}
+                  onCreated={(note) => setNotes((prev) => [note, ...prev])}
+                />
+              </div>
+            </SlabBody>
+          </Slab>
+        </div>
       </div>
     </div>
   );

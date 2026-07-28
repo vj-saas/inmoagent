@@ -2,6 +2,18 @@ export { Button, buttonVariants, type ButtonProps } from './Button';
 export { Input, type InputProps } from './Input';
 export { Select, type SelectProps } from './Select';
 export { Card, CardHeader, CardBody, cardVariants, type CardProps } from './Card';
+/* Primitivas de la dirección "Mesa de operaciones" (ver theme.css). */
+export { Slab, SlabHead, SlabBody, slabVariants, type SlabProps } from './Slab';
+export { Meta, type MetaProps } from './Meta';
+export { Num, numVariants, type NumProps } from './Num';
+export {
+  Ledger,
+  LedgerRow,
+  LedgerHead,
+  type LedgerRowProps,
+  type LedgerSignal,
+} from './Ledger';
+export { SectionHead, type SectionHeadProps } from './SectionHead';
 export { Logo, type LogoProps } from './Logo';
 export { ThemeToggle, type ThemeToggleProps } from './ThemeToggle';
 export { TableScroll, Table, THead, TBody, Tr, Th, Td } from './Table';

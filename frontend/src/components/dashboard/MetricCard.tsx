@@ -1,15 +1,6 @@
 import React from 'react';
-import { Card, CardBody } from '../ui';
-import {
-  UserPlus,
-  MessageSquare,
-  ArrowUpDown,
-  CalendarDays,
-  CalendarCheck2,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-} from 'lucide-react';
+import { Slab, Meta, Num } from '../ui';
+import { cn } from '../../lib/cn';
 
 export interface MetricCardProps {
   label: string;
@@ -20,75 +11,90 @@ export interface MetricCardProps {
    * en vez de inventar una tendencia.
    */
   previousValue?: number;
+  /**
+   * `hero`: la métrica protagonista de la pantalla — bloque invertido y
+   * cifra a tamaño de titular. Solo una por pantalla, por definición.
+   * `row`: el resto, en el ticker de la derecha.
+   */
+  emphasis?: 'hero' | 'row';
 }
 
-const iconMap: Record<string, { icon: React.ComponentType<any>; color: string; bg: string }> = {
-  'leads nuevos': { icon: UserPlus, color: 'text-info', bg: 'bg-info/10' },
-  'conversaciones activas': { icon: MessageSquare, color: 'text-accent', bg: 'bg-accent/10' },
-  'handoffs': { icon: ArrowUpDown, color: 'text-warning', bg: 'bg-warning/10' },
-  'citas propuestas': { icon: CalendarDays, color: 'text-text-muted', bg: 'bg-bg' },
-  'citas confirmadas': { icon: CalendarCheck2, color: 'text-success', bg: 'bg-success/10' },
-};
-
-function Trend({ value, previousValue }: { value: number; previousValue: number }) {
+/**
+ * Métrica del panel. Sin ícono, sin caja flotante, sin sparkline decorativo:
+ * la cifra ES el gráfico. El contraste de escala entre la métrica héroe y las
+ * secundarias es lo que convierte cinco números sueltos en una lectura con
+ * jerarquía ("hoy lo que importa es esto").
+ *
+ * La comparación contra el período anterior se escribe en monoespaciada con
+ * un triángulo macizo, no con un ícono de librería: es un dato tabular más.
+ */
+function Trend({
+  value,
+  previousValue,
+  hero,
+}: {
+  value: number;
+  previousValue: number;
+  hero: boolean;
+}) {
   const delta = value - previousValue;
 
   if (delta === 0) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium text-text-faint">
-        <Minus className="h-3.5 w-3.5" aria-hidden="true" />
-        Sin variación vs. período anterior
+      <span className={cn('u-meta', hero ? 'text-on-invert/70' : 'text-text-faint')}>
+        = Sin variación vs. período anterior
       </span>
     );
   }
 
   const pct = previousValue > 0 ? Math.round((delta / previousValue) * 100) : 100;
   const isUp = delta > 0;
-  const Icon = isUp ? TrendingUp : TrendingDown;
-  const tone = isUp ? 'text-success' : 'text-danger';
 
   return (
     <span
-      className={`inline-flex items-center gap-1 text-xs font-semibold ${tone}`}
+      className={cn('u-meta', hero ? 'text-accent-loud' : isUp ? 'text-success' : 'text-danger')}
       aria-label={`${isUp ? 'Aumentó' : 'Bajó'} un ${Math.abs(pct)}% respecto al período anterior`}
     >
-      <Icon className="h-3.5 w-3.5" aria-hidden="true" />
-      {isUp ? '+' : ''}
+      {isUp ? '▲' : '▼'} {isUp ? '+' : ''}
       {pct}% vs. período anterior
     </span>
   );
 }
 
-export const MetricCard: React.FC<MetricCardProps> = ({ label, value, previousValue }) => {
-  const normalizedLabel = label.toLowerCase().trim();
-  const config = iconMap[normalizedLabel] || { icon: UserPlus, color: 'text-accent', bg: 'bg-accent/10' };
-  const IconComponent = config.icon;
+export const MetricCard: React.FC<MetricCardProps> = ({
+  label,
+  value,
+  previousValue,
+  emphasis = 'row',
+}) => {
+  const hero = emphasis === 'hero';
 
   return (
-    <Card tone="raised" data-testid="metric-card" className="transition-all duration-200">
-      <CardBody className="p-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <span className="block text-xs font-bold uppercase tracking-wider text-text-muted">
-              {label}
-            </span>
-            <div className="text-3xl font-extrabold tracking-tight text-text">
-              {value}
-            </div>
-          </div>
-          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${config.bg} ${config.color} shadow-sm`}>
-            <IconComponent className="h-6 w-6" />
-          </div>
-        </div>
+    <Slab
+      data-testid="metric-card"
+      tone={hero ? 'ink' : 'bare'}
+      rule={hero ? 'accent' : 'hairline'}
+      className={cn('flex flex-col justify-between', hero ? 'min-h-[15rem] p-6' : 'gap-3 p-4')}
+    >
+      <Meta as="div" muted={false} className={hero ? 'text-on-invert' : 'text-text-muted'}>
+        {label}
+      </Meta>
 
-        <div className="mt-3 border-t border-border pt-3">
-          {previousValue !== undefined ? (
-            <Trend value={value} previousValue={previousValue} />
-          ) : (
-            <span className="text-xs text-text-faint">Sin datos del período anterior</span>
-          )}
-        </div>
-      </CardBody>
-    </Card>
+      <div className={cn('flex items-end', hero ? 'mt-6' : 'mt-1')}>
+        <Num variant={hero ? 'hero' : 'display'} reveal className={hero ? 'text-on-invert' : ''}>
+          {value}
+        </Num>
+      </div>
+
+      <div className={cn('mt-3 border-t pt-2', hero ? 'border-on-invert/25' : 'border-border')}>
+        {previousValue !== undefined ? (
+          <Trend value={value} previousValue={previousValue} hero={hero} />
+        ) : (
+          <span className={cn('u-meta', hero ? 'text-on-invert/70' : 'text-text-faint')}>
+            Sin datos del período anterior
+          </span>
+        )}
+      </div>
+    </Slab>
   );
 };

@@ -23,7 +23,7 @@ import { useState } from 'react';
 import { getMetrics, type MetricsResult } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { useApi } from '../hooks/useApi';
-import { AsyncSection } from '../components/ui';
+import { AsyncSection, SectionHead } from '../components/ui';
 import { DateRangePicker } from '../components/dashboard/DateRangePicker';
 import { MetricCard } from '../components/dashboard/MetricCard';
 import { LeadsTrendChart, type TrendDatum } from '../components/dashboard/LeadsTrendChart';
@@ -105,28 +105,28 @@ export function DashboardPage(): JSX.Element {
       : null;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text">Panel de Control</h1>
-          <p className="mt-1 text-xs text-text-muted">
-            Estadísticas de leads, conversaciones y citas programadas en tiempo real.
-          </p>
-        </div>
-
-        <div className="flex shrink-0 items-center">
+    <div className="space-y-8">
+      <SectionHead
+        index="01"
+        title="Panel de control"
+        kicker="Métricas del período"
+        description="Leads, conversaciones y citas del rango seleccionado, comparadas contra el período inmediatamente anterior."
+        actions={
           <DateRangePicker
             initialFrom={initialRange.from}
             initialTo={initialRange.to}
             onChange={handleChange}
             onValidityChange={handleValidityChange}
           />
-        </div>
-      </div>
+        }
+      />
 
       {!isRangeValid && (
-        <div className="rounded-lg border border-danger/20 bg-danger/10 p-4">
-          <p data-testid="range-validation-error" className="text-sm font-semibold text-danger">
+        <div className="flex items-stretch border border-danger/40 bg-danger/10">
+          <span className="u-meta flex items-center bg-danger px-2 text-white" aria-hidden="true">
+            Rango
+          </span>
+          <p data-testid="range-validation-error" className="px-4 py-3 text-sm text-danger">
             La fecha desde no puede ser posterior a la fecha hasta
           </p>
         </div>
@@ -139,25 +139,45 @@ export function DashboardPage(): JSX.Element {
           loadingLabel="Cargando métricas..."
         >
           {data && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
-                <MetricCard label="Leads nuevos" value={data.newLeads} previousValue={previousData?.newLeads} />
-                <MetricCard
-                  label="Conversaciones activas"
-                  value={data.activeConversations}
-                  previousValue={previousData?.activeConversations}
-                />
-                <MetricCard label="Handoffs" value={data.handoffs} previousValue={previousData?.handoffs} />
-                <MetricCard
-                  label="Citas propuestas"
-                  value={data.appointments.proposed}
-                  previousValue={previousData?.appointments.proposed}
-                />
-                <MetricCard
-                  label="Citas confirmadas"
-                  value={data.appointments.confirmed}
-                  previousValue={previousData?.appointments.confirmed}
-                />
+            <div className="space-y-10">
+              {/*
+                Portada editorial, no grilla de cinco cards iguales: la métrica
+                que define el día ocupa un bloque invertido de cinco columnas y
+                el resto corre como un ticker de dos por dos a la derecha. La
+                jerarquía la hace el contraste de escala, no el color.
+              */}
+              <div className="grid grid-cols-1 gap-x-10 gap-y-6 lg:grid-cols-12">
+                <div className="lg:col-span-5">
+                  <MetricCard
+                    label="Leads nuevos"
+                    value={data.newLeads}
+                    previousValue={previousData?.newLeads}
+                    emphasis="hero"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2 lg:col-span-7">
+                  <MetricCard
+                    label="Conversaciones activas"
+                    value={data.activeConversations}
+                    previousValue={previousData?.activeConversations}
+                  />
+                  <MetricCard
+                    label="Handoffs"
+                    value={data.handoffs}
+                    previousValue={previousData?.handoffs}
+                  />
+                  <MetricCard
+                    label="Citas propuestas"
+                    value={data.appointments.proposed}
+                    previousValue={previousData?.appointments.proposed}
+                  />
+                  <MetricCard
+                    label="Citas confirmadas"
+                    value={data.appointments.confirmed}
+                    previousValue={previousData?.appointments.confirmed}
+                  />
+                </div>
               </div>
 
               {trendData && <LeadsTrendChart data={trendData} />}

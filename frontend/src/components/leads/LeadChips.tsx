@@ -64,12 +64,15 @@ export const LeadChips: React.FC<LeadChipsProps> = ({
   }
 
   return (
-    <div data-testid="lead-chips" className="flex flex-wrap gap-2">
+    // Chips de filtros capturados: rectángulos de contorno en monoespaciada.
+    // `group-hover:*-inherit` los hace sobrevivir a la inversión de la fila
+    // del ledger sin duplicar variantes de color.
+    <div data-testid="lead-chips" className="flex flex-wrap gap-x-2 gap-y-1.5">
       {chips.map((chip) => (
         <span
           key={chip}
           data-testid="lead-chip"
-          className="rounded-pill bg-info/10 px-2.5 py-1 text-xs leading-snug text-info"
+          className="u-meta border border-border px-2 py-1 text-text-muted group-hover:border-current group-hover:text-inherit"
         >
           {chip}
         </span>

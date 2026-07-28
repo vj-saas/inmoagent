@@ -11,15 +11,15 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     <select
       ref={ref}
       className={cn(
-        'h-10 w-full rounded-md border bg-surface px-3 text-sm text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:border-accent disabled:cursor-not-allowed disabled:opacity-50 transition-all duration-200',
+        'h-10 w-full rounded-none border bg-surface px-3 font-mono text-sm text-text focus-visible:border-border-strong disabled:cursor-not-allowed disabled:opacity-40',
         invalid ? 'border-danger' : 'border-border',
-        className
+        className,
       )}
       aria-invalid={invalid || undefined}
       {...props}
     >
       {children}
     </select>
-  )
+  ),
 );
 Select.displayName = 'Select';

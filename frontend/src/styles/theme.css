@@ -1,64 +1,106 @@
 /**
- * Design tokens — InmobilApp frontend
+ * Design tokens — InmoAgent · dirección "MESA DE OPERACIONES"
  *
- * Filosofía: Swiss / Editorial (ver .design/frontend-redesign/DESIGN_BRIEF.md)
- * Base cool-neutral + acento cálido terracota, tipografía Archivo/IBM Plex Mono.
+ * Editorial suizo / neo-brutalismo refinado aplicado a una herramienta de
+ * operación diaria. Tres decisiones estructurales, no decorativas:
  *
- * IMPORTANTE: los nombres de token existentes (--color-text, --color-bg,
- * --color-primary, --color-accent, --color-info/danger/success/warning,
- * --color-surface, --color-border, --color-text-muted) se mantienen sin
- * cambios porque cientos de clases Tailwind ya generadas (bg-primary,
- * text-danger, border-border, etc.) dependen de ese nombre exacto en todo
- * el codebase. Esta fase EXTIENDE los tokens (nuevos valores, dark mode,
- * tipografía, motion, tokens de layout) sin renombrar nada existente.
+ *   1. RADIO CERO. Se sobreescribe TODA la escala de radios de Tailwind
+ *      (`--radius-*`) a 0, de modo que cada `rounded-*` ya escrito en el
+ *      codebase colapsa a esquina viva sin tocar 50 archivos. `rounded-full`
+ *      no se toca (spinners, avatares) porque en v4 es un valor fijo.
+ *   2. SOMBRA CERO. Toda la escala `--shadow-*` pasa a una sombra
+ *      transparente (`0 0 #0000`, NO `none`: `none` dentro de la lista
+ *      compuesta que arma Tailwind invalida la regla). La jerarquía la
+ *      hacen las reglas de 1px/2px y los bloques macizos, no la elevación.
+ *   3. UN SOLO ACENTO. Terracota ácida. `--color-accent` es la versión
+ *      AA-safe para texto sobre papel; `--color-accent-loud` es la versión
+ *      saturada, reservada a bloques macizos y tipografía display.
+ *
+ * Los nombres de token existentes (--color-text, --color-bg, --color-primary,
+ * --color-accent, --color-info/danger/success/warning, --color-surface,
+ * --color-border, --color-text-muted) se mantienen: cientos de clases
+ * Tailwind ya generadas dependen de ese nombre exacto. Esta fase cambia
+ * VALORES y AGREGA tokens, no renombra nada.
  */
 
 @theme {
-  /* ---- Color: light mode (valores por defecto) ---- */
-  --color-bg: #f7f8fa;
-  --color-surface: #ffffff;
+  /* ---- Color: light mode = tinta sobre papel ---- */
+  --color-bg: #edeae3;
+  --color-surface: #f7f5f0;
   --color-surface-raised: #ffffff;
-  --color-border: #e2e4e9;
-  --color-border-strong: #cbd0d8;
-  --color-text: #12151b;
-  --color-text-muted: #4b5563;
-  --color-text-faint: #8a919c;
+  --color-border: #cfc9bc;
+  --color-border-strong: #171310;
+  --color-text: #171310;
+  --color-text-muted: #57514a;
+  --color-text-faint: #857d72;
 
-  --color-primary: #10182a;
-  --color-primary-hover: #1e2a44;
+  /* Bloque invertido: en light es tinta con texto papel; en dark se da vuelta
+     solo (ver index.css). Sirve para `bg-invert text-on-invert`. */
+  --color-invert: #171310;
+  --color-on-invert: #f7f5f0;
 
-  --color-accent: #a1481e;
-  --color-accent-hover: #833a17;
+  --color-primary: #171310;
+  --color-primary-hover: #2e2822;
 
-  --color-info: #0369a1;
-  --color-danger: #b91c1c;
-  --color-success: #15803d;
-  --color-warning: #b45309;
+  /* Terracota ácida. `accent` = AA sobre papel (5.2:1). `accent-loud` = el
+     bloque macizo, solo con texto tinta o tipografía grande. */
+  --color-accent: #b3320f;
+  --color-accent-hover: #8f2709;
+  --color-accent-loud: #e8481c;
+  /* Único color que NO cambia entre modos: el naranja macizo pide texto tinta
+     en los dos (papel sobre naranja da 2.5:1, tinta da 6:1). */
+  --color-on-accent: #171310;
 
-  --color-focus-ring: #a1481e;
-  --color-overlay: rgba(16, 21, 30, 0.48);
+  --color-info: #0b5fa5;
+  --color-danger: #b3261e;
+  --color-success: #14663c;
+  --color-warning: #8a5300;
 
-  /* ---- Chart series (dashboard: sparklines, tendencias) ---- */
-  --color-chart-primary: #a1481e;
-  --color-chart-secondary: #10182a;
-  --color-chart-grid: #e2e4e9;
-  --color-chart-muted: #cbd0d8;
+  --color-focus-ring: #b3320f;
+  --color-overlay: rgba(23, 19, 16, 0.72);
 
-  /* ---- Radius (más cerrado que antes: look Swiss/editorial, menos "soft") ---- */
-  --radius-sm: 4px;
-  --radius: 8px;
-  --radius-card: 12px;
-  --radius-pill: 9999px;
+  /* ---- Chart: sin cromo, dos series y nada más ---- */
+  --color-chart-primary: #b3320f;
+  --color-chart-secondary: #171310;
+  --color-chart-grid: #cfc9bc;
+  --color-chart-muted: #b8b1a3;
 
-  /* ---- Shadow (se mantiene la sutileza, se agrega shadow-focus) ---- */
-  --shadow-sm: 0 1px 2px 0 rgba(16, 21, 30, 0.04);
-  --shadow-md: 0 4px 20px -2px rgba(16, 21, 30, 0.06), 0 2px 6px -1px rgba(16, 21, 30, 0.04);
-  --shadow-lg: 0 10px 30px -3px rgba(16, 21, 30, 0.09), 0 4px 12px -2px rgba(16, 21, 30, 0.05);
-  --shadow-focus: 0 0 0 3px rgba(161, 72, 30, 0.25);
+  /* ---- Radio: esquina viva en toda la app ---- */
+  --radius-xs: 0px;
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-3xl: 0px;
+  --radius-4xl: 0px;
+  --radius: 0px;
+  --radius-card: 0px;
+  --radius-pill: 0px;
 
-  /* ---- Typography ---- */
-  --font-family: 'Archivo', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  --font-family-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* ---- Sombra: anulada. La única "sombra" del sistema es dura y sin blur
+       (`--shadow-hard`), reservada a overlays (Modal). ---- */
+  --shadow-2xs: 0 0 #0000;
+  --shadow-xs: 0 0 #0000;
+  --shadow-sm: 0 0 #0000;
+  --shadow-md: 0 0 #0000;
+  --shadow-lg: 0 0 #0000;
+  --shadow-xl: 0 0 #0000;
+  --shadow-2xl: 0 0 #0000;
+  --shadow-hard: 8px 8px 0 0 var(--color-invert);
+  --shadow-focus: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-focus-ring);
+
+  /* ---- Tipografía ----
+     Archivo variable (eje wdth 62–125): el ancho es la herramienta de
+     jerarquía. Display = Archivo a 125% de ancho; texto = Archivo normal;
+     TODO dato tabular (teléfonos, precios, timers, estados, IDs) = IBM Plex
+     Mono. Los tokens `--font-*` generan las utilidades font-sans/mono/display. */
+  --font-sans: 'Archivo', system-ui, Helvetica, Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-display: 'Archivo', system-ui, Helvetica, Arial, sans-serif;
+
+  --font-family: var(--font-sans);
+  --font-family-mono: var(--font-mono);
 
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
@@ -79,10 +121,10 @@
   --line-height-tight: 1.2;
   --line-height-relaxed: 1.65;
 
-  --letter-spacing-tight: -0.02em;
-  --letter-spacing-wide: 0.04em;
+  --letter-spacing-tight: -0.03em;
+  --letter-spacing-wide: 0.12em;
 
-  /* ---- Spacing (base 4px, extendido) ---- */
+  /* ---- Spacing (base 4px) ---- */
   --spacing-0: 0;
   --spacing-1: 0.25rem;
   --spacing-2: 0.5rem;
@@ -99,16 +141,16 @@
   --spacing-20: 5rem;
   --spacing-24: 6rem;
 
-  /* ---- Motion (sutil y funcional, ver brief) ---- */
-  --duration-fast: 150ms;
-  --duration-normal: 200ms;
-  --duration-slow: 300ms;
-  --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+  /* ---- Motion: corta y mecánica, nunca elástica ---- */
+  --duration-fast: 120ms;
+  --duration-normal: 180ms;
+  --duration-slow: 260ms;
+  --easing-default: cubic-bezier(0.2, 0, 0, 1);
   --easing-out: cubic-bezier(0, 0, 0.2, 1);
 
-  /* ---- Layout: nav ---- */
-  --sidebar-width: 248px;
-  --sidebar-width-collapsed: 64px;
+  /* ---- Layout ---- */
+  --sidebar-width: 272px;
+  --sidebar-width-collapsed: 72px;
   --header-height-mobile: 56px;
-  --max-width-page: 1280px;
+  --max-width-page: 1440px;
 }

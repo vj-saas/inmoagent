@@ -4,17 +4,15 @@ export interface SpinnerProps {
   text?: string;
 }
 
+/**
+ * Indicador de carga: un bloque macizo girando sobre su eje. Cuadrado, no
+ * circular — el sistema no tiene curvas, tampoco cuando espera.
+ */
 export const Spinner: React.FC<SpinnerProps> = ({ text = 'Cargando...' }) => {
   return (
-    <div
-      className="flex items-center justify-center gap-3 p-4"
-      data-testid="spinner"
-    >
-      <div
-        className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-text"
-        aria-hidden="true"
-      />
-      <span>{text}</span>
+    <div className="flex items-center justify-center gap-3 p-8" data-testid="spinner">
+      <div className="h-3 w-3 animate-spin bg-accent-loud" aria-hidden="true" />
+      <span className="u-meta text-text-muted">{text}</span>
     </div>
   );
 };

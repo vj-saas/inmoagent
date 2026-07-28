@@ -24,7 +24,7 @@ import {
 } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { useApi } from '../hooks/useApi';
-import { AsyncSection } from '../components/ui';
+import { AsyncSection, Ledger, LedgerHead, Meta, SectionHead } from '../components/ui';
 import { CallQueueRow } from '../components/leads/CallQueueRow';
 
 const QUEUE_STATES: ConversationState[] = ['HUMAN_HANDOFF', 'QUALIFICATION'];
@@ -75,13 +75,13 @@ export function CallQueuePage(): JSX.Element {
   const assignableUsers = assignableApi.data?.users ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="border-b border-border pb-5">
-        <h1 className="text-2xl font-bold tracking-tight text-text">Llamar hoy</h1>
-        <p className="mt-1 text-xs text-text-muted">
-          Leads que pidieron un humano o quedaron tibios en calificación, priorizados para contactar.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <SectionHead
+        index="02"
+        title="Llamar hoy"
+        kicker={`${leads.length} en cola`}
+        description="Leads que pidieron un humano o quedaron tibios en calificación. Arriba, quien lleva más tiempo esperando una persona."
+      />
 
       <AsyncSection
         loading={leadsApi.loading}
@@ -92,7 +92,17 @@ export function CallQueuePage(): JSX.Element {
         emptyTitle="No hay leads pendientes de llamar."
         emptyMessage="Cuando un lead pida un humano o quede tibio en calificación, va a aparecer acá."
       >
-        <div data-testid="call-queue-list" className="flex flex-col gap-3">
+        {/*
+          Libro mayor, no pila de tarjetas: filas al ras separadas por
+          hairline. La columna de la izquierda es la barra maciza de urgencia,
+          y por eso el encabezado la rotula como "Señal".
+        */}
+        <Ledger data-testid="call-queue-list">
+          <LedgerHead>
+            <Meta className="w-16">Señal</Meta>
+            <Meta>Lead · estado · espera</Meta>
+            <Meta className="ml-auto">Acción</Meta>
+          </LedgerHead>
           {leads.map((lead) => (
             <CallQueueRow
               key={lead.id}
@@ -103,7 +113,7 @@ export function CallQueuePage(): JSX.Element {
               onUpdated={handleUpdated}
             />
           ))}
-        </div>
+        </Ledger>
       </AsyncSection>
     </div>
   );

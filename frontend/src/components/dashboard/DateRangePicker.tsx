@@ -62,11 +62,11 @@ export function DateRangePicker({
 
   return (
     <div
-      className="mb-4 flex flex-wrap items-end gap-4"
+      className="flex flex-wrap items-end gap-3"
       data-testid="date-range-picker"
       data-valid={isValid}
     >
-      <label htmlFor="date-range-from" className="flex flex-col gap-1 text-sm font-medium text-text">
+      <label htmlFor="date-range-from" className="u-meta flex flex-col gap-1.5 text-text-muted">
         Desde
         <Input
           id="date-range-from"
@@ -77,7 +77,7 @@ export function DateRangePicker({
           className="w-auto"
         />
       </label>
-      <label htmlFor="date-range-to" className="flex flex-col gap-1 text-sm font-medium text-text">
+      <label htmlFor="date-range-to" className="u-meta flex flex-col gap-1.5 text-text-muted">
         Hasta
         <Input
           id="date-range-to"
