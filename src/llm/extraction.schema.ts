@@ -14,6 +14,7 @@ export const rawExtractionSchema = z.object({
     'show_interest',
     'change_filters',
     'schedule_visit',
+    'references_seen_listing',
     'off_topic',
     'other',
   ]),

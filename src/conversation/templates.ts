@@ -145,15 +145,31 @@ function buildPrivacyLine(tenant: Tenant): string {
 }
 
 /**
+ * Nota que reconoce que el lead ya mencionó un aviso puntual (spec 09: "vi
+ * una propiedad en Palermo que me interesa" en el primer mensaje). Es una
+ * invitación, no una pregunta (sin "?"): no cuenta contra "una sola pregunta
+ * por mensaje", que la sigue ocupando `OPERATION_QUESTION`.
+ */
+export const SEEN_LISTING_ACK =
+  'Si tenés el link o la dirección exacta de la que viste, pasámela así te confirmo el detalle.';
+
+/**
  * Primer mensaje al lead. `welcomeIntro` (configurable por el tenant) reemplaza
  * SOLO la frase introductoria: la pregunta de operación y el aviso de Ley 25.326
  * los agrega siempre el backend, sin importar el contenido configurado (AC-5,
  * AC-6, AC-7; regla de negocio innegociable 5 de CLAUDE.md).
+ *
+ * `seenListingAck` inserta `SEEN_LISTING_ACK` entre la intro y la pregunta de
+ * operación cuando el primer mensaje del lead ya menciona un aviso puntual.
  */
-export function buildGreetingMessage(tenant: Tenant): string {
+export function buildGreetingMessage(
+  tenant: Tenant,
+  seenListingAck = false,
+): string {
   const intro = tenant.welcomeIntro?.trim() || DEFAULT_INTRO(tenant);
   const privacyLine = buildPrivacyLine(tenant);
-  return `${intro}\n\n${OPERATION_QUESTION}\n\n${privacyLine}`;
+  const ackLine = seenListingAck ? `${SEEN_LISTING_ACK}\n\n` : '';
+  return `${intro}\n\n${ackLine}${OPERATION_QUESTION}\n\n${privacyLine}`;
 }
 
 /** Repregunta de operación cuando el saludo completo ya se mandó antes (no repetirlo íntegro). */
@@ -230,11 +246,15 @@ export function buildTeaserIntro(neighborhoods: string[], seed: string): string 
   return pickVariant(variants, seed);
 }
 
-/** Excepción a "una pregunta por mensaje": el lead ya vio valor (§3, punto 4). */
+/**
+ * Cierre del teaser (§3): UNA sola pregunta (confirmar interés). Antes pedía
+ * también presupuesto y ambientes en el mismo mensaje — junto con el pedido
+ * de nombre que se manda aparte, el lead recibía 3-4 preguntas encadenadas en
+ * cuestión de segundos. El resto de los filtros los sigue pidiendo
+ * `askMissingFilter` uno por turno, como con cualquier otro lead.
+ */
 export function buildTeaserClosingQuestion(count: number): string {
-  const opener =
-    count === 1 ? '¿Va por ahí lo que buscás?' : '¿Alguna va por ahí?';
-  return `${opener} Para afinarte la búsqueda decime hasta cuánto es tu presupuesto y cuántos ambientes necesitás.`;
+  return count === 1 ? '¿Va por ahí lo que buscás?' : '¿Alguna va por ahí?';
 }
 
 /**

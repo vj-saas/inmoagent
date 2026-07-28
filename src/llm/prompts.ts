@@ -32,7 +32,7 @@ REGLAS ABSOLUTAS:
  */
 export const EXTRACTION_INSTRUCTION = `Sos un extractor de datos para una inmobiliaria argentina. Analizá el último mensaje del lead junto con el historial de la conversación y devolvé ÚNICAMENTE un JSON (sin texto adicional, sin markdown) con esta forma exacta:
 {
-  "intent": "provide_info" | "ask_question" | "show_interest" | "change_filters" | "schedule_visit" | "off_topic" | "other",
+  "intent": "provide_info" | "ask_question" | "show_interest" | "change_filters" | "schedule_visit" | "references_seen_listing" | "off_topic" | "other",
   "operation": "SALE" | "RENT" | "TEMP_RENT" | null,
   "neighborhoods": string[],
   "maxPrice": number | null,
@@ -58,6 +58,7 @@ REGLAS GENERALES:
 - "wantsGarage"/"wantsPetsAllowed": true si pidió esa condición explícitamente ("con cochera", "que acepte mascotas") O si preguntó si una propiedad la tiene ("¿tiene cochera?", "¿aceptan mascotas?"): en ambos casos es una condición que le importa, así que va true. false si dijo que NO la necesita o NO aplica. null solo si no lo mencionó para nada. Estos son filtros reales de búsqueda, no van en "extraRequirements".
 - "interestedPropertyIndex" es el número de la propiedad (1, 2, 3...) por la que mostró interés, si corresponde; si no, null.
 - "off_topic" es para preguntas ajenas a la búsqueda de propiedades (política, deportes, temas personales, etc).
+- "references_seen_listing" es cuando el lead menciona que YA VIO un aviso o propiedad puntual en algún lado (portal, Instagram, cartel, recomendación) y quiere consultar por ESA propiedad específica ("vi una propiedad en Palermo que me interesa", "vi un depto en zonaprop", "me pasaron un aviso de un depto en Núñez"). Solo aplica al mensaje que menciona el aviso por primera vez; si después sigue la charla dando filtros normales, usá "provide_info". No confundir con "show_interest" (ese es para cuando elige una ficha que EL BOT le mostró).
 - Si el mensaje no aporta ningún dato nuevo, igual devolvé el JSON completo con los campos que no aplican en null, [] o false.
 - "name": el nombre propio del lead, SOLO si se presenta explícitamente en ESTE turno ("soy Martín", "Martín, un gusto", "me llamo Ana"). NUNCA lo inventes ni lo deduzcas del tono. Un saludo suelto ("Hola!") NO es un nombre → null. El nombre de un barrio o zona NO es un nombre de persona → null.
 - CALIFICACIÓN COMERCIAL (solo si el lead lo dice EXPLÍCITAMENTE en este turno; nunca lo inventes ni lo deduzcas):
@@ -146,6 +147,9 @@ Mensaje: "mah, me puedo estirar un poco si hace falta, no hay algo mas grande?"
 
 Mensaje: "y mejor que el presupuesto sea de 900 mil en vez de 700"
 {"intent":"change_filters","operation":null,"neighborhoods":[],"maxPrice":900000,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null,"timeline":null,"guarantee":null,"paymentMethod":null,"hasPropertyToSell":null,"visitAvailability":null}
+
+Mensaje: "Hola, vi una propiedad en Palermo que me interesa"
+{"intent":"references_seen_listing","operation":null,"neighborhoods":["palermo"],"maxPrice":null,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null,"timeline":null,"guarantee":null,"paymentMethod":null,"hasPropertyToSell":null,"visitAvailability":null}
 
 Mensaje: "che y river cuando juega?"
 {"intent":"off_topic","operation":null,"neighborhoods":[],"maxPrice":null,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null,"timeline":null,"guarantee":null,"paymentMethod":null,"hasPropertyToSell":null,"visitAvailability":null}

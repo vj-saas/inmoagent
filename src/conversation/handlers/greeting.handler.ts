@@ -2,8 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { ConversationState } from '@prisma/client';
 import { PropertySearchService } from '../../properties/property-search.service';
 import { SafeReplyService } from '../safe-reply.service';
+import { leadSeed } from '../copy-variants.util';
 import {
   buildGreetingMessage,
+  buildNameRequestMessage,
   OPERATION_FOLLOWUP_FALLBACK,
 } from '../templates';
 import type {
@@ -30,6 +32,10 @@ export class GreetingHandler {
     // mensaje OUT se persiste recién cuando el worker de la cola de salida
     // efectivamente lo envía, no en este mismo turno.
     const alreadyGreeted = ctx.lead.greetedAt !== null;
+    // §3 / spec 09: el lead menciona un aviso puntual que ya vio en algún
+    // lado ("vi una propiedad en Palermo que me interesa"). Se lo reconocemos
+    // en el propio saludo en vez de ignorarlo y tirar derecho a comprar/alquilar.
+    const seenListingAck = ctx.extraction.intent === 'references_seen_listing';
 
     if (!filters.fOperation) {
       // Si el lead ya lo recibió y todavía no dijo si compra o alquila, repetir
@@ -56,7 +62,10 @@ export class GreetingHandler {
             actions: alreadyGreeted
               ? suggestion.actions
               : [
-                  { kind: 'text', text: buildGreetingMessage(ctx.tenant) },
+                  {
+                    kind: 'text',
+                    text: buildGreetingMessage(ctx.tenant, seenListingAck),
+                  },
                   ...suggestion.actions,
                 ],
             nextState: ConversationState.GREETING,
@@ -67,7 +76,9 @@ export class GreetingHandler {
 
       if (!alreadyGreeted) {
         return {
-          actions: [{ kind: 'text', text: buildGreetingMessage(ctx.tenant) }],
+          actions: [
+            { kind: 'text', text: buildGreetingMessage(ctx.tenant, seenListingAck) },
+          ],
           nextState: ConversationState.GREETING,
           filterUpdates: filters,
           markGreeted: true,
@@ -75,6 +86,28 @@ export class GreetingHandler {
       }
 
       return this.askForOperation(ctx, filters);
+    }
+
+    // Apenas se confirma comprar/alquilar es el momento más natural para
+    // preguntar el nombre — antes de mostrarle nada, en vez de pegarlo
+    // después del teaser/búsqueda (que apilaba 3-4 preguntas en el mismo
+    // burst de mensajes). Solo corta acá la PRIMERA vez que se confirma la
+    // operación (mientras `lead.state` sigue en GREETING); en cualquier
+    // turno posterior este handler ya no se vuelve a invocar.
+    if (ctx.lead.name === null && ctx.lead.nameAskedAt === null) {
+      const nameQuestion = buildNameRequestMessage(leadSeed(ctx.lead));
+      return {
+        actions: alreadyGreeted
+          ? [{ kind: 'text', text: nameQuestion }]
+          : [
+              { kind: 'text', text: buildGreetingMessage(ctx.tenant, seenListingAck) },
+              { kind: 'text', text: nameQuestion },
+            ],
+        nextState: ConversationState.QUALIFICATION,
+        filterUpdates: filters,
+        markGreeted: true,
+        markNameAsked: true,
+      };
     }
 
     // El primer mensaje ya trae info ("hola busco depto en caballito para alquilar"): se extrae
@@ -90,7 +123,7 @@ export class GreetingHandler {
     return {
       ...result,
       actions: [
-        { kind: 'text', text: buildGreetingMessage(ctx.tenant) },
+        { kind: 'text', text: buildGreetingMessage(ctx.tenant, seenListingAck) },
         ...result.actions,
       ],
       markGreeted: true,

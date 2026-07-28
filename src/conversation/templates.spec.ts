@@ -40,9 +40,7 @@ function seedsFor(leadId: string, count = 12): string[] {
 
 describe('buildTeaserClosingQuestion', () => {
   it('con una sola ficha pregunta si "va por ahí" (singular)', () => {
-    expect(buildTeaserClosingQuestion(1)).toBe(
-      '¿Va por ahí lo que buscás? Para afinarte la búsqueda decime hasta cuánto es tu presupuesto y cuántos ambientes necesitás.',
-    );
+    expect(buildTeaserClosingQuestion(1)).toBe('¿Va por ahí lo que buscás?');
   });
 
   it('con varias fichas pregunta "alguna" (plural)', () => {
