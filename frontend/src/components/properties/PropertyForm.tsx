@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Formulario de alta y edición de una propiedad (`Property`), un solo
  * componente para ambos modos: si recibe `property` es edición, si no, alta.
  *
@@ -316,9 +316,9 @@ export function PropertyForm({
   };
 
   return (
-    <Card>
+    <Card tone="raised">
       <CardHeader>
-        <h2 className="text-lg font-semibold text-text">
+        <h2 className="u-display text-lg text-text">
           {isEditing ? 'Editar propiedad' : 'Cargar propiedad'}
         </h2>
       </CardHeader>
@@ -327,7 +327,7 @@ export function PropertyForm({
 
         <form onSubmit={handleSubmit} data-testid="property-form" className="flex flex-col gap-4">
           <div>
-            <label htmlFor="property-form-title" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-title" className="u-meta mb-1.5 block text-text-muted">
               Título
             </label>
             <Input
@@ -343,7 +343,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-operation" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-operation" className="u-meta mb-1.5 block text-text-muted">
               Operación
             </label>
             <Select
@@ -366,7 +366,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-property-type" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-property-type" className="u-meta mb-1.5 block text-text-muted">
               Tipo de propiedad
             </label>
             <Input
@@ -383,7 +383,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-price" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-price" className="u-meta mb-1.5 block text-text-muted">
               Precio
             </label>
             <Input
@@ -405,7 +405,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-neighborhood" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-neighborhood" className="u-meta mb-1.5 block text-text-muted">
               Barrio
             </label>
             <Input
@@ -421,7 +421,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-external-ref" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-external-ref" className="u-meta mb-1.5 block text-text-muted">
               Referencia externa
             </label>
             <Input
@@ -439,7 +439,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-description" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-description" className="u-meta mb-1.5 block text-text-muted">
               Descripción
             </label>
             <textarea
@@ -452,7 +452,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-currency" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-currency" className="u-meta mb-1.5 block text-text-muted">
               Moneda
             </label>
             <Input
@@ -465,7 +465,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-expenses" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-expenses" className="u-meta mb-1.5 block text-text-muted">
               Expensas
             </label>
             <Input
@@ -478,7 +478,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-city" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-city" className="u-meta mb-1.5 block text-text-muted">
               Ciudad
             </label>
             <Input
@@ -490,7 +490,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-address" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-address" className="u-meta mb-1.5 block text-text-muted">
               Dirección
             </label>
             <Input
@@ -502,7 +502,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-rooms" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-rooms" className="u-meta mb-1.5 block text-text-muted">
               Ambientes
             </label>
             <Input
@@ -515,7 +515,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-bedrooms" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-bedrooms" className="u-meta mb-1.5 block text-text-muted">
               Dormitorios
             </label>
             <Input
@@ -528,7 +528,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-bathrooms" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-bathrooms" className="u-meta mb-1.5 block text-text-muted">
               Baños
             </label>
             <Input
@@ -541,7 +541,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-area" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-area" className="u-meta mb-1.5 block text-text-muted">
               Superficie (m²)
             </label>
             <Input
@@ -554,7 +554,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-garage" className="flex items-center gap-2 text-sm font-medium text-text">
+            <label htmlFor="property-form-garage" className="u-meta flex items-center gap-2 text-text-muted">
               <input
                 id="property-form-garage"
                 type="checkbox"
@@ -567,7 +567,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-pets-allowed" className="flex items-center gap-2 text-sm font-medium text-text">
+            <label htmlFor="property-form-pets-allowed" className="u-meta flex items-center gap-2 text-text-muted">
               <input
                 id="property-form-pets-allowed"
                 type="checkbox"
@@ -580,7 +580,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-features" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-features" className="u-meta mb-1.5 block text-text-muted">
               Características
             </label>
             <Input
@@ -594,7 +594,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <label htmlFor="property-form-listing-url" className="mb-1 block text-sm font-medium text-text">
+            <label htmlFor="property-form-listing-url" className="u-meta mb-1.5 block text-text-muted">
               Link de publicación
             </label>
             <Input
@@ -606,7 +606,7 @@ export function PropertyForm({
           </div>
 
           <div>
-            <span className="mb-1 block text-sm font-medium text-text">Fotos</span>
+            <span className="u-meta mb-1.5 block text-text-muted">Fotos</span>
             <PhotoListEditor
               tenantId={tenantId}
               token={token}

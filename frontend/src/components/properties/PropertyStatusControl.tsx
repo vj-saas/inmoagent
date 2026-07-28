@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 
 import { updatePropertyStatus, type Property, type PropertyStatus } from '../../api/endpoints';
 import { useApi } from '../../hooks/useApi';
@@ -55,7 +55,7 @@ export const PropertyStatusControl: React.FC<PropertyStatusControlProps> = ({
       <div>
         <label
           htmlFor="property-status-control-select"
-          className="mb-1 block text-sm font-medium text-text"
+          className="u-meta mb-1.5 block text-text-muted"
         >
           Estado de la propiedad
         </label>

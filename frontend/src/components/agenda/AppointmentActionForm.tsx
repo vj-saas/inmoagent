@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import type { AssignableUser } from '../../api/endpoints';
 import { Button, Input, Select } from '../ui';
 
@@ -79,7 +79,7 @@ export const AppointmentActionForm: React.FC<AppointmentActionFormProps> = ({
       onSubmit={handleSubmit}
       className="flex flex-col gap-2"
     >
-      <label htmlFor="appointment-action-form-scheduled-at" className="text-sm font-medium text-text">
+      <label htmlFor="appointment-action-form-scheduled-at" className="u-meta text-text-muted">
         Fecha y hora
       </label>
       <Input
@@ -96,7 +96,7 @@ export const AppointmentActionForm: React.FC<AppointmentActionFormProps> = ({
 
       {mode === 'confirm' && assignableUsers.length > 0 && (
         <>
-          <label htmlFor="appointment-action-form-assignee" className="text-sm font-medium text-text">
+          <label htmlFor="appointment-action-form-assignee" className="u-meta text-text-muted">
             Asesor
           </label>
           <Select
@@ -118,7 +118,7 @@ export const AppointmentActionForm: React.FC<AppointmentActionFormProps> = ({
 
       {(mode === 'confirm' || mode === 'reschedule') && (
         <>
-          <label htmlFor="appointment-action-form-notes" className="text-sm font-medium text-text">
+          <label htmlFor="appointment-action-form-notes" className="u-meta text-text-muted">
             Notas
           </label>
           <textarea

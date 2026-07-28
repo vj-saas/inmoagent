@@ -124,7 +124,7 @@ export function PublicSchedulingPage(): JSX.Element {
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-8">
       <Card className="w-full max-w-lg border-2 border-border-strong shadow-[var(--shadow-hard)]">
-        <CardHeader className="border-b border-border/80 p-6">
+        <CardHeader className="border-b-2 border-border-strong p-6">
           <p className="u-meta text-accent">Agendar Visita</p>
           <h1 className="u-display mt-2 text-2xl text-text">{details?.tenantName}</h1>
           <p className="text-xs text-text-muted mt-1">Hola {details?.leadName}, seleccioná tu horario para coordinar la visita a la propiedad.</p>
@@ -187,7 +187,7 @@ export function PublicSchedulingPage(): JSX.Element {
           )}
 
           {selectedSlot && (
-            <div className="pt-4 border-t border-border/60">
+            <div className="border-t border-border pt-4">
               <Button
                 type="button"
                 onClick={handleConfirm}

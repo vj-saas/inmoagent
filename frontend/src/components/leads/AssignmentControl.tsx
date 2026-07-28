@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   patchAssignment,
   type AssignableUser,
@@ -106,7 +106,7 @@ export const AssignmentControl: React.FC<AssignmentControlProps> = ({
       </div>
 
       <div>
-        <label htmlFor="assignment-control-select" className="mb-1 block text-sm font-medium text-text">
+        <label htmlFor="assignment-control-select" className="u-meta mb-1.5 block text-text-muted">
           Asignar a
         </label>
         <Select
@@ -131,7 +131,7 @@ export const AssignmentControl: React.FC<AssignmentControlProps> = ({
       <div>
         <label
           htmlFor="assignment-control-next-action"
-          className="mb-1 block text-sm font-medium text-text"
+          className="u-meta mb-1.5 block text-text-muted"
         >
           Próxima acción
         </label>

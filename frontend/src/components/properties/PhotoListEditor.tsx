@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Editor de fotos de una propiedad: lista editable de `photoUrls: string[]`.
  *
  * Dos formas de agregar una URL a la lista:
@@ -186,7 +186,7 @@ export function PhotoListEditor({
       <div>
         <label
           htmlFor="photo-list-editor-url-input"
-          className="mb-1 block text-sm font-medium text-text"
+          className="u-meta mb-1.5 block text-text-muted"
         >
           Agregar por URL
         </label>
@@ -213,7 +213,7 @@ export function PhotoListEditor({
       <div>
         <label
           htmlFor="photo-list-editor-file-input"
-          className="mb-1 block text-sm font-medium text-text"
+          className="u-meta mb-1.5 block text-text-muted"
         >
           Subir archivo
         </label>

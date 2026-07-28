@@ -75,9 +75,11 @@ export function ToastProvider({ children, duration = 4000 }: ToastProviderProps)
           <div
             key={toast.id}
             role="status"
+            // Bloque recto con la sombra dura del sistema: el aviso se apoya
+            // sobre la pantalla, no flota difuminado sobre ella.
             className={cn(
-              'pointer-events-auto rounded-card border px-4 py-2 text-sm shadow-md',
-              toneClasses[toast.tone]
+              'pointer-events-auto border-2 px-4 py-2 text-sm shadow-[var(--shadow-hard)]',
+              toneClasses[toast.tone],
             )}
             data-testid="toast"
           >
