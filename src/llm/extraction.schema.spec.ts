@@ -20,6 +20,11 @@ function raw(overrides: Partial<RawExtraction> = {}): RawExtraction {
     extraRequirements: null,
     interestedPropertyIndex: null,
     name: null,
+    timeline: null,
+    guarantee: null,
+    paymentMethod: null,
+    hasPropertyToSell: null,
+    visitAvailability: null,
     ...overrides,
   };
 }
@@ -143,6 +148,74 @@ describe('sanitizeExtraction', () => {
   it('AC-16: descarta el nombre si es una palabra de la lista negra (saludo/muletilla)', () => {
     const result = sanitizeExtraction(raw({ name: 'Hola' }), 'Hola! buenas');
     expect(result.name).toBeNull();
+  });
+
+  // spec 09, T1.3: calificación comercial, siempre a un conjunto cerrado.
+  it('AC-22: acepta "guarantee" cuando matchea el conjunto cerrado', () => {
+    const result = sanitizeExtraction(
+      raw({ guarantee: 'propietaria' }),
+      'tengo garantía propietaria',
+    );
+    expect(result.guarantee).toBe('propietaria');
+  });
+
+  it('AC-23: acepta "paymentMethod" cuando matchea el conjunto cerrado', () => {
+    const result = sanitizeExtraction(
+      raw({ paymentMethod: 'contado' }),
+      'pago contado',
+    );
+    expect(result.paymentMethod).toBe('contado');
+  });
+
+  it('AC-24: mapea "timeline" a los 4 valores cerrados', () => {
+    expect(
+      sanitizeExtraction(raw({ timeline: 'inmediato' }), 'necesito ya')
+        .timeline,
+    ).toBe('inmediato');
+    expect(
+      sanitizeExtraction(raw({ timeline: '1-3 meses' }), 'para marzo')
+        .timeline,
+    ).toBe('1-3 meses');
+    expect(
+      sanitizeExtraction(raw({ timeline: 'explorando' }), 'viendo nomás')
+        .timeline,
+    ).toBe('explorando');
+  });
+
+  it('AC-25: descarta "timeline"/"guarantee"/"paymentMethod" fuera del conjunto cerrado (no persiste texto crudo)', () => {
+    const result = sanitizeExtraction(
+      raw({
+        timeline: 'lo antes posible',
+        guarantee: 'tengo un aval de mi tío',
+        paymentMethod: 'transferencia',
+      }),
+      'lo antes posible, con aval de mi tío, transferencia',
+    );
+    expect(result.timeline).toBeNull();
+    expect(result.guarantee).toBeNull();
+    expect(result.paymentMethod).toBeNull();
+  });
+
+  it('es case-insensitive y tolera espacios extra en los valores cerrados', () => {
+    const result = sanitizeExtraction(
+      raw({ guarantee: '  PROPIETARIA  ' }),
+      'garantía propietaria',
+    );
+    expect(result.guarantee).toBe('propietaria');
+  });
+
+  it('"hasPropertyToSell" pasa tal cual (ya es boolean, sin normalizar)', () => {
+    expect(sanitizeExtraction(raw({ hasPropertyToSell: true }), 'x').hasPropertyToSell).toBe(true);
+    expect(sanitizeExtraction(raw({ hasPropertyToSell: false }), 'x').hasPropertyToSell).toBe(false);
+    expect(sanitizeExtraction(raw({}), 'x').hasPropertyToSell).toBeNull();
+  });
+
+  it('"visitAvailability" es texto libre, sin normalizar a un enum', () => {
+    const result = sanitizeExtraction(
+      raw({ visitAvailability: '  sábados a la mañana  ' }),
+      'puedo sábados a la mañana',
+    );
+    expect(result.visitAvailability).toBe('sábados a la mañana');
   });
 });
 

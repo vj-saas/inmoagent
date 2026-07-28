@@ -563,7 +563,7 @@ el handoff entre chats.
 | T2.5 | Eco de comprensión | low | ✅ hecho | `buildUnderstandingEcho`, disparado en `triggerSearch` solo cuando `lead.state !== SEARCH_MATCH` (primera búsqueda completa) y hay resultados. **Fase 2 completa.** |
 | T1.1 | Capturar nombre | medium | ✅ hecho | `Lead.name`/`nameAskedAt` (migración manual); `sanitizeLeadName` en extraction.schema.ts; se pregunta 1 vez al final del teaser o de la primera búsqueda, nunca en el saludo; alerta usa el nombre (AC-18 ya funcionaba, se agregó test) |
 | T1.2 | Schema comercial | high | ✅ hecho | 11 campos nuevos en `Lead` (migración manual, misma limitación de DB local que T1.1/T2.4). Puramente aditivo — sin código que los use todavía, cero regresión |
-| T1.3 | Extracción comercial | high | ⬜ pendiente | ⚠️ verificar no regresión |
+| T1.3 | Extracción comercial | high | ✅ hecho | timeline/guarantee/paymentMethod/hasPropertyToSell/visitAvailability en la misma llamada de extracción; sanitizeClosedValue descarta cualquier valor fuera del conjunto cerrado (AC-25). ⚠️ AC-26 (re-correr sim-personas.ts) NO se pudo validar: no hay Postgres local corriendo en este entorno (mismo bloqueo que las migraciones de T1.1/T1.2/T2.4). Pendiente antes de deployar. |
 | T1.4 | Estado COMMERCIAL_QUALIFICATION | high | ⬜ pendiente | 🔴 crítico — aprobación humana |
 | T1.5 | Score del lead | medium | ⬜ pendiente | |
 | T3.1 | Señales de compra | high | ⬜ pendiente | 🔴 crítico — aprobación humana |
@@ -610,6 +610,17 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecho · ⏸️ pausado · ❌ de
    `08-PROXIMOS-PASOS.md`); por ahora el campo se setea directo en la DB.
    Agregarlo al DTO de config es una tarea chica y separada cuando se
    retome ese frente.
+10. **Pendiente real, no resuelto:** ni `npx prisma migrate dev`/`deploy` ni
+    `scripts/sim-personas.ts` (AC-26) se pudieron correr en este entorno de
+    trabajo — no hay una instancia de Postgres local accesible (Docker
+    Desktop no está corriendo). Las 3 migraciones nuevas (T1.1, T1.2) están
+    escritas a mano siguiendo el formato exacto de Prisma y `prisma generate`
+    corrió limpio, pero **nadie las aplicó contra una DB real todavía**.
+    Antes de deployar a producción: `npx prisma migrate deploy` contra la DB
+    real, y re-correr `scripts/sim-personas.ts` comparando contra
+    `scripts/sim-report-jergas.md` para confirmar que agrandar el prompt de
+    extracción (T1.3) no degradó la extracción de operación/barrios/precio/
+    ambientes.
 
 ### Pendientes de definir
 - **¿Entra la Fase 4 (captación)?** Depende de si el ICP incluye captación de

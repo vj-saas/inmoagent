@@ -32,6 +32,15 @@ export const rawExtractionSchema = z.object({
   interestedPropertyIndex: z.number().int().positive().nullable(),
   /** Nombre del lead, SOLO si se presentó explícitamente en este turno (spec 09, T1.1). */
   name: z.string().nullable(),
+  // Calificación comercial (spec 09, T1.3). Se acepta como string libre acá
+  // (no z.enum): si el LLM devuelve una variante de fraseo, sanitizeExtraction
+  // la normaliza o la descarta — un enum estricto en el schema crudo tiraría
+  // TODA la extracción a reintento por un solo campo mal fraseado.
+  timeline: z.string().nullable(),
+  guarantee: z.string().nullable(),
+  paymentMethod: z.string().nullable(),
+  hasPropertyToSell: z.boolean().nullable(),
+  visitAvailability: z.string().nullable(),
 });
 
 export type RawExtraction = z.infer<typeof rawExtractionSchema>;
@@ -55,6 +64,16 @@ export interface ExtractionResult {
   interestedPropertyIndex: number | null;
   /** Nombre del lead, ya validado contra el texto del turno (ver `sanitizeLeadName`). */
   name: string | null;
+  /** "inmediato" | "1-3 meses" | "3-6 meses" | "explorando", o null si no matchea el conjunto cerrado. */
+  timeline: string | null;
+  /** "propietaria" | "caucion" | "recibo" | "no_tiene" | "no_sabe" (alquiler). */
+  guarantee: string | null;
+  /** "contado" | "credito" | "mixto" | "no_sabe" (venta). */
+  paymentMethod: string | null;
+  /** true = tiene que vender/rescindir algo antes de mudarse (también es una captación). */
+  hasPropertyToSell: boolean | null;
+  /** Texto libre, no normalizado a un enum (no alimenta el score). */
+  visitAvailability: string | null;
 }
 
 const MAX_ROOMS = 10;
@@ -123,6 +142,37 @@ export function sanitizeLeadName(
   return capitalizeEachWord(trimmed);
 }
 
+const TIMELINE_VALUES = new Set([
+  'inmediato',
+  '1-3 meses',
+  '3-6 meses',
+  'explorando',
+]);
+const GUARANTEE_VALUES = new Set([
+  'propietaria',
+  'caucion',
+  'recibo',
+  'no_tiene',
+  'no_sabe',
+]);
+const PAYMENT_METHOD_VALUES = new Set(['contado', 'credito', 'mixto', 'no_sabe']);
+
+/**
+ * Normaliza un campo comercial a su conjunto cerrado de valores; cualquier
+ * variante de fraseo que el LLM no haya devuelto tal cual se descarta a
+ * `null` en vez de persistir texto crudo (spec 09, T1.3, AC-25) — el score
+ * (T1.5) hace `switch`/lookup exacto sobre estos valores, así que un string
+ * fuera del conjunto rompería silenciosamente el cálculo.
+ */
+function sanitizeClosedValue(
+  raw: string | null,
+  allowed: ReadonlySet<string>,
+): string | null {
+  if (!raw) return null;
+  const normalized = raw.trim().toLowerCase();
+  return allowed.has(normalized) ? normalized : null;
+}
+
 /**
  * Valores fuera de rango se descartan (no invalidan toda la extracción):
  * precio ≤ 0, rooms > 10. Los barrios/zonas que extrae el LLM se aceptan tal
@@ -168,5 +218,10 @@ export function sanitizeExtraction(
     extraRequirements: extraRequirements ? extraRequirements : null,
     interestedPropertyIndex: raw.interestedPropertyIndex,
     name: sanitizeLeadName(raw.name, turnText),
+    timeline: sanitizeClosedValue(raw.timeline, TIMELINE_VALUES),
+    guarantee: sanitizeClosedValue(raw.guarantee, GUARANTEE_VALUES),
+    paymentMethod: sanitizeClosedValue(raw.paymentMethod, PAYMENT_METHOD_VALUES),
+    hasPropertyToSell: raw.hasPropertyToSell,
+    visitAvailability: raw.visitAvailability?.trim() || null,
   };
 }
