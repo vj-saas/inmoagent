@@ -59,7 +59,7 @@ function NavIndexItem({
 
           <span
             className={cn(
-              'u-wipe relative truncate text-xl font-semibold tracking-tight md:text-[0.9375rem]',
+              'relative truncate text-xl font-semibold tracking-tight md:text-[0.9375rem]',
               collapsed && 'md:sr-only',
             )}
           >
@@ -137,12 +137,16 @@ export function Sidebar({
       )}
 
       <aside
+        // `nav-drawer` + `data-open` resuelven el desplazamiento del drawer en
+        // CSS plano (ver index.css): fuera de pantalla en mobile, fijo en
+        // desktop. No se usan las utilidades `translate-x-*` de Tailwind v4
+        // porque el estado cerrado no resolvía y el drawer tapaba la pantalla.
         className={cn(
-          'fixed inset-y-0 left-0 z-40 flex w-full max-w-sm flex-col border-r-2 border-border-strong bg-bg transition-transform duration-200 ease-out',
-          'md:relative md:z-auto md:h-screen md:max-w-none md:translate-x-0',
-          mobileOpen ? 'translate-x-0' : '-translate-x-full',
+          'nav-drawer fixed inset-y-0 left-0 z-40 flex w-full max-w-sm flex-col border-r-2 border-border-strong bg-bg transition-transform duration-200 ease-out',
+          'md:relative md:z-auto md:h-screen md:max-w-none',
           collapsed ? 'md:w-[var(--sidebar-width-collapsed)]' : 'md:w-[var(--sidebar-width)]',
         )}
+        data-open={mobileOpen}
         aria-label="Navegación principal"
       >
         <div

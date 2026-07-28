@@ -137,7 +137,7 @@ export function LeadDetailPage(): JSX.Element {
         el nombre a tamaño de titular y el teléfono como dato tabular debajo.
       */}
       <header className="border-b-2 border-border-strong pb-4">
-        <Link to="/leads" className="u-wipe group relative inline-flex items-center gap-1.5">
+        <Link to="/leads" className="group relative inline-flex items-center gap-1.5">
           <ArrowLeft className="h-3.5 w-3.5 text-accent" aria-hidden="true" />
           <Meta muted={false} className="text-text-muted">
             Volver

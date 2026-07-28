@@ -32,7 +32,10 @@
   --color-border-strong: #171310;
   --color-text: #171310;
   --color-text-muted: #57514a;
-  --color-text-faint: #857d72;
+  /* `text-faint` viste las etiquetas `u-meta` de 11px, que son texto real y no
+     decoración: se oscurece hasta pasar AA (4.5:1) también sobre `--color-bg`,
+     que es el fondo más exigente de los dos. */
+  --color-text-faint: #6b6456;
 
   /* Bloque invertido: en light es tinta con texto papel; en dark se da vuelta
      solo (ver index.css). Sirve para `bg-invert text-on-invert`. */

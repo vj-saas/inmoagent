@@ -16,6 +16,13 @@ Un panel administrativo que se siente como una herramienta profesional construid
 
 ## Aesthetic Direction
 
+> **Superada el 2026-07-28.** La dirección vigente es
+> [`DIRECCION-MESA-DE-OPERACIONES.md`](./DIRECCION-MESA-DE-OPERACIONES.md)
+> (editorial / neo-brutalista refinada: radio cero, sombra cero, índice
+> numerado sin íconos, listas tipo ledger). Lo que sigue en esta sección se
+> conserva como registro de la dirección anterior; el resto del brief
+> —problema, principios, IA, accesibilidad, alcance— sigue vigente.
+
 - **Philosophy**: Swiss / Editorial — grilla estricta, tipografía como protagonista, mucho espacio en blanco, jerarquía clara, un acento de color bien dosificado. Es la base visual de Linear y Notion.
 - **Tone**: Profesional y sobrio, pero no frío ni corporativo-pesado. Cálido en los detalles (acento ámbar/terracota, no azul genérico de SaaS), serio en la estructura.
 - **Reference points**: Linear, Notion (estructura, tipografía, densidad, sidebar). Stripe Dashboard (seriedad de los datos y gráficos). Toque cálido propio del rubro inmobiliario en el acento de color, no en decoración.

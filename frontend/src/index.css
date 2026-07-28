@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @import "./styles/theme.css";
 
 /*
@@ -27,7 +27,7 @@
   --color-border-strong: #efeae1;
   --color-text: #efeae1;
   --color-text-muted: #a79e92;
-  --color-text-faint: #7e766b;
+  --color-text-faint: #8d8578;
 
   --color-invert: #efeae1;
   --color-on-invert: #16130f;
@@ -64,7 +64,7 @@
     --color-border-strong: #efeae1;
     --color-text: #efeae1;
     --color-text-muted: #a79e92;
-    --color-text-faint: #7e766b;
+    --color-text-faint: #8d8578;
 
     --color-invert: #efeae1;
     --color-on-invert: #16130f;
@@ -191,6 +191,29 @@
 }
 
 /*
+ * Drawer del índice de navegación (mobile).
+ *
+ * Va como CSS plano y no como utilidades de Tailwind a propósito: las
+ * utilidades `translate-x-*` de v4 escriben la propiedad `translate` a través
+ * de custom properties registradas, y el estado cerrado del drawer no
+ * resolvía — quedaba tapando el contenido en mobile. Tres reglas explícitas
+ * son más baratas de leer y no dependen de cómo se resuelva esa variable.
+ */
+.nav-drawer {
+  transform: translateX(-100%);
+}
+
+.nav-drawer[data-open='true'] {
+  transform: translateX(0);
+}
+
+@media (width >= 48rem) {
+  .nav-drawer {
+    transform: none;
+  }
+}
+
+/*
  * Utilidades tipográficas del sistema. Son las tres reglas duras de la
  * dirección de arte, expresadas una sola vez:
  *   .u-display  — Archivo estirado al 125% del eje wdth, el titular editorial.
@@ -223,10 +246,11 @@
 /*
  * Subrayado que barre de izquierda a derecha. Es la microinteracción firma
  * del sistema: se usa en el índice de navegación y en links editoriales.
- * `transform` en vez de `width` para que corra en el compositor.
- * El transform lo maneja Tailwind desde el markup
- * (`origin-left scale-x-0 group-hover:scale-x-100`) para no pelear con las
- * variables de transform de v4; acá solo vive la geometría de la línea.
+ *
+ * Se aplica a un `<span aria-hidden>` dentro de un contenedor `group relative`;
+ * el barrido lo maneja Tailwind desde el markup con
+ * `origin-left scale-x-0 group-hover:scale-x-100` (transform, no `width`, para
+ * que corra en el compositor). Acá solo vive la geometría de la línea.
  */
 @utility u-wipe-line {
   position: absolute;

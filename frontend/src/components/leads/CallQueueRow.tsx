@@ -70,7 +70,7 @@ export const CallQueueRow: React.FC<CallQueueRowProps> = ({
             <Link
               to={`/leads/${lead.id}`}
               data-testid="call-queue-row-link"
-              className="u-wipe group/link relative"
+              className="group/link relative"
             >
               <span
                 data-testid="call-queue-row-name"
