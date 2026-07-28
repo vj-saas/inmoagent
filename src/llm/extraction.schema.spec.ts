@@ -1,6 +1,7 @@
 import {
   rawExtractionSchema,
   sanitizeExtraction,
+  sanitizeLeadName,
   type RawExtraction,
 } from './extraction.schema';
 
@@ -18,6 +19,7 @@ function raw(overrides: Partial<RawExtraction> = {}): RawExtraction {
     priceFlexible: false,
     extraRequirements: null,
     interestedPropertyIndex: null,
+    name: null,
     ...overrides,
   };
 }
@@ -111,5 +113,82 @@ describe('sanitizeExtraction', () => {
       'mas baratos no hay?',
     );
     expect(result.neighborhoods).toEqual([]);
+  });
+
+  // spec 09, T1.1: nombre del lead, siempre validado contra el turno.
+  it('AC-14: acepta el nombre si el lead se presenta explícitamente', () => {
+    const result = sanitizeExtraction(
+      raw({ name: 'Martín' }),
+      'hola! soy Martín, busco depto en caballito',
+    );
+    expect(result.name).toBe('Martín');
+  });
+
+  it('AC-15: descarta el nombre si NO aparece en el texto del turno (alucinación del LLM)', () => {
+    const result = sanitizeExtraction(
+      raw({ name: 'Juan' }),
+      'busco depto en caballito',
+    );
+    expect(result.name).toBeNull();
+  });
+
+  it('AC-16: descarta el nombre si es un barrio conocido', () => {
+    const result = sanitizeExtraction(
+      raw({ name: 'Recoleta' }),
+      'busco en Recoleta',
+    );
+    expect(result.name).toBeNull();
+  });
+
+  it('AC-16: descarta el nombre si es una palabra de la lista negra (saludo/muletilla)', () => {
+    const result = sanitizeExtraction(raw({ name: 'Hola' }), 'Hola! buenas');
+    expect(result.name).toBeNull();
+  });
+});
+
+describe('sanitizeLeadName', () => {
+  it('acepta un nombre mencionado en el turno y lo capitaliza', () => {
+    expect(sanitizeLeadName('martín', 'hola soy martín')).toBe('Martín');
+  });
+
+  it('acepta nombre y apellido, capitalizando cada palabra', () => {
+    expect(
+      sanitizeLeadName('juan carlos', 'me llamo juan carlos, un gusto'),
+    ).toBe('Juan Carlos');
+  });
+
+  it('null si rawName es null', () => {
+    expect(sanitizeLeadName(null, 'hola')).toBeNull();
+  });
+
+  it('null si es demasiado corto (1 caracter)', () => {
+    expect(sanitizeLeadName('J', 'soy J')).toBeNull();
+  });
+
+  it('null si es demasiado largo (> 40 caracteres)', () => {
+    const long = 'a'.repeat(41);
+    expect(sanitizeLeadName(long, `soy ${long}`)).toBeNull();
+  });
+
+  it('null si es un barrio conocido (case/tilde-insensitive)', () => {
+    expect(sanitizeLeadName('belgrano', 'busco en belgrano')).toBeNull();
+    expect(sanitizeLeadName('Palermo', 'busco en Palermo')).toBeNull();
+  });
+
+  it.each(['Hola', 'buenas', 'gracias', 'dale', 'Che', 'joya'])(
+    'null si es la palabra de lista negra "%s"',
+    (word) => {
+      expect(sanitizeLeadName(word, `${word}, como va`)).toBeNull();
+    },
+  );
+
+  it('null si no aparece (ni con tolerancia a typos) en el texto del turno', () => {
+    expect(sanitizeLeadName('Martín', 'busco depto en caballito')).toBeNull();
+  });
+
+  it('tolera un pequeño error de tipeo (mismo criterio que textMentionsNeighborhood)', () => {
+    expect(sanitizeLeadName('Martin', 'hola soy Martn, busco depto')).toBe(
+      'Martin',
+    );
   });
 });

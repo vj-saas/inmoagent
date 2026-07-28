@@ -43,7 +43,8 @@ export const EXTRACTION_INSTRUCTION = `Sos un extractor de datos para una inmobi
   "roomsInferred": boolean,
   "priceFlexible": boolean,
   "extraRequirements": string | null,
-  "interestedPropertyIndex": number | null
+  "interestedPropertyIndex": number | null,
+  "name": string | null
 }
 
 REGLAS GENERALES:
@@ -53,6 +54,7 @@ REGLAS GENERALES:
 - "interestedPropertyIndex" es el número de la propiedad (1, 2, 3...) por la que mostró interés, si corresponde; si no, null.
 - "off_topic" es para preguntas ajenas a la búsqueda de propiedades (política, deportes, temas personales, etc).
 - Si el mensaje no aporta ningún dato nuevo, igual devolvé el JSON completo con los campos que no aplican en null, [] o false.
+- "name": el nombre propio del lead, SOLO si se presenta explícitamente en ESTE turno ("soy Martín", "Martín, un gusto", "me llamo Ana"). NUNCA lo inventes ni lo deduzcas del tono. Un saludo suelto ("Hola!") NO es un nombre → null. El nombre de un barrio o zona NO es un nombre de persona → null.
 
 REGLAS ESPECÍFICAS DE ARGENTINA:
 
@@ -105,34 +107,40 @@ REGLAS ESPECÍFICAS DE ARGENTINA:
 EJEMPLOS:
 
 Mensaje: "Hola! busco depto para alquilar, somos una pareja con un nene, por caballito o flores"
-{"intent":"provide_info","operation":"RENT","neighborhoods":["caballito","flores"],"maxPrice":null,"currency":null,"minRooms":3,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":true,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null}
+{"intent":"provide_info","operation":"RENT","neighborhoods":["caballito","flores"],"maxPrice":null,"currency":null,"minRooms":3,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":true,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null}
 
 Mensaje: "quiero alquilar en palermo, 2 ambientes"
-{"intent":"provide_info","operation":"RENT","neighborhoods":["palermo"],"maxPrice":null,"currency":null,"minRooms":2,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null}
+{"intent":"provide_info","operation":"RENT","neighborhoods":["palermo"],"maxPrice":null,"currency":null,"minRooms":2,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null}
 
 Mensaje: "hasta 500 lucas estaría bien"
-{"intent":"provide_info","operation":null,"neighborhoods":[],"maxPrice":500000,"currency":"ARS","minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null}
+{"intent":"provide_info","operation":null,"neighborhoods":[],"maxPrice":500000,"currency":"ARS","minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null}
 
 Mensaje: "quiero comprar algo de 2 dormitorios en palermo, tengo hasta 150 lucas verdes, tiene que ser apto crédito"
-{"intent":"provide_info","operation":"SALE","neighborhoods":["palermo"],"maxPrice":150000,"currency":"USD","minRooms":3,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":"apto crédito","interestedPropertyIndex":null}
+{"intent":"provide_info","operation":"SALE","neighborhoods":["palermo"],"maxPrice":150000,"currency":"USD","minRooms":3,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":"apto crédito","interestedPropertyIndex":null,"name":null}
 
 Mensaje: "para mí solo, algo chico, 800 dólares máximo"
-{"intent":"provide_info","operation":null,"neighborhoods":[],"maxPrice":800,"currency":"USD","minRooms":1,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":true,"priceFlexible":false,"extraRequirements":"busca algo chico","interestedPropertyIndex":null}
+{"intent":"provide_info","operation":null,"neighborhoods":[],"maxPrice":800,"currency":"USD","minRooms":1,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":true,"priceFlexible":false,"extraRequirements":"busca algo chico","interestedPropertyIndex":null,"name":null}
 
 Mensaje: "busco un depto grande en belgrano, dueño directo si puede ser, tengo un perro"
-{"intent":"provide_info","operation":null,"neighborhoods":["belgrano"],"maxPrice":null,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":true,"roomsInferred":false,"priceFlexible":false,"extraRequirements":"busca depto grande; dueño directo","interestedPropertyIndex":null}
+{"intent":"provide_info","operation":null,"neighborhoods":["belgrano"],"maxPrice":null,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":true,"roomsInferred":false,"priceFlexible":false,"extraRequirements":"busca depto grande; dueño directo","interestedPropertyIndex":null,"name":null}
 
 Mensaje: "un palo y medio de presupuesto, alquiler, con cochera"
-{"intent":"provide_info","operation":"RENT","neighborhoods":[],"maxPrice":1500000,"currency":"ARS","minRooms":null,"wantsGarage":true,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null}
+{"intent":"provide_info","operation":"RENT","neighborhoods":[],"maxPrice":1500000,"currency":"ARS","minRooms":null,"wantsGarage":true,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null}
 
 Mensaje: "me interesa el 2, el de la foto con balcón"
-{"intent":"show_interest","operation":null,"neighborhoods":[],"maxPrice":null,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":2}
+{"intent":"show_interest","operation":null,"neighborhoods":[],"maxPrice":null,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":2,"name":null}
 
 Mensaje: "mah, me puedo estirar un poco si hace falta, no hay algo mas grande?"
-{"intent":"change_filters","operation":null,"neighborhoods":[],"maxPrice":null,"currency":null,"minRooms":3,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":true,"extraRequirements":null,"interestedPropertyIndex":null}
+{"intent":"change_filters","operation":null,"neighborhoods":[],"maxPrice":null,"currency":null,"minRooms":3,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":true,"extraRequirements":null,"interestedPropertyIndex":null,"name":null}
 
 Mensaje: "y mejor que el presupuesto sea de 900 mil en vez de 700"
-{"intent":"change_filters","operation":null,"neighborhoods":[],"maxPrice":900000,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null}
+{"intent":"change_filters","operation":null,"neighborhoods":[],"maxPrice":900000,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null}
 
 Mensaje: "che y river cuando juega?"
-{"intent":"off_topic","operation":null,"neighborhoods":[],"maxPrice":null,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null}`;
+{"intent":"off_topic","operation":null,"neighborhoods":[],"maxPrice":null,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null}
+
+Mensaje: "hola! soy Martín, busco depto en caballito"
+{"intent":"provide_info","operation":null,"neighborhoods":["caballito"],"maxPrice":null,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":"Martín"}
+
+Mensaje: "hola, buenas tardes"
+{"intent":"other","operation":null,"neighborhoods":[],"maxPrice":null,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null}`;

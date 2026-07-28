@@ -561,7 +561,7 @@ el handoff entre chats.
 | T2.3 | Una pregunta por mensaje | low | ✅ hecho | Día de visita se separó a `buildDayPreferenceQuestion`, preguntado en `enterScheduling` solo si el lead no lo dijo ya |
 | T2.4 | Registro formal | low | ✅ hecho | `Tenant.botFormality` (migración manual, sin DB local corriendo — ver nota abajo); filtro `applyFormality` centralizado en `sendActions`, no en cada template; línea inyectada en `buildSystemPrompt`. NO se expuso en el admin DTO (fuera de alcance, ver §9) |
 | T2.5 | Eco de comprensión | low | ✅ hecho | `buildUnderstandingEcho`, disparado en `triggerSearch` solo cuando `lead.state !== SEARCH_MATCH` (primera búsqueda completa) y hay resultados. **Fase 2 completa.** |
-| T1.1 | Capturar nombre | medium | ⬜ pendiente | |
+| T1.1 | Capturar nombre | medium | ✅ hecho | `Lead.name`/`nameAskedAt` (migración manual); `sanitizeLeadName` en extraction.schema.ts; se pregunta 1 vez al final del teaser o de la primera búsqueda, nunca en el saludo; alerta usa el nombre (AC-18 ya funcionaba, se agregó test) |
 | T1.2 | Schema comercial | high | ⬜ pendiente | |
 | T1.3 | Extracción comercial | high | ⬜ pendiente | ⚠️ verificar no regresión |
 | T1.4 | Estado COMMERCIAL_QUALIFICATION | high | ⬜ pendiente | 🔴 crítico — aprobación humana |

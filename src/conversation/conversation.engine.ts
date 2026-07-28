@@ -198,7 +198,7 @@ export class ConversationEngine {
       })),
       ...result.actions,
     ]);
-    await this.persistLeadUpdate(freshLead, result, turnCount);
+    await this.persistLeadUpdate(freshLead, result, turnCount, extraction.name);
   }
 
   private async resolveResult(
@@ -363,12 +363,19 @@ export class ConversationEngine {
     lead: Lead,
     result: HandlerResult,
     turnCount: number,
+    leadNameFromThisTurn: string | null,
   ): Promise<void> {
     const data: Prisma.LeadUpdateInput = {
       state: result.nextState,
       lastMessageAt: new Date(),
       turnCount,
     };
+
+    // Captura de nombre (spec 09, T1.1, AC-14): nunca pisa un nombre ya
+    // guardado (podría venir corregido a mano desde el panel).
+    if (leadNameFromThisTurn && !lead.name) {
+      data.name = leadNameFromThisTurn;
+    }
 
     if (result.filterUpdates) {
       data.fOperation = result.filterUpdates.fOperation;
@@ -387,6 +394,9 @@ export class ConversationEngine {
     }
     if (result.markGreeted && !lead.greetedAt) {
       data.greetedAt = new Date();
+    }
+    if (result.markNameAsked && !lead.nameAskedAt) {
+      data.nameAskedAt = new Date();
     }
     if (
       result.nextState === ConversationState.HUMAN_HANDOFF &&

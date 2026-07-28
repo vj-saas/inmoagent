@@ -13,6 +13,7 @@ import { SafeReplyService } from '../safe-reply.service';
 import {
   buildDelegatedZoneMessage,
   buildMissingFilterFallback,
+  buildNameRequestMessage,
   buildNoResultsMessage,
   buildPartialZoneDropMessage,
   buildSameResultsMessage,
@@ -231,10 +232,20 @@ export class QualificationHandler {
       text: buildTeaserClosingQuestion(outcome.properties.length),
     });
 
+    // Pedido de nombre (spec 09, T1.1, AC-17): el teaser ya mostró valor real.
+    const askName = this.shouldAskName(ctx);
+    if (askName) {
+      actions.push({
+        kind: 'text',
+        text: buildNameRequestMessage(leadSeed(ctx.lead)),
+      });
+    }
+
     return {
       actions,
       nextState: ConversationState.SEARCH_MATCH,
       filterUpdates: filters,
+      markNameAsked: askName,
     };
   }
 
@@ -383,11 +394,28 @@ export class QualificationHandler {
       });
     }
 
+    // Pedido de nombre (spec 09, T1.1, AC-17): solo cuando hubo algo real para
+    // mostrar, nunca antes.
+    const askName = outcome.properties.length > 0 && this.shouldAskName(ctx);
+    if (askName) {
+      actions.push({
+        kind: 'text',
+        text: buildNameRequestMessage(leadSeed(ctx.lead)),
+      });
+    }
+
     return {
       actions,
       nextState: ConversationState.SEARCH_MATCH,
       filterUpdates: filters,
+      markNameAsked: askName,
     };
+  }
+
+  /** ¿Corresponde preguntar el nombre? Solo si no lo tenemos y todavía no se
+   * le preguntó (spec 09, T1.1, AC-17): se pregunta una única vez por lead. */
+  private shouldAskName(ctx: HandlerContext): boolean {
+    return ctx.lead.name === null && ctx.lead.nameAskedAt === null;
   }
 
   private buildFollowUpInstruction(

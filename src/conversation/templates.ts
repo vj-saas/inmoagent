@@ -180,6 +180,22 @@ export function buildTeaserClosingQuestion(count: number): string {
 }
 
 /**
+ * Pedido de nombre (spec 09, T1.1, AC-17/AC-19): se pregunta en un mensaje
+ * APARTE, recién después de mostrar valor real (teaser o primera búsqueda
+ * completa) — nunca en el saludo. Se pregunta una sola vez (controlado por
+ * `Lead.nameAskedAt`, mismo patrón que `greetedAt`).
+ */
+const NAME_REQUEST_VARIANTS = [
+  'Antes de seguir, ¿cómo es tu nombre?',
+  '¿Me decís tu nombre para ir llamándote mejor?',
+  '¿Con quién tengo el gusto?',
+];
+
+export function buildNameRequestMessage(seed: string): string {
+  return pickVariant(NAME_REQUEST_VARIANTS, seed);
+}
+
+/**
  * Una sola pregunta por mensaje (spec 09, T2.3): la preferencia de día se
  * pregunta recién al confirmar interés (ver `buildDayPreferenceQuestion`,
  * usado por `SchedulingHandler.enterScheduling`), no acá.

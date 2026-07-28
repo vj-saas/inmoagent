@@ -349,3 +349,137 @@ describe('QualificationHandler — eco de comprensión (T2.5)', () => {
     });
   });
 });
+
+/**
+ * Pedido de nombre (spec 09, T1.1): se pregunta una sola vez, recién después
+ * de mostrar valor real (teaser o búsqueda completa), y nunca si ya lo
+ * tenemos o ya se lo preguntamos antes (AC-17).
+ */
+describe('QualificationHandler — pedido de nombre (T1.1)', () => {
+  const tenant = { id: 'tenant-1' } as HandlerContext['tenant'];
+  const property1 = { id: 'prop-1' };
+
+  let propertySearch: {
+    zonesWithStock: jest.Mock;
+    topStockZones: jest.Mock;
+    teaserSearch: jest.Mock;
+    searchAndRecordForLead: jest.Mock;
+  };
+  let safeReply: { compose: jest.Mock };
+  let handler: QualificationHandler;
+
+  beforeEach(() => {
+    propertySearch = {
+      zonesWithStock: jest.fn().mockResolvedValue(['caballito']),
+      topStockZones: jest.fn(),
+      teaserSearch: jest.fn().mockResolvedValue({ properties: [property1] }),
+      searchAndRecordForLead: jest.fn().mockResolvedValue({
+        properties: [property1],
+        relaxed: null,
+      }),
+    };
+    safeReply = { compose: jest.fn() };
+    handler = new QualificationHandler(
+      propertySearch as unknown as PropertySearchService,
+      safeReply as unknown as SafeReplyService,
+    );
+  });
+
+  function ctx(
+    leadOverrides: Partial<{ name: string | null; nameAskedAt: Date | null }>,
+  ): HandlerContext {
+    return {
+      tenant,
+      lead: {
+        id: 'lead-1',
+        state: ConversationState.QUALIFICATION,
+        lastSearchIds: [],
+        turnCount: 2,
+        name: null,
+        nameAskedAt: null,
+        ...leadOverrides,
+      },
+      turnText: 'busco en caballito para alquilar',
+      extraction: {
+        intent: 'provide_info',
+        operation: null,
+        neighborhoods: [],
+        maxPrice: null,
+        currency: null,
+        minRooms: null,
+        wantsGarage: null,
+        wantsPetsAllowed: null,
+        roomsInferred: false,
+        priceFlexible: false,
+        extraRequirements: null,
+        interestedPropertyIndex: null,
+        name: null,
+      },
+      recentMessages: [],
+    } as unknown as HandlerContext;
+  }
+
+  // Teaser: operación + zona, sin ambientes/precio -> triggerTeaser.
+  const teaserFilters: LeadFilters = {
+    fOperation: 'RENT' as LeadFilters['fOperation'],
+    fNeighborhoods: ['caballito'],
+    fMaxPrice: null,
+    fCurrency: null,
+    fMinRooms: null,
+    fGarage: null,
+    fPetsAllowed: null,
+    fNotes: null,
+    fOfferedNeighborhoods: [],
+    fPriceMentionedAtTurn: null,
+  };
+
+  it('AC-17: sin nombre y sin haberlo preguntado antes, el teaser termina con el pedido de nombre', async () => {
+    const result = await handler.handle(ctx({}), teaserFilters);
+
+    const lastAction = result.actions[result.actions.length - 1];
+    expect(lastAction).toMatchObject({
+      kind: 'text',
+      text: expect.stringMatching(/nombre|gusto/i),
+    });
+    expect(result.markNameAsked).toBe(true);
+  });
+
+  it('AC-17: si ya tenemos el nombre, NO se pregunta', async () => {
+    const result = await handler.handle(ctx({ name: 'Martín' }), teaserFilters);
+
+    const lastAction = result.actions[result.actions.length - 1];
+    expect(lastAction).not.toMatchObject({
+      text: expect.stringMatching(/nombre|gusto/i),
+    });
+    expect(result.markNameAsked).toBe(false);
+  });
+
+  it('AC-17: si ya se lo preguntamos antes (nameAskedAt seteado), NO se vuelve a preguntar', async () => {
+    const result = await handler.handle(
+      ctx({ nameAskedAt: new Date('2026-07-20') }),
+      teaserFilters,
+    );
+
+    const lastAction = result.actions[result.actions.length - 1];
+    expect(lastAction).not.toMatchObject({
+      text: expect.stringMatching(/nombre|gusto/i),
+    });
+    expect(result.markNameAsked).toBe(false);
+  });
+
+  it('AC-17: en una búsqueda completa (no teaser), también se pregunta el nombre al final', async () => {
+    const fullFilters: LeadFilters = {
+      ...teaserFilters,
+      fMaxPrice: 500000,
+      fCurrency: 'ARS',
+      fMinRooms: 2,
+    };
+    const result = await handler.handle(ctx({}), fullFilters);
+
+    const lastAction = result.actions[result.actions.length - 1];
+    expect(lastAction).toMatchObject({
+      text: expect.stringMatching(/nombre|gusto/i),
+    });
+    expect(result.markNameAsked).toBe(true);
+  });
+});

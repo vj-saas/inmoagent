@@ -43,4 +43,6 @@ export interface HandlerResult {
   preferredDay?: string | null;
   /** Marca que se mandó el saludo+aviso legal completo (se manda una sola vez por lead). */
   markGreeted?: boolean;
+  /** Marca que se le preguntó el nombre al lead (se pregunta una sola vez, spec 09 T1.1). */
+  markNameAsked?: boolean;
 }

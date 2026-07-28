@@ -42,6 +42,7 @@ function extraction(
     priceFlexible: false,
     extraRequirements: null,
     interestedPropertyIndex: null,
+    name: null,
     ...overrides,
   };
 }
@@ -52,6 +53,7 @@ function lead(overrides: Partial<Lead> = {}): Lead {
     tenantId: TENANT.id,
     phone: '5491100000000',
     name: null,
+    nameAskedAt: null,
     state: ConversationState.QUALIFICATION,
     greetedAt: new Date(),
     handoffAt: null,
@@ -431,5 +433,54 @@ describe('ConversationEngine — botFormality (T2.4)', () => {
     await engine.handleTurn(TENANT.id, stored.id, 'hola');
 
     expect(messaging.sendText.mock.calls[0][2]).toBe(RAW_TEXT);
+  });
+});
+
+// spec 09, T1.1: captura del nombre del lead, siempre desde la extracción de
+// ESTE turno, y nunca pisando un nombre ya guardado.
+describe('ConversationEngine — captura de nombre (T1.1)', () => {
+  it('AC-14: si la extracción trae un nombre y el lead no tenía, lo persiste', async () => {
+    const stored = lead({ name: null });
+    const { engine, prisma, llm } = build(stored);
+    (llm.extractIntent as jest.Mock).mockResolvedValue(
+      extraction({ name: 'Martín' }),
+    );
+
+    await engine.handleTurn(TENANT.id, stored.id, 'hola soy Martín');
+
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    expect(update.mock.calls[0][0].data.name).toBe('Martín');
+  });
+
+  it('nunca pisa un nombre ya guardado, aunque la extracción traiga otro', async () => {
+    const stored = lead({ name: 'Ana' });
+    const { engine, prisma, llm } = build(stored);
+    (llm.extractIntent as jest.Mock).mockResolvedValue(
+      extraction({ name: 'Martín' }),
+    );
+
+    await engine.handleTurn(TENANT.id, stored.id, 'hola soy Martín');
+
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    expect(update.mock.calls[0][0].data.name).toBeUndefined();
+  });
+
+  it('sin nombre en la extracción, no toca el campo name', async () => {
+    const stored = lead({ name: null });
+    const { engine, prisma } = build(stored);
+
+    await engine.handleTurn(TENANT.id, stored.id, 'busco en caballito');
+
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    expect(update.mock.calls[0][0].data.name).toBeUndefined();
   });
 });

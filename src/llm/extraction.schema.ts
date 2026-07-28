@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import {
+  isKnownNeighborhood,
   normalizeNeighborhood,
+  normalizeText,
   textMentionsNeighborhood,
 } from '../properties/neighborhoods';
 
@@ -28,6 +30,8 @@ export const rawExtractionSchema = z.object({
   priceFlexible: z.boolean(),
   extraRequirements: z.string().nullable(),
   interestedPropertyIndex: z.number().int().positive().nullable(),
+  /** Nombre del lead, SOLO si se presentó explícitamente en este turno (spec 09, T1.1). */
+  name: z.string().nullable(),
 });
 
 export type RawExtraction = z.infer<typeof rawExtractionSchema>;
@@ -49,9 +53,75 @@ export interface ExtractionResult {
   /** Incluye lo que puso el LLM más los barrios no reconocidos (en texto libre). */
   extraRequirements: string | null;
   interestedPropertyIndex: number | null;
+  /** Nombre del lead, ya validado contra el texto del turno (ver `sanitizeLeadName`). */
+  name: string | null;
 }
 
 const MAX_ROOMS = 10;
+const MIN_NAME_LENGTH = 2;
+const MAX_NAME_LENGTH = 40;
+
+/**
+ * Palabras que el LLM confunde con un nombre propio (saludos, muletillas,
+ * confirmaciones cortas). Lista cerrada y normalizada (minúsculas, sin
+ * tildes) — spec 09, T1.1 AC-16.
+ */
+const NAME_BLACKLIST = new Set([
+  'hola',
+  'buenas',
+  'buenos dias',
+  'buenas tardes',
+  'buenas noches',
+  'gracias',
+  'chau',
+  'listo',
+  'dale',
+  'si',
+  'no',
+  'ok',
+  'okay',
+  'genial',
+  'joya',
+  'buenisimo',
+  'perfecto',
+  'hey',
+  'che',
+]);
+
+function capitalizeEachWord(text: string): string {
+  return text
+    .split(' ')
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : word))
+    .join(' ');
+}
+
+/**
+ * El LLM alucina nombres con frecuencia (saluda "Hola!" y a veces devuelve
+ * "Hola" como `name`, o repite el nombre del bot). Un candidato solo se
+ * acepta si:
+ * - aparece mencionado en el TEXTO de este turno (mismo criterio tolerante a
+ *   typos que `textMentionsNeighborhood`, reutilizado tal cual: no es
+ *   específico de barrios, solo compara palabras);
+ * - tiene un largo plausible para un nombre (2 a 40 caracteres);
+ * - no es una palabra de la lista negra (saludos/muletillas/confirmaciones);
+ * - no es, él mismo, un barrio conocido ("Recoleta" no es un nombre).
+ * Spec 09, T1.1, AC-15/AC-16.
+ */
+export function sanitizeLeadName(
+  rawName: string | null,
+  turnText: string,
+): string | null {
+  if (!rawName) return null;
+  const trimmed = rawName.trim();
+  if (trimmed.length < MIN_NAME_LENGTH || trimmed.length > MAX_NAME_LENGTH) {
+    return null;
+  }
+  const normalized = normalizeText(trimmed);
+  if (NAME_BLACKLIST.has(normalized)) return null;
+  if (isKnownNeighborhood(trimmed)) return null;
+  if (!textMentionsNeighborhood(turnText, trimmed)) return null;
+  return capitalizeEachWord(trimmed);
+}
 
 /**
  * Valores fuera de rango se descartan (no invalidan toda la extracción):
@@ -97,5 +167,6 @@ export function sanitizeExtraction(
     priceFlexible: raw.priceFlexible,
     extraRequirements: extraRequirements ? extraRequirements : null,
     interestedPropertyIndex: raw.interestedPropertyIndex,
+    name: sanitizeLeadName(raw.name, turnText),
   };
 }

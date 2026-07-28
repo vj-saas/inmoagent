@@ -56,6 +56,7 @@ describe('OpenAiLlmProvider', () => {
     priceFlexible: false,
     extraRequirements: null,
     interestedPropertyIndex: null,
+    name: null,
   });
 
   it('extractIntent parsea y sanitiza una respuesta válida en el primer intento', async () => {

@@ -243,6 +243,10 @@ model Lead {
   greetedAt     DateTime? // se completa cuando se manda el saludo+aviso legal completo (una sola vez)
   lastSearchIds String[]  @default([]) // IDs del último resultado (validación de salida)
   turnCount     Int       @default(0) // cantidad de turnos procesados por el FSM (ver fPriceMentionedAtTurn)
+  // Se pide el nombre una sola vez, recién después de mostrar valor real
+  // (teaser o búsqueda completa) — spec 09, T1.1. Si el lead no lo da, no se
+  // le vuelve a preguntar (mismo patrón que `greetedAt`).
+  nameAskedAt DateTime?
 
   assignedUserId String?
   assignedUser   Person? @relation("LeadAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
