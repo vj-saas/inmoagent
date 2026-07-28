@@ -1,6 +1,11 @@
 # 09 — Spec: Calificación comercial y naturalidad conversacional
 
-> **Estado:** 📋 Especificado, sin implementar. Esperando OK para arrancar.
+> **Estado:** ✅ Fases 1, 2 y 3 implementadas y pusheadas a `main` (T1.1-T1.5,
+> T2.1-T2.5, T3.1-T3.3). Fase 4 (T4.1, captación) **pausada** — el ICP para
+> captación de propietarios todavía no está definido (consultado 2026-07-28).
+> ⚠️ Antes de deployar a producción: correr `npx prisma migrate deploy` contra
+> una DB real y re-correr `scripts/sim-personas.ts` (ver §9, decisión 10) — no
+> se pudo validar en este entorno de trabajo (sin Postgres local corriendo).
 > **Fecha base:** 2026-07-28
 > **Alcance:** módulos `conversation/`, `llm/`, schema de `Lead`/`Tenant`.
 > **Doc previo relevante:** `03-CONVERSACION.md` (FSM y prompts actuales),
@@ -569,7 +574,7 @@ el handoff entre chats.
 | T3.1 | Señales de compra | high | ✅ hecho | 🔴 **crítico — cambia cómo se clasifica off-topic vs. señal de compra en `resolveResult`.** Mismo criterio que T1.4: avanzado sin pausa por instrucción explícita, señalado para revisión. `buying-signals.util.ts` (regex) + rama nueva en `conversation.engine.ts` ANTES del redirect off-topic; dispara `LeadAlertService` y setea `qBuyingSignalAt` (ya sube el score de T1.5 en el mismo turno). Cubre el caso exacto de H4 con test dedicado (AC-43) |
 | T3.2 | Match reasoning | medium | ✅ hecho | `formatPropertyCaption` recibe `filters` opcional (via `OutgoingAction.filters`, adjuntado en `qualification.handler.ts`) y agrega UNA línea (prioridad cochera > mascotas > ambientes exactos > patio) solo si hay match real contra atributos de la propiedad — nunca del LLM |
 | T3.3 | Rescate sin stock | medium | ✅ hecho | Reutiliza `qWantsStockAlert` (ya en schema desde T1.2) y `acceptsZoneSuggestion`/`hasNewFilterData` existentes — sin campo nuevo. Ver decisión #13 en §9 sobre el trade-off de precisión al detectar "aceptación". **Cierra la Fase 3.** |
-| T4.1 | Captación | high | ⬜ pendiente | ⏸️ decidir si entra |
+| T4.1 | Captación | high | ⏸️ pausado | Consultado 2026-07-28: el usuario todavía no define el ICP para esto. Queda sin implementar hasta que se retome en otra sesión. Fases 1, 2 y 3 (T1.1-T1.5, T2.1-T2.5, T3.1-T3.3) están completas y pusheadas a `main`. |
 
 Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecho · ⏸️ pausado · ❌ descartado
 
@@ -653,8 +658,11 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecho · ⏸️ pausado · ❌ de
     pendiente" explícito, mismo patrón que `fOfferedNeighborhoods`.
 
 ### Pendientes de definir
-- **¿Entra la Fase 4 (captación)?** Depende de si el ICP incluye captación de
-  propietarios. Impacta el alcance en ~1 semana.
+- **¿Entra la Fase 4 (captación)?** Consultado explícitamente el 2026-07-28: el
+  usuario todavía no tiene definido si el ICP de esta inmobiliaria incluye
+  captación de propietarios, así que T4.1 queda **pausada sin implementar**.
+  Retomar esta pregunta antes de arrancar T4.1 en una sesión futura. Impacta
+  el alcance en ~1 semana si se suma.
 - **Idioma:** el bot responde siempre en español rioplatense, incluso a leads que
   escriben en inglés (ya detectado en QA previos). Sigue siendo decisión de
   producto abierta y **fuera del alcance de esta spec**.
