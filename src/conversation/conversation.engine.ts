@@ -27,6 +27,7 @@ import {
   mergeFilters,
   normalizeKeycapDigits,
 } from './filters.util';
+import { hasBuyingSignal } from './buying-signals.util';
 import { leadSeed } from './copy-variants.util';
 import { applyFormality } from './formality.util';
 import { calculateLeadScore } from './lead-score.util';
@@ -42,6 +43,7 @@ import { OutputValidatorService } from './output-validator.service';
 import { resolveReleaseState } from './release-state.util';
 import { SafeReplyService } from './safe-reply.service';
 import {
+  buildBuyingSignalFallback,
   buildHandoffFarewell,
   buildOffTopicRedirectFallback,
   buildReformulateRequest,
@@ -216,6 +218,30 @@ export class ConversationEngine {
     // zonas concretas (QA personas §6).
     const delegatesZone =
       filters.fNeighborhoods.length === 0 && delegatesZoneChoice(ctx.turnText);
+
+    // Señales de compra (spec 09, T3.1, H4): el LLM clasifica preguntas de
+    // pago/descuento/reserva como `off_topic` ("me hacen descuento si pago
+    // contado?" → "yo sólo puedo ayudarte con la búsqueda..."). Se detecta
+    // por regex, ANTES de mirar `intent`, así nunca cae en el redirect
+    // genérico de off-topic (AC-40). Se responde sin prometer nada (AC-41) y
+    // se alerta al asesor (AC-42) — es la señal de compra más fuerte que hay.
+    if (hasBuyingSignal(ctx.turnText)) {
+      const reply = await this.safeReply.compose(
+        {
+          tenant: ctx.tenant,
+          lead,
+          recentMessages,
+          instruction: `El lead hizo una pregunta o comentario relacionado a precio, forma de pago, descuento, seña o negociación ("${ctx.turnText}"). Respondé con calidez que eso te lo confirma el asesor humano directamente. NUNCA prometas descuentos, precios ni condiciones que no estén en los datos (regla del sistema). Si corresponde, invitalo a seguir viendo opciones.`,
+        },
+        buildBuyingSignalFallback(leadSeed(ctx.lead)),
+      );
+      await this.leadAlert.notify(ctx.tenant, lead, null);
+      return {
+        actions: [{ kind: 'text', text: reply }],
+        nextState: lead.state,
+        commercialUpdate: { qBuyingSignalAt: new Date() },
+      };
+    }
 
     const isRedirectable =
       !delegatesZone &&
@@ -416,6 +442,9 @@ export class ConversationEngine {
       if (u.qAskedFields !== undefined) data.qAskedFields = u.qAskedFields;
       if (u.pendingPropertyId !== undefined) {
         data.pendingPropertyId = u.pendingPropertyId;
+      }
+      if (u.qBuyingSignalAt !== undefined) {
+        data.qBuyingSignalAt = u.qBuyingSignalAt;
       }
     }
     if (

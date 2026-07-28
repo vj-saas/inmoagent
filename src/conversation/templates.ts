@@ -291,6 +291,21 @@ export function buildCommercialQuestion(
 }
 
 /**
+ * Fallback determinístico para una señal de compra (spec 09, T3.1, AC-41):
+ * nunca promete precio/descuento/condiciones (regla 5 del system prompt) y
+ * deriva la respuesta concreta al asesor humano.
+ */
+const BUYING_SIGNAL_FALLBACK_VARIANTS = [
+  'Eso te lo confirma el asesor directamente, para darte una respuesta precisa. ¿Seguimos viendo opciones mientras tanto?',
+  'Ese detalle te lo termina de cerrar el asesor humano. ¿Te sigo mostrando opciones?',
+  'Eso lo ve el asesor con vos, así te da una respuesta concreta. ¿Continuamos con la búsqueda?',
+];
+
+export function buildBuyingSignalFallback(seed: string): string {
+  return pickVariant(BUYING_SIGNAL_FALLBACK_VARIANTS, seed);
+}
+
+/**
  * Una sola pregunta por mensaje (spec 09, T2.3): la preferencia de día se
  * pregunta recién al confirmar interés (ver `buildDayPreferenceQuestion`,
  * usado por `SchedulingHandler.enterScheduling`), no acá.

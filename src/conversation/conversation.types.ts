@@ -57,5 +57,7 @@ export interface HandlerResult {
     qHasPropertyToSell?: boolean | null;
     qAskedFields?: string[];
     pendingPropertyId?: string | null;
+    /** Señal de compra detectada este turno (spec 09, T3.1). */
+    qBuyingSignalAt?: Date;
   };
 }

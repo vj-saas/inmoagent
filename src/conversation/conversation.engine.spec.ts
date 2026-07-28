@@ -172,6 +172,7 @@ function build(storedLead: Lead, tenant: Tenant = TENANT) {
     prisma,
     messaging,
     llm,
+    safeReply,
     leadAlert,
     greeting,
     qualification,
@@ -595,5 +596,78 @@ describe('ConversationEngine — persistencia del score (T1.5)', () => {
     >;
     // 30 (ya había interés, qAskedFields no vacío) + 20 (garantía propietaria, RENT)
     expect(update.mock.calls[0][0].data.qScore).toBe(50);
+  });
+});
+
+// spec 09, T3.1 (H4): una señal de compra fuerte nunca se trata como
+// off-topic, se responde sin prometer nada, se alerta al asesor y sube el score.
+describe('ConversationEngine — señales de compra (T3.1)', () => {
+  it('AC-40: el caso real de H4 no dispara el redirect off-topic genérico', async () => {
+    const stored = lead({ state: ConversationState.SEARCH_MATCH });
+    const { engine, llm, messaging, qualification } = build(stored);
+    llm.extractIntent.mockResolvedValue(
+      extraction({ intent: 'off_topic' }), // el LLM lo clasifica mal, a propósito (H4)
+    );
+
+    await engine.handleTurn(
+      TENANT.id,
+      stored.id,
+      'en zonaprop vi uno igual a 130 mil, me hacen descuento si pago de contado?',
+    );
+
+    // No debería haber ido al handler normal del estado (se corta antes, en resolveResult).
+    expect(qualification.handle).not.toHaveBeenCalled();
+    const sentText = messaging.sendText.mock.calls[0][2] as string;
+    expect(sentText).not.toMatch(/no sé nada|solo (puedo|te puedo) ayudar/i);
+  });
+
+  it('AC-41: responde vía safeReply.compose sin instrucción de prometer nada', async () => {
+    const stored = lead({ state: ConversationState.SEARCH_MATCH });
+    const { engine, llm, safeReply } = build(stored);
+    llm.extractIntent.mockResolvedValue(extraction({ intent: 'off_topic' }));
+
+    await engine.handleTurn(TENANT.id, stored.id, 'me hacen descuento?');
+
+    expect(safeReply.compose).toHaveBeenCalledTimes(1);
+    const [[input]] = safeReply.compose.mock.calls;
+    expect(input.instruction).toMatch(/asesor/i);
+    expect(input.instruction).toMatch(/NUNCA prometas/i);
+  });
+
+  it('AC-42: dispara la alerta interna y persiste qBuyingSignalAt', async () => {
+    const stored = lead({ state: ConversationState.SEARCH_MATCH });
+    const { engine, llm, leadAlert, prisma } = build(stored);
+    llm.extractIntent.mockResolvedValue(extraction({ intent: 'off_topic' }));
+
+    await engine.handleTurn(TENANT.id, stored.id, 'es negociable el precio?');
+
+    expect(leadAlert.notify).toHaveBeenCalledWith(TENANT, stored, null);
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    expect(update.mock.calls[0][0].data.qBuyingSignalAt).toBeInstanceOf(Date);
+  });
+
+  it('mantiene el mismo estado (no interrumpe el flujo de la FSM)', async () => {
+    const stored = lead({ state: ConversationState.SEARCH_MATCH });
+    const { engine, llm, prisma } = build(stored);
+    llm.extractIntent.mockResolvedValue(extraction({ intent: 'off_topic' }));
+
+    await engine.handleTurn(TENANT.id, stored.id, 'aceptan financiación?');
+
+    expect(persistedState(prisma)).toBe(ConversationState.SEARCH_MATCH);
+  });
+
+  it('un mensaje sin señal de compra sigue yendo al redirect off-topic genérico (no regresión)', async () => {
+    const stored = lead({ state: ConversationState.SEARCH_MATCH });
+    const { engine, llm, safeReply } = build(stored);
+    llm.extractIntent.mockResolvedValue(extraction({ intent: 'off_topic' }));
+
+    await engine.handleTurn(TENANT.id, stored.id, 'che y river cuando juega?');
+
+    const [[input]] = safeReply.compose.mock.calls;
+    expect(input.instruction).not.toMatch(/asesor/i);
+    expect(input.instruction).toMatch(/no tiene que ver con la búsqueda/i);
   });
 });
