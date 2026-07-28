@@ -1,6 +1,7 @@
 import type { Tenant } from '@prisma/client';
 
 import {
+  buildDayPreferenceQuestion,
   buildDelegatedZoneMessage,
   buildGreetingMessage,
   buildHandoffFarewell,
@@ -20,6 +21,11 @@ import {
   DEFAULT_INTRO,
   OPERATION_QUESTION,
 } from './templates';
+
+/** Cuenta signos de pregunta en un texto (AC-8: máx. uno por mensaje, salvo teaser). */
+function countQuestionMarks(text: string): number {
+  return (text.match(/\?/g) ?? []).length;
+}
 
 /** Genera N seeds distintos para un mismo lead (turnos consecutivos), para
  * recorrer el pool completo de variantes en los tests (spec 09, T2.2 AC-5). */
@@ -66,6 +72,33 @@ describe('buildSearchClosingQuestion', () => {
     expect(buildSearchClosingQuestion(1, 'lead-4:2')).toBe(
       buildSearchClosingQuestion(1, 'lead-4:2'),
     );
+  });
+
+  // AC-7 / AC-8 (spec 09, T2.3): la pregunta de día NO va acá — se pregunta
+  // recién al confirmar interés, vía buildDayPreferenceQuestion.
+  it('AC-8: ninguna variante (count 1 o varios) tiene más de un signo "?"', () => {
+    for (const seed of seedsFor('lead-14')) {
+      expect(countQuestionMarks(buildSearchClosingQuestion(1, seed))).toBeLessThanOrEqual(1);
+      expect(countQuestionMarks(buildSearchClosingQuestion(2, seed))).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('AC-7: ninguna variante menciona "entre semana" ni "sábado" (eso se pregunta después)', () => {
+    for (const seed of seedsFor('lead-15')) {
+      expect(buildSearchClosingQuestion(1, seed)).not.toMatch(/entre semana|sábado/i);
+      expect(buildSearchClosingQuestion(2, seed)).not.toMatch(/entre semana|sábado/i);
+    }
+  });
+});
+
+describe('buildDayPreferenceQuestion', () => {
+  it('AC-7: todas las variantes preguntan entre semana o sábado, con un solo "?"', () => {
+    for (const seed of seedsFor('lead-16')) {
+      const text = buildDayPreferenceQuestion(seed);
+      expect(text).toMatch(/entre semana/i);
+      expect(text).toMatch(/sábado/i);
+      expect(countQuestionMarks(text)).toBe(1);
+    }
   });
 });
 

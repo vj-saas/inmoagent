@@ -143,22 +143,43 @@ export function buildTeaserClosingQuestion(count: number): string {
   return `${opener} Para afinarte la búsqueda decime hasta cuánto es tu presupuesto y cuántos ambientes necesitás.`;
 }
 
+/**
+ * Una sola pregunta por mensaje (spec 09, T2.3): la preferencia de día se
+ * pregunta recién al confirmar interés (ver `buildDayPreferenceQuestion`,
+ * usado por `SchedulingHandler.enterScheduling`), no acá.
+ */
 const SEARCH_CLOSING_SINGLE_VARIANTS = [
-  '¿Te interesa? Te coordino una visita — ¿te queda mejor *entre semana* o el *sábado*?',
-  '¿Te copó esta opción? Coordinamos la visita — ¿te queda mejor *entre semana* o el *sábado*?',
-  '¿Te cierra esta? Te ayudo a coordinar la visita — ¿te queda mejor *entre semana* o el *sábado*?',
+  '¿Te interesa? Te coordino una visita 🙂',
+  '¿Te copó esta opción? Te ayudo a coordinar la visita.',
+  '¿Te cierra esta? Coordinamos la visita cuando quieras.',
 ];
 
 const SEARCH_CLOSING_MULTI_VARIANTS = [
-  '¿Cuál te gustó más? Decime el número y te coordino una visita — ¿te queda mejor *entre semana* o el *sábado*?',
-  '¿Alguna te cerró? Decime el número y arreglamos la visita — ¿te queda mejor *entre semana* o el *sábado*?',
-  '¿Cuál te gusta más? Pasame el número y coordinamos la visita — ¿te queda mejor *entre semana* o el *sábado*?',
+  '¿Cuál te gustó más? Decime el número y te coordino una visita.',
+  '¿Alguna te cerró? Decime el número y arreglamos la visita.',
+  '¿Cuál te gusta más? Pasame el número y coordinamos la visita.',
 ];
 
 export function buildSearchClosingQuestion(count: number, seed: string): string {
   const variants =
     count === 1 ? SEARCH_CLOSING_SINGLE_VARIANTS : SEARCH_CLOSING_MULTI_VARIANTS;
   return pickVariant(variants, seed);
+}
+
+/**
+ * Se pregunta recién cuando el lead confirma interés en una ficha, no antes
+ * (spec 09, T2.3 AC-7): antes vivía pegada a `buildSearchClosingQuestion`,
+ * violando la regla de una sola pregunta por mensaje (dos "?" en el mismo
+ * texto, AC-8).
+ */
+const DAY_PREFERENCE_VARIANTS = [
+  '¿Te queda mejor *entre semana* o el *sábado*?',
+  '¿Preferís *entre semana* o el *sábado* para la visita?',
+  '¿Mejor *entre semana* o *sábado* para coordinar?',
+];
+
+export function buildDayPreferenceQuestion(seed: string): string {
+  return pickVariant(DAY_PREFERENCE_VARIANTS, seed);
 }
 
 /**

@@ -84,4 +84,38 @@ describe('SchedulingHandler — disparador push B.4', () => {
     expect(leadAlert.notify).toHaveBeenCalledTimes(1);
     expect(leadAlert.notify).toHaveBeenCalledWith(tenant, lead, null);
   });
+
+  // spec 09, T2.3, AC-7: la preferencia de día se pregunta recién al confirmar
+  // interés (no antes, en el cierre de la búsqueda).
+  it('AC-7: si el lead no dijo su preferencia de día, se la pregunta en un mensaje aparte', async () => {
+    const result = await handler.enterScheduling(ctx(), null);
+
+    const texts = result.actions.map((a) =>
+      a.kind === 'text' ? a.text : '',
+    );
+    expect(texts.some((t) => /entre semana/i.test(t) && /sábado/i.test(t))).toBe(
+      true,
+    );
+    // Cada mensaje sigue siendo una sola pregunta (AC-8).
+    for (const text of texts) {
+      expect((text.match(/\?/g) ?? []).length).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('AC-7: si el lead ya dijo su preferencia de día, NO se le vuelve a preguntar', async () => {
+    const result = await handler.enterScheduling(
+      {
+        tenant,
+        lead,
+        turnText: 'me interesa, prefiero el sábado',
+      } as HandlerContext,
+      null,
+    );
+
+    const texts = result.actions.map((a) =>
+      a.kind === 'text' ? a.text : '',
+    );
+    expect(texts.some((t) => /entre semana/i.test(t))).toBe(false);
+    expect(result.preferredDay).toBe('sábado');
+  });
 });
