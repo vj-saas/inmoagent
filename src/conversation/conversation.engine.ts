@@ -28,6 +28,7 @@ import {
   normalizeKeycapDigits,
 } from './filters.util';
 import { leadSeed } from './copy-variants.util';
+import { applyFormality } from './formality.util';
 import { GreetingHandler } from './handlers/greeting.handler';
 import { QualificationHandler } from './handlers/qualification.handler';
 import { SchedulingHandler } from './handlers/scheduling.handler';
@@ -326,7 +327,8 @@ export class ConversationEngine {
     for (const action of actions) {
       if (action.kind === 'text') {
         if (action.text) {
-          await this.messaging.sendText(tenant, lead.phone, action.text);
+          const text = applyFormality(action.text, tenant.botFormality);
+          await this.messaging.sendText(tenant, lead.phone, text);
         }
         continue;
       }
@@ -345,7 +347,10 @@ export class ConversationEngine {
       }
 
       const photo = action.property.photos[0];
-      const caption = formatPropertyCaption(action.property, action.index);
+      const caption = applyFormality(
+        formatPropertyCaption(action.property, action.index),
+        tenant.botFormality,
+      );
       if (photo) {
         await this.messaging.sendImage(tenant, lead.phone, photo.url, caption);
       } else {

@@ -559,7 +559,7 @@ el handoff entre chats.
 | T2.1 | Util de variantes | low | ✅ hecho | `copy-variants.util.ts`, offset por hash de leadId + turnCount, sin repetir turno a turno |
 | T2.2 | Pools de copy | low | ✅ hecho | SEARCH_INTRO/SAME_RESULTS_MESSAGE/REFORMULATE_REQUEST/OFF_TOPIC_REDIRECT_FALLBACK pasaron de const a función con seed; tests adaptados a pool |
 | T2.3 | Una pregunta por mensaje | low | ✅ hecho | Día de visita se separó a `buildDayPreferenceQuestion`, preguntado en `enterScheduling` solo si el lead no lo dijo ya |
-| T2.4 | Registro formal | low | ⬜ pendiente | |
+| T2.4 | Registro formal | low | ✅ hecho | `Tenant.botFormality` (migración manual, sin DB local corriendo — ver nota abajo); filtro `applyFormality` centralizado en `sendActions`, no en cada template; línea inyectada en `buildSystemPrompt`. NO se expuso en el admin DTO (fuera de alcance, ver §9) |
 | T2.5 | Eco de comprensión | low | ⬜ pendiente | |
 | T1.1 | Capturar nombre | medium | ⬜ pendiente | |
 | T1.2 | Schema comercial | high | ⬜ pendiente | |
@@ -589,6 +589,27 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecho · ⏸️ pausado · ❌ de
    tenants ya configurados.
 6. **Las señales de compra se detectan por regex, no por LLM**, porque el LLM ya
    demostró clasificarlas mal (H4).
+7. **T2.4 se implementó con un filtro centralizado (`applyFormality`), no con
+   variantes formales dedicadas por mensaje.** El diseño original de §4.8
+   proponía variantes dedicadas para 6 mensajes de alto impacto + un filtro
+   genérico para el resto. En la práctica, aplicar el filtro una sola vez en
+   `ConversationEngine.sendActions` (para todo texto saliente, fijo o del LLM)
+   cubre los mismos criterios de aceptación con menos código y sin el riesgo
+   de que un mensaje nuevo se agregue sin su variante formal. Se mantiene
+   además la línea inyectada en `buildSystemPrompt` para que el propio LLM
+   redacte ya en registro formal (el filtro es el backstop determinístico).
+8. **La migración de `Tenant.botFormality` se escribió a mano** (carpeta +
+   `migration.sql`) en vez de generarse con `npx prisma migrate dev`, porque
+   no había una instancia de Postgres corriendo en el entorno de trabajo
+   (Docker Desktop no estaba disponible). Se corrió `npx prisma generate`
+   (no requiere DB) para regenerar el client. **Pendiente:** validar con
+   `npx prisma migrate deploy` (o `migrate dev`) contra una DB real antes de
+   deployar, para confirmar que el SQL a mano aplica limpio.
+9. **`botFormality` no se expuso en `UpdateTenantConfigDto`/admin.** Los
+   no-objetivos de esta spec excluyen tocar el panel/admin (Fase A de
+   `08-PROXIMOS-PASOS.md`); por ahora el campo se setea directo en la DB.
+   Agregarlo al DTO de config es una tarea chica y separada cuando se
+   retome ese frente.
 
 ### Pendientes de definir
 - **¿Entra la Fase 4 (captación)?** Depende de si el ICP incluye captación de

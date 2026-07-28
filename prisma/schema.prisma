@@ -28,6 +28,10 @@ model Tenant {
   // Configuración del bot
   botName            String   @default("Asistente")
   botTone            String   @default("cordial y profesional, voseo argentino")
+  // "cercano" (default, con emojis/muletillas) | "formal" (sin emojis, registro
+  // sobrio) — spec 09, T2.4. Default "cercano" para no cambiar el comportamiento
+  // de tenants ya configurados.
+  botFormality       String   @default("cercano")
   schedulingLink     String?
   humanHours         String?
   competitorsToAvoid String[] @default([])

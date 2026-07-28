@@ -79,7 +79,7 @@ function lead(overrides: Partial<Lead> = {}): Lead {
  * (`GuardrailsService`, `OutputValidatorService`), que se usan reales para que
  * la acción de guardrail bajo prueba salga del mismo camino que en producción.
  */
-function build(storedLead: Lead) {
+function build(storedLead: Lead, tenant: Tenant = TENANT) {
   const prisma = {
     lead: {
       findUnique: jest.fn().mockResolvedValue(storedLead),
@@ -93,7 +93,7 @@ function build(storedLead: Lead) {
   } as unknown as PrismaService;
 
   const tenants = {
-    findById: jest.fn().mockResolvedValue(TENANT),
+    findById: jest.fn().mockResolvedValue(tenant),
   } as unknown as TenantsService;
 
   const messaging = {
@@ -396,5 +396,40 @@ describe('ConversationEngine — AC-6: HUMAN_HANDOFF originado por `send` del as
     expect(searchMatch.handle).toHaveBeenCalledTimes(1);
     expect(messaging.sendText.mock.calls[0][2]).toBe(HANDOFF_TIMEOUT_APOLOGY);
     expect(persistedState(prisma)).toBe(ConversationState.SEARCH_MATCH);
+  });
+});
+
+// spec 09, T2.4: registro formal configurable por tenant, aplicado de forma
+// centralizada en `sendActions` sobre TODO texto saliente (fijo o del LLM).
+describe('ConversationEngine — botFormality (T2.4)', () => {
+  const FORMAL_TENANT = { ...TENANT, botFormality: 'formal' } as Tenant;
+  const RAW_TEXT = '¡Dale, mirá esto! 🙂 ¿Te sirve?';
+
+  it('AC-9: con tenant "formal", saca emojis y la muletilla del inicio antes de enviar', async () => {
+    const stored = lead({ state: ConversationState.QUALIFICATION });
+    const { engine, messaging, qualification } = build(stored, FORMAL_TENANT);
+    qualification.handle.mockResolvedValue({
+      actions: [{ kind: 'text', text: RAW_TEXT }],
+      nextState: ConversationState.QUALIFICATION,
+    });
+
+    await engine.handleTurn(FORMAL_TENANT.id, stored.id, 'hola');
+
+    const sentText = messaging.sendText.mock.calls[0][2] as string;
+    expect(sentText).not.toMatch(/\p{Extended_Pictographic}/u);
+    expect(sentText.toLowerCase()).not.toContain('dale,');
+  });
+
+  it('AC-10: con tenant sin botFormality (default), el texto sale sin tocar (regresión)', async () => {
+    const stored = lead({ state: ConversationState.QUALIFICATION });
+    const { engine, messaging, qualification } = build(stored, TENANT);
+    qualification.handle.mockResolvedValue({
+      actions: [{ kind: 'text', text: RAW_TEXT }],
+      nextState: ConversationState.QUALIFICATION,
+    });
+
+    await engine.handleTurn(TENANT.id, stored.id, 'hola');
+
+    expect(messaging.sendText.mock.calls[0][2]).toBe(RAW_TEXT);
   });
 });

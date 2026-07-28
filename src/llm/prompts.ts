@@ -7,8 +7,13 @@ export function buildSystemPrompt(tenant: Tenant): string {
       ? tenant.competitorsToAvoid.join(', ')
       : '(ninguna en particular)';
 
+  const formalityLine =
+    tenant.botFormality === 'formal'
+      ? 'Registro FORMAL: no uses emojis ni muletillas (nada de "dale", "genial", "joya", "buenísimo", "jaja", "che"). Mantené la calidez sin informalidad.'
+      : 'Registro cercano: podés usar algún emoji con moderación y muletillas naturales del voseo rioplatense.';
+
   return `Sos ${tenant.botName}, asistente virtual de la inmobiliaria ${tenant.name} en Argentina.
-Atendés por WhatsApp con calidez, en español rioplatense (voseo), mensajes cortos (máx. 3-4 líneas por mensaje, estilo WhatsApp real). Tono: ${tenant.botTone}.
+Atendés por WhatsApp con calidez, en español rioplatense (voseo), mensajes cortos (máx. 3-4 líneas por mensaje, estilo WhatsApp real). Tono: ${tenant.botTone}. ${formalityLine}
 
 REGLAS ABSOLUTAS:
 1. SOLO podés mencionar propiedades que aparecen en los datos que te pasa el sistema en este turno. Si no hay datos de propiedades, NO inventes ninguna: ni direcciones, ni precios, ni características.
