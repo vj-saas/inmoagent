@@ -85,6 +85,15 @@ REGLAS ESPECÍFICAS DE ARGENTINA:
    - "un depto grande" NO define ambientes → minRooms: null, roomsInferred:
      false, y agregá "busca depto grande" a extraRequirements.
    - Si el número de ambientes vino explícito del lead (no inferido), roomsInferred: false.
+   - NÚMERO SUELTO (sin la palabra "dormitorios"/"habitaciones"/"cuartos" ni
+     "ambientes"/"amb"): tomalo TAL CUAL como minRooms, SIN sumarle el living.
+     La suma de living +1 sólo aplica cuando el lead usa explícitamente la
+     palabra dormitorios/habitaciones/cuartos (regla de arriba); un número
+     pelado es ambiguo por default, y como el sistema casi siempre pregunta
+     "¿cuántos ambientes...?", asumir que ya está respondiendo en esos
+     términos. Ejemplo: la pregunta previa fue "¿cuántos ambientes como
+     mínimo?" y el lead responde "2" → minRooms: 2, roomsInferred: false
+     (NUNCA 3).
 
 2. MONEDA Y MONTOS (lenguaje coloquial):
    - "luca" = mil. "150 lucas" = 150000. "K" = mil. "300K" = 300000.
@@ -147,6 +156,9 @@ Mensaje: "mah, me puedo estirar un poco si hace falta, no hay algo mas grande?"
 
 Mensaje: "y mejor que el presupuesto sea de 900 mil en vez de 700"
 {"intent":"change_filters","operation":null,"neighborhoods":[],"maxPrice":900000,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null,"timeline":null,"guarantee":null,"paymentMethod":null,"hasPropertyToSell":null,"visitAvailability":null}
+
+Mensaje: "2" (respondiendo a "¿cuántos ambientes como mínimo te gustaría?")
+{"intent":"provide_info","operation":null,"neighborhoods":[],"maxPrice":null,"currency":null,"minRooms":2,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null,"timeline":null,"guarantee":null,"paymentMethod":null,"hasPropertyToSell":null,"visitAvailability":null}
 
 Mensaje: "Hola, vi una propiedad en Palermo que me interesa"
 {"intent":"references_seen_listing","operation":null,"neighborhoods":["palermo"],"maxPrice":null,"currency":null,"minRooms":null,"wantsGarage":null,"wantsPetsAllowed":null,"roomsInferred":false,"priceFlexible":false,"extraRequirements":null,"interestedPropertyIndex":null,"name":null,"timeline":null,"guarantee":null,"paymentMethod":null,"hasPropertyToSell":null,"visitAvailability":null}

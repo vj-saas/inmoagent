@@ -76,6 +76,9 @@ describe('GuardrailsService', () => {
     'quiero hablar con un humano',
     'atendeme porfa',
     'quiero un asesor',
+    'contactame un asesor',
+    'contactame con un asesor',
+    'contactenme con alguien de la oficina',
   ])('"%s" dispara handoff en un lead activo', (text) => {
     expect(
       service.evaluate(lead({ state: ConversationState.QUALIFICATION }), text),

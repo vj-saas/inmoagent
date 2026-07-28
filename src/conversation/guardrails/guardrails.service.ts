@@ -27,6 +27,7 @@ const HANDOFF_PATTERNS = [
   /quiero (un|hablar con un) asesor/i,
   /pasa(me|rme) con (alguien|una persona|un humano|un asesor|la oficina)/i,
   /comunica(me|rme) con (alguien|una persona|un humano|un asesor|la oficina)/i,
+  /contact(a|e)n?(me|rme|nos)?\s+(con\s+)?(alguien|una persona|un humano|un asesor|un agente|un vendedor|la oficina)/i,
   /persona (real|de carne y hueso)/i,
   /no (quiero|me gusta) hablar con (un |el |los )?(bots?|robots?|m[aá]quinas?|asistentes? virtuales?)/i,
 ];
