@@ -133,6 +133,22 @@ export class AdminLeadsController {
     return { lead: withLastInboundAt(lead, lastInboundAt), messages };
   }
 
+  /** Historial de propiedades mostradas al lead (spec 10, §3.4), más recientes primero. */
+  @Get(':leadId/property-views')
+  async propertyViews(
+    @Param('tenantId') tenantId: string,
+    @Param('leadId') leadId: string,
+  ) {
+    await this.adminLeads.findLeadOrThrow(tenantId, leadId);
+
+    const propertyViews = await this.prisma.leadPropertyView.findMany({
+      where: { tenantId, leadId },
+      orderBy: { lastShownAt: 'desc' },
+    });
+
+    return { propertyViews };
+  }
+
   /**
    * Envío manual de un asesor humano a un lead (spec V-B2). Requiere sesión de
    * persona (`PersonSessionRequiredGuard`, T4): bajo API key no hay a quién

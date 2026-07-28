@@ -34,6 +34,15 @@ const HANDOFF_PATTERNS = [
 const HANDOFF_TIMEOUT_MS = 48 * 60 * 60 * 1000;
 
 /**
+ * Umbral de inactividad para expirar una sesión (spec 10, §2.1): 30 días sin
+ * `lastMessageAt`. Mismo orden de magnitud que `WEBHOOK_EVENT_RETENTION_DAYS`
+ * (`maintenance.constants.ts`), que ya fija ese número como ventana operativa
+ * razonable en este proyecto. Chequeo perezoso (al llegar el próximo
+ * mensaje), no un job de fondo — ver decisión de diseño en docs/10 §1.
+ */
+const SESSION_EXPIRATION_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
  * Guardrails de código, evaluados ANTES de invocar al LLM, en el orden de
  * docs/03-CONVERSACION.md §3: opt-out → handoff explícito → estado silenciado.
  * (El guardrail de "mensaje no soportado" ya se resolvió en la Fase 3, en
@@ -70,6 +79,17 @@ export class GuardrailsService {
         : { type: 'silenced' };
     }
 
+    // spec 10: chequeo por TIEMPO REAL (a diferencia de `isPriceStale`, que
+    // mide turnos). Va último, después de opt-out/handoff explícitos, para
+    // que un pedido concreto del lead siempre gane sobre el reset automático
+    // — y solo aplica a estados "activos" (OPTED_OUT/HUMAN_HANDOFF ya
+    // retornaron arriba). El veto por cita abierta (no expirar con una
+    // visita pendiente) lo resuelve el caller, que sí tiene acceso a
+    // `Appointment` — ver `ConversationEngine.handleTurn`.
+    if (this.isSessionExpired(lead.lastMessageAt)) {
+      return { type: 'session_expired' };
+    }
+
     return { type: 'continue' };
   }
 
@@ -79,5 +99,13 @@ export class GuardrailsService {
       return true;
     }
     return Date.now() - handoffAt.getTime() >= HANDOFF_TIMEOUT_MS;
+  }
+
+  private isSessionExpired(lastMessageAt: Date | null): boolean {
+    if (!lastMessageAt) {
+      // Lead recién creado, todavía sin ningún turno procesado: nada que expirar.
+      return false;
+    }
+    return Date.now() - lastMessageAt.getTime() >= SESSION_EXPIRATION_MS;
   }
 }

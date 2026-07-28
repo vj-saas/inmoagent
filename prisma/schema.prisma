@@ -55,12 +55,13 @@ model Tenant {
   // Admin
   apiKeyHash String // argon2 de la API key del tenant
 
-  properties   Property[]
-  leads        Lead[]
-  messages     Message[]
-  appointments Appointment[]
-  people       Person[]
-  leadNotes    LeadNote[]
+  properties    Property[]
+  leads         Lead[]
+  messages      Message[]
+  appointments  Appointment[]
+  people        Person[]
+  leadNotes     LeadNote[]
+  propertyViews LeadPropertyView[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -284,9 +285,10 @@ model Lead {
   assignedUserId String?
   assignedUser   Person? @relation("LeadAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
 
-  messages     Message[]
-  appointments Appointment[]
-  notes        LeadNote[]
+  messages      Message[]
+  appointments  Appointment[]
+  notes         LeadNote[]
+  propertyViews LeadPropertyView[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -294,6 +296,45 @@ model Lead {
   @@unique([tenantId, phone])
   @@index([tenantId, state])
   @@index([tenantId, lastMessageAt])
+}
+
+// ─────────────────────────────────────────────
+// HISTORIAL DE PROPIEDADES MOSTRADAS (spec 10)
+// ─────────────────────────────────────────────
+
+/**
+ * Historial append-only de qué propiedades se le mostraron a un lead a lo
+ * largo del tiempo (spec 10, §3). Distinto de `Lead.lastSearchIds`, que se
+ * sobreescribe en cada búsqueda nueva y cumple una función de seguridad
+ * (whitelist anti-alucinación) — este modelo es puramente historial.
+ *
+ * SIN `@relation` hacia `Property` a propósito: `Property` tiene borrado
+ * físico real (ver `properties-admin.service.ts`), y un historial no debería
+ * bloquear ese borrado ni desaparecer con él (mismo criterio que
+ * `Appointment.propertyId`, que tampoco es una relación Prisma real). El
+ * snapshot de título/zona/precio en la propia fila mantiene el historial
+ * legible aunque la propiedad original ya no exista.
+ */
+model LeadPropertyView {
+  id       String @id @default(cuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  leadId   String
+  lead     Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  propertyId String // sin @relation, ver comentario del modelo
+
+  titleSnapshot        String
+  neighborhoodSnapshot String
+  priceSnapshot        Decimal @db.Decimal(14, 2)
+  currencySnapshot     String
+
+  firstShownAt DateTime @default(now())
+  lastShownAt  DateTime @default(now())
+  timesShown   Int      @default(1)
+
+  @@unique([leadId, propertyId])
+  @@index([tenantId, leadId, lastShownAt])
 }
 
 enum MessageDirection {

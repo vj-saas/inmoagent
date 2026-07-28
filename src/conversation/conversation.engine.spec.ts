@@ -93,6 +93,8 @@ function build(storedLead: Lead, tenant: Tenant = TENANT) {
       update: jest.fn().mockResolvedValue(storedLead),
     },
     message: { findMany: jest.fn().mockResolvedValue([]) },
+    leadPropertyView: { upsert: jest.fn().mockResolvedValue({}) },
+    appointment: { count: jest.fn().mockResolvedValue(0) },
   } as unknown as PrismaService;
 
   const tenants = {
@@ -669,5 +671,174 @@ describe('ConversationEngine — señales de compra (T3.1)', () => {
     const [[input]] = safeReply.compose.mock.calls;
     expect(input.instruction).not.toMatch(/asesor/i);
     expect(input.instruction).toMatch(/no tiene que ver con la búsqueda/i);
+  });
+});
+
+// spec 10, §3: historial de propiedades mostradas (aditivo, sin tocar
+// lastSearchIds ni ningún handler existente).
+describe('ConversationEngine — historial de propiedades mostradas (spec 10)', () => {
+  const property = {
+    id: 'prop-1',
+    title: 'Depto en Caballito',
+    neighborhood: 'caballito',
+    price: 500000,
+    currency: 'ARS',
+    rooms: null,
+    features: [],
+    listingUrl: null,
+    photos: [],
+  };
+
+  it('registra un upsert en LeadPropertyView al enviar una ficha whitelisteada', async () => {
+    const stored = lead({
+      state: ConversationState.QUALIFICATION,
+      lastSearchIds: ['prop-1'],
+    });
+    const { engine, qualification, prisma } = build(stored);
+    qualification.handle.mockResolvedValue({
+      actions: [{ kind: 'property', property, index: 1 }],
+      nextState: ConversationState.SEARCH_MATCH,
+    });
+
+    await engine.handleTurn(TENANT.id, stored.id, 'mostrame de nuevo');
+
+    expect(prisma.leadPropertyView.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { leadId_propertyId: { leadId: stored.id, propertyId: 'prop-1' } },
+        create: expect.objectContaining({
+          tenantId: TENANT.id,
+          leadId: stored.id,
+          propertyId: 'prop-1',
+          titleSnapshot: 'Depto en Caballito',
+          neighborhoodSnapshot: 'caballito',
+          priceSnapshot: 500000,
+          currencySnapshot: 'ARS',
+        }),
+        update: expect.objectContaining({
+          timesShown: { increment: 1 },
+        }),
+      }),
+    );
+  });
+
+  it('NO registra nada si la propiedad no está whitelisteada (bloqueada antes)', async () => {
+    const stored = lead({
+      state: ConversationState.QUALIFICATION,
+      lastSearchIds: [], // prop-1 NO está en la whitelist
+    });
+    const { engine, qualification, prisma } = build(stored);
+    qualification.handle.mockResolvedValue({
+      actions: [{ kind: 'property', property, index: 1 }],
+      nextState: ConversationState.SEARCH_MATCH,
+    });
+
+    await engine.handleTurn(TENANT.id, stored.id, 'mostrame de nuevo');
+
+    expect(prisma.leadPropertyView.upsert).not.toHaveBeenCalled();
+  });
+});
+
+// spec 10 §2: expiración de sesión por tiempo real. Chequeo perezoso (al
+// llegar el próximo mensaje), no un job de fondo.
+describe('ConversationEngine — expiración de sesión por tiempo real (spec 10)', () => {
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+  it('resetea filtros/calificación comercial y persiste el reset de inmediato, antes de despachar a GREETING', async () => {
+    const stored = lead({
+      state: ConversationState.SEARCH_MATCH,
+      lastMessageAt: new Date(Date.now() - THIRTY_DAYS_MS - 1000),
+      fOperation: OperationType.RENT,
+      fNeighborhoods: ['caballito'],
+      fMaxPrice: 500000,
+      greetedAt: new Date('2026-01-01'),
+      lastSearchIds: ['prop-1'],
+    });
+    const { engine, prisma, greeting, searchMatch } = build(stored);
+
+    await engine.handleTurn(TENANT.id, stored.id, 'hola, siguen ahí?');
+
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    // Dos escrituras: el reset eager (spec 10 §2.5) + la persistencia normal
+    // de fin de turno — a diferencia de otros guardrails con stop:false, acá
+    // hacen falta las dos.
+    expect(update).toHaveBeenCalledTimes(2);
+
+    const eagerReset = update.mock.calls[0][0].data;
+    expect(eagerReset.state).toBe(ConversationState.GREETING);
+    expect(eagerReset.fOperation).toBeNull();
+    expect(eagerReset.fNeighborhoods).toEqual([]);
+    expect(eagerReset.fMaxPrice).toBeNull();
+    expect(eagerReset.greetedAt).toBeNull();
+    expect(eagerReset.lastSearchIds).toEqual([]);
+    expect(eagerReset.qAskedFields).toEqual([]);
+    expect(eagerReset.turnCount).toBe(0);
+
+    // El turno sigue procesándose: despacha a GREETING (el reset ya se aplicó
+    // en memoria vía effectiveLead), no a SEARCH_MATCH.
+    expect(greeting.handle).toHaveBeenCalledTimes(1);
+    expect(searchMatch.handle).not.toHaveBeenCalled();
+  });
+
+  it('AC-veto: no expira si hay una cita agendada abierta (PROPOSED/CONFIRMED)', async () => {
+    const stored = lead({
+      state: ConversationState.SEARCH_MATCH,
+      lastMessageAt: new Date(Date.now() - THIRTY_DAYS_MS - 1000),
+    });
+    const { engine, prisma, searchMatch, greeting } = build(stored);
+    (prisma.appointment.count as jest.Mock).mockResolvedValue(1);
+
+    await engine.handleTurn(
+      TENANT.id,
+      stored.id,
+      'hola, sigue en pie la visita?',
+    );
+
+    // Sigue en SEARCH_MATCH (no se resetea), y NO hay escritura eager extra.
+    expect(searchMatch.handle).toHaveBeenCalledTimes(1);
+    expect(greeting.handle).not.toHaveBeenCalled();
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    expect(update).toHaveBeenCalledTimes(1);
+  });
+
+  it('BAJA en una sesión vieja sigue haciendo opt-out en vez de resetear', async () => {
+    const stored = lead({
+      state: ConversationState.QUALIFICATION,
+      lastMessageAt: new Date(Date.now() - THIRTY_DAYS_MS - 1000),
+    });
+    const { engine, prisma } = build(stored);
+
+    await engine.handleTurn(TENANT.id, stored.id, 'BAJA');
+
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    expect(update).toHaveBeenCalledTimes(1);
+    expect(update.mock.calls[0][0].data.state).toBe(
+      ConversationState.OPTED_OUT,
+    );
+  });
+
+  it('un lead activo y reciente no dispara ninguna escritura eager (regresión, no expira)', async () => {
+    const stored = lead({
+      state: ConversationState.QUALIFICATION,
+      lastMessageAt: new Date(),
+    });
+    const { engine, prisma, qualification } = build(stored);
+
+    await engine.handleTurn(TENANT.id, stored.id, 'busco en caballito');
+
+    expect(qualification.handle).toHaveBeenCalledTimes(1);
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    expect(update).toHaveBeenCalledTimes(1);
   });
 });

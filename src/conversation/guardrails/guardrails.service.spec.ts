@@ -278,3 +278,89 @@ describe('GuardrailsService', () => {
     });
   });
 });
+
+/**
+ * Expiración de sesión por tiempo real (spec 10, §2): a diferencia de
+ * `isPriceStale` (que mide turnos), este chequeo mide `lastMessageAt` contra
+ * el reloj real, mismo criterio que ya usa `isHandoffTimedOut` para el
+ * timeout de 48hs.
+ */
+describe('GuardrailsService — expiración de sesión por tiempo real (spec 10)', () => {
+  const service = new GuardrailsService();
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+  it('un lead activo con más de 30 días de inactividad dispara session_expired', () => {
+    const stale = lead({
+      state: ConversationState.QUALIFICATION,
+      lastMessageAt: new Date(Date.now() - THIRTY_DAYS_MS - 1000),
+    });
+    expect(service.evaluate(stale, 'hola, siguen ahí?')).toEqual({
+      type: 'session_expired',
+    });
+  });
+
+  it('exactamente 30 días cuenta como expirado (borde inclusive, mismo criterio que el timeout de handoff)', () => {
+    const atThreshold = lead({
+      state: ConversationState.SEARCH_MATCH,
+      lastMessageAt: new Date(Date.now() - THIRTY_DAYS_MS),
+    });
+    expect(service.evaluate(atThreshold, 'hola')).toEqual({
+      type: 'session_expired',
+    });
+  });
+
+  it('un lead activo reciente (< 30 días) NO expira', () => {
+    const recent = lead({
+      state: ConversationState.QUALIFICATION,
+      lastMessageAt: new Date(Date.now() - THIRTY_DAYS_MS + 60_000),
+    });
+    expect(service.evaluate(recent, 'hola')).toEqual({ type: 'continue' });
+  });
+
+  it('un lead sin lastMessageAt (recién creado) nunca expira', () => {
+    const brandNew = lead({
+      state: ConversationState.GREETING,
+      lastMessageAt: null,
+    });
+    expect(service.evaluate(brandNew, 'hola')).toEqual({ type: 'continue' });
+  });
+
+  it('BAJA sigue ganando sobre una sesión vieja (opt-out explícito tiene prioridad)', () => {
+    const stale = lead({
+      state: ConversationState.QUALIFICATION,
+      lastMessageAt: new Date(Date.now() - THIRTY_DAYS_MS - 1000),
+    });
+    expect(service.evaluate(stale, 'BAJA')).toEqual({ type: 'opt_out' });
+  });
+
+  it('un pedido explícito de humano sigue ganando sobre una sesión vieja', () => {
+    const stale = lead({
+      state: ConversationState.QUALIFICATION,
+      lastMessageAt: new Date(Date.now() - THIRTY_DAYS_MS - 1000),
+    });
+    expect(service.evaluate(stale, 'quiero hablar con una persona')).toEqual({
+      type: 'handoff',
+    });
+  });
+
+  it('OPTED_OUT sigue silenciado aunque lastMessageAt sea viejo (no revive el guardrail de expiración)', () => {
+    const staleOptedOut = lead({
+      state: ConversationState.OPTED_OUT,
+      lastMessageAt: new Date(Date.now() - THIRTY_DAYS_MS - 1000),
+    });
+    expect(service.evaluate(staleOptedOut, 'hola')).toEqual({
+      type: 'silenced',
+    });
+  });
+
+  it('HUMAN_HANDOFF sigue resolviéndose por su propio timeout de 48hs, no por el de 30 días', () => {
+    const staleHandoff = lead({
+      state: ConversationState.HUMAN_HANDOFF,
+      handoffAt: new Date(Date.now() - THIRTY_DAYS_MS - 1000),
+      lastMessageAt: new Date(Date.now() - THIRTY_DAYS_MS - 1000),
+    });
+    expect(service.evaluate(staleHandoff, 'hola')).toEqual({
+      type: 'handoff_timeout_release',
+    });
+  });
+});

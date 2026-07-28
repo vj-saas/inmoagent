@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
+  AppointmentStatus,
   ConversationState,
   type Lead,
   type Prisma,
@@ -11,6 +12,7 @@ import type {
 } from '../llm/llm-provider.interface';
 import { LLM_PROVIDER } from '../llm/llm-provider.interface';
 import { MessagingService } from '../messaging/messaging.service';
+import type { PropertyWithPhotos } from '../properties/property-search.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { TenantsService } from '../tenants/tenants.service';
 import type {
@@ -98,7 +100,24 @@ export class ConversationEngine {
       return;
     }
 
-    const guardrailAction = this.guardrails.evaluate(lead, turnText);
+    let guardrailAction = this.guardrails.evaluate(lead, turnText);
+    if (guardrailAction.type === 'session_expired') {
+      // spec 10 §2.4: nunca expirar con una visita agendada sin resolver —
+      // es una obligación operativa real, no algo que un reset automático
+      // pueda esconder. En la práctica un lead con cita abierta ya está en
+      // HUMAN_HANDOFF (silenciado, ni llega hasta acá), salvo que un admin lo
+      // haya liberado a mano sin cerrar la cita — este chequeo cubre ese borde.
+      const hasOpenAppointment =
+        (await this.prisma.appointment.count({
+          where: {
+            leadId: lead.id,
+            status: { in: [AppointmentStatus.PROPOSED, AppointmentStatus.CONFIRMED] },
+          },
+        })) > 0;
+      if (hasOpenAppointment) {
+        guardrailAction = { type: 'continue' };
+      }
+    }
     const guardrailOutcome = this.resolveGuardrail(
       tenant,
       lead,
@@ -108,6 +127,18 @@ export class ConversationEngine {
     if (guardrailAction.type === 'handoff') {
       // Handoff explícito recién iniciado (no un re-pedido sobre un lead ya en HUMAN_HANDOFF).
       await this.leadAlert.notify(tenant, lead, null);
+    }
+
+    if (guardrailAction.type === 'session_expired') {
+      // Persistido de inmediato (spec 10 §2.5): a diferencia de otros
+      // `leadUpdate` con `stop:false` (ej. `handoff_timeout_release`), estos
+      // campos no forman parte de lo que ningún `HandlerResult` devuelve, así
+      // que si no se escriben acá quedan solo en el `effectiveLead` en
+      // memoria de este turno y nunca llegan a la DB.
+      await this.prisma.lead.update({
+        where: { id: lead.id },
+        data: guardrailOutcome.leadUpdate,
+      });
     }
 
     if (guardrailOutcome.stop) {
@@ -332,6 +363,45 @@ export class ConversationEngine {
             handoffAt: null,
           },
         };
+      case 'session_expired':
+        // spec 10 §2.2/§2.3: reset completo, siempre a GREETING (a diferencia
+        // de `resolveReleaseState`, que resuelve una pregunta distinta — ver
+        // docs/10 §2.3 sobre por qué NO se reusa esa función acá). Este
+        // `leadUpdate` se persiste de inmediato en `handleTurn` (no alcanza
+        // con que quede en el `effectiveLead` en memoria: los campos de acá
+        // no forman parte de lo que ningún `HandlerResult` devuelve).
+        return {
+          stop: false,
+          replies: [],
+          leadUpdate: {
+            state: ConversationState.GREETING,
+            fOperation: null,
+            fNeighborhoods: [],
+            fMaxPrice: null,
+            fCurrency: null,
+            fMinRooms: null,
+            fGarage: null,
+            fPetsAllowed: null,
+            fNotes: null,
+            fOfferedNeighborhoods: [],
+            fPriceMentionedAtTurn: null,
+            fPreferredDay: null,
+            turnCount: 0,
+            lastSearchIds: [],
+            greetedAt: null,
+            nameAskedAt: null,
+            qTimeline: null,
+            qGuarantee: null,
+            qPaymentMethod: null,
+            qHasPropertyToSell: null,
+            qMotive: null,
+            qVisitAvailability: null,
+            qAskedFields: [],
+            qWantsStockAlert: false,
+            qBuyingSignalAt: null,
+            pendingPropertyId: null,
+          },
+        };
       case 'continue':
       default:
         return { stop: false, replies: [], leadUpdate: {} };
@@ -387,7 +457,36 @@ export class ConversationEngine {
       } else {
         await this.messaging.sendText(tenant, lead.phone, caption);
       }
+
+      // Historial de propiedades mostradas (spec 10, §3): aditivo puro, no
+      // afecta `lastSearchIds` (que sigue siendo la whitelist de salida) ni
+      // ningún handler existente. Único punto de escritura, justo después de
+      // confirmar que la propiedad pasó el guardrail anti-alucinación de arriba.
+      await this.recordPropertyView(tenant.id, lead.id, action.property);
     }
+  }
+
+  private async recordPropertyView(
+    tenantId: string,
+    leadId: string,
+    property: PropertyWithPhotos,
+  ): Promise<void> {
+    await this.prisma.leadPropertyView.upsert({
+      where: { leadId_propertyId: { leadId, propertyId: property.id } },
+      create: {
+        tenantId,
+        leadId,
+        propertyId: property.id,
+        titleSnapshot: property.title,
+        neighborhoodSnapshot: property.neighborhood,
+        priceSnapshot: property.price,
+        currencySnapshot: property.currency,
+      },
+      update: {
+        lastShownAt: new Date(),
+        timesShown: { increment: 1 },
+      },
+    });
   }
 
   private async persistLeadUpdate(
