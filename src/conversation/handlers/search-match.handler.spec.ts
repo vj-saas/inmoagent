@@ -1,7 +1,7 @@
 import { ConversationState } from '@prisma/client';
 import { SearchMatchHandler } from './search-match.handler';
+import { CommercialQualificationHandler } from './commercial-qualification.handler';
 import { QualificationHandler } from './qualification.handler';
-import { SchedulingHandler } from './scheduling.handler';
 import { PrismaService } from '../../prisma/prisma.service';
 import { SafeReplyService } from '../safe-reply.service';
 import type { HandlerContext, LeadFilters } from '../conversation.types';
@@ -41,19 +41,18 @@ describe('SearchMatchHandler — pregunta + interés en la misma propiedad', () 
   };
 
   let qualification: { handle: jest.Mock };
-  let scheduling: { enterScheduling: jest.Mock; handle: jest.Mock };
+  let commercialQualification: { enter: jest.Mock };
   let prisma: { property: { findUnique: jest.Mock } };
   let safeReply: { compose: jest.Mock };
   let handler: SearchMatchHandler;
 
   beforeEach(() => {
     qualification = { handle: jest.fn() };
-    scheduling = {
-      enterScheduling: jest.fn().mockResolvedValue({
+    commercialQualification = {
+      enter: jest.fn().mockResolvedValue({
         actions: [],
-        nextState: ConversationState.HUMAN_HANDOFF,
+        nextState: ConversationState.COMMERCIAL_QUALIFICATION,
       }),
-      handle: jest.fn(),
     };
     prisma = { property: { findUnique: jest.fn().mockResolvedValue(property) } };
     safeReply = {
@@ -62,7 +61,7 @@ describe('SearchMatchHandler — pregunta + interés en la misma propiedad', () 
 
     handler = new SearchMatchHandler(
       qualification as unknown as QualificationHandler,
-      scheduling as unknown as SchedulingHandler,
+      commercialQualification as unknown as CommercialQualificationHandler,
       prisma as unknown as PrismaService,
       safeReply as unknown as SafeReplyService,
     );
@@ -99,7 +98,7 @@ describe('SearchMatchHandler — pregunta + interés en la misma propiedad', () 
       filters,
     );
 
-    expect(scheduling.enterScheduling).not.toHaveBeenCalled();
+    expect(commercialQualification.enter).not.toHaveBeenCalled();
     expect(safeReply.compose).toHaveBeenCalledTimes(1);
     const [[input]] = safeReply.compose.mock.calls;
     expect(input.instruction).toContain('expensas: ARS 30.000');
@@ -110,15 +109,17 @@ describe('SearchMatchHandler — pregunta + interés en la misma propiedad', () 
     });
   });
 
-  it('sin pregunta, sigue agendando de una (no regresión)', async () => {
+  // spec 09, T1.4, AC-27: ya no agenda directo — pasa por COMMERCIAL_QUALIFICATION.
+  it('sin pregunta, pasa a COMMERCIAL_QUALIFICATION (no agenda directo)', async () => {
     const result = await handler.handle(ctx('me interesa el segundo', 2), filters);
 
     expect(safeReply.compose).not.toHaveBeenCalled();
-    expect(scheduling.enterScheduling).toHaveBeenCalledWith(
+    expect(commercialQualification.enter).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ id: 'prop-2' }),
+      filters,
     );
-    expect(result.nextState).toBe(ConversationState.HUMAN_HANDOFF);
+    expect(result.nextState).toBe(ConversationState.COMMERCIAL_QUALIFICATION);
   });
 
   it('intent ask_question (sin "?") también cuenta como pregunta sin responder', async () => {
@@ -127,14 +128,14 @@ describe('SearchMatchHandler — pregunta + interés en la misma propiedad', () 
       filters,
     );
 
-    expect(scheduling.enterScheduling).not.toHaveBeenCalled();
+    expect(commercialQualification.enter).not.toHaveBeenCalled();
     expect(safeReply.compose).toHaveBeenCalledTimes(1);
   });
 
-  it('no confirma elección (falso positivo del LLM) -> re-pregunta, sin tocar scheduling ni safeReply', async () => {
+  it('no confirma elección (falso positivo del LLM) -> re-pregunta, sin tocar commercialQualification ni safeReply', async () => {
     const result = await handler.handle(ctx('2 amb estaria joya', 2), filters);
 
-    expect(scheduling.enterScheduling).not.toHaveBeenCalled();
+    expect(commercialQualification.enter).not.toHaveBeenCalled();
     expect(safeReply.compose).not.toHaveBeenCalled();
     expect(result.nextState).toBe(ConversationState.SEARCH_MATCH);
   });

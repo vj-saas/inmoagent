@@ -7,6 +7,7 @@ import { PropertiesModule } from '../properties/properties.module';
 import { TenantsModule } from '../tenants/tenants.module';
 import { ConversationEngine } from './conversation.engine';
 import { GuardrailsService } from './guardrails/guardrails.service';
+import { CommercialQualificationHandler } from './handlers/commercial-qualification.handler';
 import { GreetingHandler } from './handlers/greeting.handler';
 import { QualificationHandler } from './handlers/qualification.handler';
 import { SchedulingHandler } from './handlers/scheduling.handler';
@@ -33,6 +34,7 @@ import { SafeReplyService } from './safe-reply.service';
     GreetingHandler,
     QualificationHandler,
     SearchMatchHandler,
+    CommercialQualificationHandler,
     SchedulingHandler,
   ],
   exports: [ConversationEngine],

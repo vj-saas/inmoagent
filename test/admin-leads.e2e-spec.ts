@@ -162,8 +162,15 @@ describe('Admin: release y supresión de leads (e2e)', () => {
       wantsGarage: null,
       wantsPetsAllowed: null,
       roomsInferred: false,
+      priceFlexible: false,
       extraRequirements: null,
       interestedPropertyIndex: null,
+      name: null,
+      timeline: null,
+      guarantee: null,
+      paymentMethod: null,
+      hasPropertyToSell: null,
+      visitAvailability: null,
     });
     llm.composeReply.mockResolvedValue('¿En qué barrio te gustaría buscar?');
     await engine.handleTurn(tenant.id, lead.id, 'hola, siguen ahí?');

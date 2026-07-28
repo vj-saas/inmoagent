@@ -29,6 +29,7 @@ import {
 } from './filters.util';
 import { leadSeed } from './copy-variants.util';
 import { applyFormality } from './formality.util';
+import { CommercialQualificationHandler } from './handlers/commercial-qualification.handler';
 import { GreetingHandler } from './handlers/greeting.handler';
 import { QualificationHandler } from './handlers/qualification.handler';
 import { SchedulingHandler } from './handlers/scheduling.handler';
@@ -72,6 +73,7 @@ export class ConversationEngine {
     private readonly greeting: GreetingHandler,
     private readonly qualification: QualificationHandler,
     private readonly searchMatch: SearchMatchHandler,
+    private readonly commercialQualification: CommercialQualificationHandler,
     private readonly scheduling: SchedulingHandler,
   ) {}
 
@@ -244,6 +246,8 @@ export class ConversationEngine {
         return this.qualification.handle(ctx, filters);
       case ConversationState.SEARCH_MATCH:
         return this.searchMatch.handle(ctx, filters);
+      case ConversationState.COMMERCIAL_QUALIFICATION:
+        return this.commercialQualification.handle(ctx, filters);
       case ConversationState.SCHEDULING:
         return this.scheduling.handle(ctx);
       default:
@@ -397,6 +401,21 @@ export class ConversationEngine {
     }
     if (result.markNameAsked && !lead.nameAskedAt) {
       data.nameAskedAt = new Date();
+    }
+    // Calificación comercial (spec 09, T1.4): persistido centralmente, igual
+    // que filterUpdates, para que el handler nunca escriba directo a la DB.
+    if (result.commercialUpdate) {
+      const u = result.commercialUpdate;
+      if (u.qGuarantee !== undefined) data.qGuarantee = u.qGuarantee;
+      if (u.qPaymentMethod !== undefined) data.qPaymentMethod = u.qPaymentMethod;
+      if (u.qTimeline !== undefined) data.qTimeline = u.qTimeline;
+      if (u.qHasPropertyToSell !== undefined) {
+        data.qHasPropertyToSell = u.qHasPropertyToSell;
+      }
+      if (u.qAskedFields !== undefined) data.qAskedFields = u.qAskedFields;
+      if (u.pendingPropertyId !== undefined) {
+        data.pendingPropertyId = u.pendingPropertyId;
+      }
     }
     if (
       result.nextState === ConversationState.HUMAN_HANDOFF &&

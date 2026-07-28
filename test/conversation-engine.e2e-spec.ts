@@ -32,8 +32,15 @@ function extraction(
     wantsGarage: null,
     wantsPetsAllowed: null,
     roomsInferred: false,
+    priceFlexible: false,
     extraRequirements: null,
     interestedPropertyIndex: null,
+    name: null,
+    timeline: null,
+    guarantee: null,
+    paymentMethod: null,
+    hasPropertyToSell: null,
+    visitAvailability: null,
     ...overrides,
   };
 }
@@ -826,7 +833,24 @@ describe('ConversationEngine (e2e) — casos de docs/03-CONVERSACION.md §7', ()
     );
     await engine.handleTurn(tenant.id, lead.id, 'me interesa esa');
 
-    const updated = await reload(lead);
+    // spec 09, T1.4: ya no agenda directo — pasa por COMMERCIAL_QUALIFICATION
+    // (alquiler: garantía + timeline) antes de HUMAN_HANDOFF.
+    let updated = await reload(lead);
+    expect(updated.state).toBe(ConversationState.COMMERCIAL_QUALIFICATION);
+
+    llm.extractIntent.mockResolvedValueOnce(
+      extraction({ guarantee: 'propietaria' }),
+    );
+    await engine.handleTurn(tenant.id, lead.id, 'tengo garantía propietaria');
+    updated = await reload(lead);
+    expect(updated.state).toBe(ConversationState.COMMERCIAL_QUALIFICATION);
+    expect(updated.qGuarantee).toBe('propietaria');
+
+    llm.extractIntent.mockResolvedValueOnce(
+      extraction({ timeline: 'inmediato' }),
+    );
+    await engine.handleTurn(tenant.id, lead.id, 'necesito mudarme ya');
+    updated = await reload(lead);
     expect(updated.state).toBe(ConversationState.HUMAN_HANDOFF);
   });
 
@@ -909,17 +933,34 @@ describe('ConversationEngine (e2e) — casos de docs/03-CONVERSACION.md §7', ()
         lastSearchIds: [property.id],
       },
     });
-    llm.extractIntent.mockResolvedValue(
+    llm.extractIntent.mockResolvedValueOnce(
       extraction({ intent: 'schedule_visit', interestedPropertyIndex: 1 }),
     );
-
     await engine.handleTurn(
       tenant.id,
       lead.id,
       'me interesa la primera, quiero visitarla',
     );
 
-    const updated = await reload(lead);
+    // spec 09, T1.4: RENT pasa por COMMERCIAL_QUALIFICATION (garantía +
+    // timeline) antes de agendar — ya no salta directo a HUMAN_HANDOFF.
+    let updated = await reload(lead);
+    expect(updated.state).toBe(ConversationState.COMMERCIAL_QUALIFICATION);
+    expect(
+      await prisma.appointment.findMany({ where: { leadId: lead.id } }),
+    ).toHaveLength(0);
+
+    llm.extractIntent.mockResolvedValueOnce(
+      extraction({ guarantee: 'propietaria' }),
+    );
+    await engine.handleTurn(tenant.id, lead.id, 'tengo garantía propietaria');
+
+    llm.extractIntent.mockResolvedValueOnce(
+      extraction({ timeline: 'inmediato' }),
+    );
+    await engine.handleTurn(tenant.id, lead.id, 'necesito mudarme ya');
+
+    updated = await reload(lead);
     expect(updated.state).toBe(ConversationState.HUMAN_HANDOFF);
     const appointments = await prisma.appointment.findMany({
       where: { leadId: lead.id },
@@ -929,7 +970,7 @@ describe('ConversationEngine (e2e) — casos de docs/03-CONVERSACION.md §7', ()
     expect(appointments[0].status).toBe(AppointmentStatus.PROPOSED);
   });
 
-  it('flujo completo GREETING -> QUALIFICATION -> SEARCH_MATCH -> SCHEDULING -> HUMAN_HANDOFF', async () => {
+  it('flujo completo GREETING -> QUALIFICATION -> SEARCH_MATCH -> COMMERCIAL_QUALIFICATION -> SCHEDULING -> HUMAN_HANDOFF', async () => {
     const tenant = await createTenant({
       schedulingLink: 'https://cal.com/demo',
     });
@@ -987,7 +1028,7 @@ describe('ConversationEngine (e2e) — casos de docs/03-CONVERSACION.md §7', ()
     expect((await reload(lead)).state).toBe(ConversationState.SEARCH_MATCH);
     expect(messaging.sendImage).toHaveBeenCalled();
 
-    // 4) muestra interés en la propiedad -> SCHEDULING inline -> HUMAN_HANDOFF
+    // 4) muestra interés en la propiedad -> COMMERCIAL_QUALIFICATION (spec 09, T1.4)
     llm.extractIntent.mockResolvedValueOnce(
       extraction({ intent: 'schedule_visit', interestedPropertyIndex: 1 }),
     );
@@ -996,10 +1037,26 @@ describe('ConversationEngine (e2e) — casos de docs/03-CONVERSACION.md §7', ()
       lead.id,
       'me interesa, quiero visitarla',
     );
+    expect((await reload(lead)).state).toBe(
+      ConversationState.COMMERCIAL_QUALIFICATION,
+    );
+
+    // 5) contesta las 2 preguntas comerciales de alquiler -> recién ahí SCHEDULING -> HUMAN_HANDOFF
+    llm.extractIntent.mockResolvedValueOnce(
+      extraction({ guarantee: 'propietaria' }),
+    );
+    await engine.handleTurn(tenant.id, lead.id, 'tengo garantía propietaria');
+
+    llm.extractIntent.mockResolvedValueOnce(
+      extraction({ timeline: 'inmediato' }),
+    );
+    await engine.handleTurn(tenant.id, lead.id, 'necesito mudarme ya');
 
     const finalLead = await reload(lead);
     expect(finalLead.state).toBe(ConversationState.HUMAN_HANDOFF);
     expect(finalLead.handoffAt).not.toBeNull();
+    expect(finalLead.qGuarantee).toBe('propietaria');
+    expect(finalLead.qTimeline).toBe('inmediato');
 
     const appointments = await prisma.appointment.findMany({
       where: { leadId: lead.id },

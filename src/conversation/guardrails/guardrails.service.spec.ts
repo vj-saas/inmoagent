@@ -52,6 +52,25 @@ describe('GuardrailsService', () => {
     ).toEqual({ type: 'silenced' });
   });
 
+  // spec 09, T1.4, AC-32: los guardrails no distinguen por estado (solo
+  // OPTED_OUT/HUMAN_HANDOFF tienen rama propia) — un lead en el nuevo estado
+  // COMMERCIAL_QUALIFICATION se intercepta exactamente igual que en cualquier
+  // otro estado "activo".
+  it('AC-32: BAJA y pedido de humano interceptan igual estando en COMMERCIAL_QUALIFICATION', () => {
+    expect(
+      service.evaluate(
+        lead({ state: ConversationState.COMMERCIAL_QUALIFICATION }),
+        'BAJA',
+      ),
+    ).toEqual({ type: 'opt_out' });
+    expect(
+      service.evaluate(
+        lead({ state: ConversationState.COMMERCIAL_QUALIFICATION }),
+        'quiero hablar con una persona',
+      ),
+    ).toEqual({ type: 'handoff' });
+  });
+
   it.each([
     'quiero hablar con una persona',
     'quiero hablar con un humano',

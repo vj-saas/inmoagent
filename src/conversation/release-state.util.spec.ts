@@ -108,4 +108,17 @@ describe('resolveReleaseState (FSM: estado de retorno al salir de HUMAN_HANDOFF)
     const partial = {} as Pick<Lead, 'lastSearchIds'>;
     expect(resolveReleaseState(partial)).toBe(ConversationState.QUALIFICATION);
   });
+
+  // spec 09, T1.4, AC-33: un lead solo llega a COMMERCIAL_QUALIFICATION
+  // después de confirmar interés en una ficha ya mostrada, así que
+  // `lastSearchIds` es SIEMPRE no vacío en ese punto. La función no necesita
+  // conocer el estado de origen: con `lastSearchIds` no vacío ya vuelve a
+  // SEARCH_MATCH (nunca a GREETING/QUALIFICATION-desde-cero), que es
+  // coherente para un lead que se liberó en medio de las preguntas
+  // comerciales.
+  it('AC-33: un lead liberado desde COMMERCIAL_QUALIFICATION (siempre con fichas mostradas) vuelve a SEARCH_MATCH', () => {
+    expect(
+      resolveReleaseState(lead({ lastSearchIds: ['prop_1', 'prop_2'] })),
+    ).toBe(ConversationState.SEARCH_MATCH);
+  });
 });

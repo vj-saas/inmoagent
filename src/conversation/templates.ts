@@ -195,6 +195,44 @@ export function buildNameRequestMessage(seed: string): string {
   return pickVariant(NAME_REQUEST_VARIANTS, seed);
 }
 
+/** Campos de calificación comercial que se pueden preguntar (spec 09, T1.4). */
+export type CommercialField =
+  | 'guarantee'
+  | 'timeline'
+  | 'paymentMethod'
+  | 'hasPropertyToSell';
+
+const COMMERCIAL_QUESTION_VARIANTS: Record<CommercialField, string[]> = {
+  guarantee: [
+    '¿Con qué garantía contás: propietaria, seguro de caución, o recibo de sueldo?',
+    '¿Tenés garantía propietaria, de caución, o vas a garantizar con recibo de sueldo?',
+  ],
+  timeline: [
+    '¿Para cuándo necesitás mudarte?',
+    '¿Tenés fecha pensada para la mudanza, o todavía estás viendo opciones?',
+  ],
+  paymentMethod: [
+    '¿Vas a pagar de contado o necesitás crédito hipotecario?',
+    '¿Es una compra de contado o vas a necesitar crédito?',
+  ],
+  hasPropertyToSell: [
+    '¿Tenés que vender o rescindir algo antes de mudarte?',
+    '¿Dependés de vender una propiedad tuya para poder comprar esta?',
+  ],
+};
+
+/**
+ * Una sola pregunta comercial por mensaje (spec 09, T1.4, AC-28): la decide
+ * `CommercialQualificationHandler` según la operación y lo que todavía falta
+ * (`Lead.qAskedFields`), nunca el LLM.
+ */
+export function buildCommercialQuestion(
+  field: CommercialField,
+  seed: string,
+): string {
+  return pickVariant(COMMERCIAL_QUESTION_VARIANTS[field], seed);
+}
+
 /**
  * Una sola pregunta por mensaje (spec 09, T2.3): la preferencia de día se
  * pregunta recién al confirmar interés (ver `buildDayPreferenceQuestion`,

@@ -43,8 +43,15 @@ function extraction(
     wantsGarage: null,
     wantsPetsAllowed: null,
     roomsInferred: false,
+    priceFlexible: false,
     extraRequirements: null,
     interestedPropertyIndex: null,
+    name: null,
+    timeline: null,
+    guarantee: null,
+    paymentMethod: null,
+    hasPropertyToSell: null,
+    visitAvailability: null,
     ...overrides,
   };
 }

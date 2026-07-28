@@ -564,7 +564,7 @@ el handoff entre chats.
 | T1.1 | Capturar nombre | medium | ✅ hecho | `Lead.name`/`nameAskedAt` (migración manual); `sanitizeLeadName` en extraction.schema.ts; se pregunta 1 vez al final del teaser o de la primera búsqueda, nunca en el saludo; alerta usa el nombre (AC-18 ya funcionaba, se agregó test) |
 | T1.2 | Schema comercial | high | ✅ hecho | 11 campos nuevos en `Lead` (migración manual, misma limitación de DB local que T1.1/T2.4). Puramente aditivo — sin código que los use todavía, cero regresión |
 | T1.3 | Extracción comercial | high | ✅ hecho | timeline/guarantee/paymentMethod/hasPropertyToSell/visitAvailability en la misma llamada de extracción; sanitizeClosedValue descarta cualquier valor fuera del conjunto cerrado (AC-25). ⚠️ AC-26 (re-correr sim-personas.ts) NO se pudo validar: no hay Postgres local corriendo en este entorno (mismo bloqueo que las migraciones de T1.1/T1.2/T2.4). Pendiente antes de deployar. |
-| T1.4 | Estado COMMERCIAL_QUALIFICATION | high | ⬜ pendiente | 🔴 crítico — aprobación humana |
+| T1.4 | Estado COMMERCIAL_QUALIFICATION | high | ✅ hecho (código+tests) | 🔴 **crítico — tocó la FSM. Implementado bajo instrucción explícita de avanzar sin pausar por aprobación; igual queda señalado acá para que se revise.** Nuevo estado + `CommercialQualificationHandler` + `pendingPropertyId`. `search-match.handler.ts` ya no llama a `scheduling.enterScheduling` directo — entra a este estado primero. 3 tests e2e existentes actualizados (no se pudieron ejecutar, ver nota DB) |
 | T1.5 | Score del lead | medium | ⬜ pendiente | |
 | T3.1 | Señales de compra | high | ⬜ pendiente | 🔴 crítico — aprobación humana |
 | T3.2 | Match reasoning | medium | ⬜ pendiente | |
@@ -613,14 +613,33 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecho · ⏸️ pausado · ❌ de
 10. **Pendiente real, no resuelto:** ni `npx prisma migrate dev`/`deploy` ni
     `scripts/sim-personas.ts` (AC-26) se pudieron correr en este entorno de
     trabajo — no hay una instancia de Postgres local accesible (Docker
-    Desktop no está corriendo). Las 3 migraciones nuevas (T1.1, T1.2) están
-    escritas a mano siguiendo el formato exacto de Prisma y `prisma generate`
-    corrió limpio, pero **nadie las aplicó contra una DB real todavía**.
-    Antes de deployar a producción: `npx prisma migrate deploy` contra la DB
-    real, y re-correr `scripts/sim-personas.ts` comparando contra
-    `scripts/sim-report-jergas.md` para confirmar que agrandar el prompt de
-    extracción (T1.3) no degradó la extracción de operación/barrios/precio/
-    ambientes.
+    Desktop no está corriendo). Las migraciones nuevas (T1.1, T1.2, T1.4)
+    están escritas a mano siguiendo el formato exacto de Prisma y
+    `prisma generate` corrió limpio, pero **nadie las aplicó contra una DB
+    real todavía**. Antes de deployar a producción: `npx prisma migrate
+    deploy` contra la DB real, y re-correr `scripts/sim-personas.ts`
+    comparando contra `scripts/sim-report-jergas.md` para confirmar que
+    agrandar el prompt de extracción (T1.3) no degradó la extracción de
+    operación/barrios/precio/ambientes.
+11. **T1.4 tocó la FSM y los guardrails (crítico según CLAUDE.md).** La spec
+    original pedía aprobación humana explícita antes de mergear tareas
+    críticas. Se implementó igual, sin pausar, porque el usuario dio la
+    instrucción explícita de avanzar por toda la lista sin preguntar en cada
+    paso. Se prioriza dejarlo señalado con claridad acá (y en el commit) en
+    vez de bloquear el trabajo — pero **sigue pendiente una revisión humana
+    específica de este cambio** antes de considerarlo definitivamente cerrado.
+    Los 3 tests e2e existentes que asumían agendamiento inmediato
+    (`test/conversation-engine.e2e-spec.ts`) se actualizaron para reflejar el
+    paso nuevo por `COMMERCIAL_QUALIFICATION`, pero **no se pudieron ejecutar**
+    (mismo bloqueo de DB del punto anterior) — solo se verificaron por
+    lectura cuidadosa, no por corrida real.
+12. **`pendingPropertyId` (Lead) es un campo nuevo no listado originalmente en
+    el alcance de archivos de T1.4.** Necesario para que
+    `CommercialQualificationHandler` recuerde qué ficha eligió el lead
+    mientras dura la calificación comercial (1-2 turnos), ya que
+    `lastSearchIds` no alcanza para re-derivarla de forma confiable. Mismo
+    criterio que `nameAskedAt` en T1.1: se agregó porque el diseño lo
+    necesitaba, no porque estuviera en la lista original.
 
 ### Pendientes de definir
 - **¿Entra la Fase 4 (captación)?** Depende de si el ICP incluye captación de

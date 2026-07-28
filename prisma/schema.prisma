@@ -203,6 +203,11 @@ enum ConversationState {
   GREETING
   QUALIFICATION
   SEARCH_MATCH
+  // Entre SEARCH_MATCH y SCHEDULING (spec 09, T1.4): el lead ya confirmó
+  // interés en una ficha, pero antes de mandar el link de agenda se le hacen
+  // hasta 2 preguntas comerciales (garantía/timeline o contado-crédito/vende
+  // algo antes), según la operación. Nunca la decide el LLM.
+  COMMERCIAL_QUALIFICATION
   SCHEDULING
   HUMAN_HANDOFF
   OPTED_OUT
@@ -250,7 +255,7 @@ model Lead {
 
   // ── Calificación comercial (spec 09, T1.2) ──────────────────────────────
   // Valores normalizados a un conjunto cerrado por código (nunca texto crudo
-  // del LLM): ver `sanitizeCommercialField` en llm/extraction.schema.ts.
+  // del LLM): ver `sanitizeClosedValue` en llm/extraction.schema.ts.
   qTimeline          String? // "inmediato" | "1-3 meses" | "3-6 meses" | "explorando"
   qGuarantee         String? // "propietaria" | "caucion" | "recibo" | "no_tiene" | "no_sabe" (alquiler)
   qPaymentMethod     String? // "contado" | "credito" | "mixto" | "no_sabe" (venta)
@@ -269,6 +274,12 @@ model Lead {
   // descuento/contado/financiación/etc.), no por el LLM.
   qBuyingSignalAt  DateTime?
   qWantsStockAlert Boolean   @default(false) // pidió aviso cuando entre stock (T3.3)
+  // Propiedad elegida al entrar a COMMERCIAL_QUALIFICATION (T1.4): se necesita
+  // recordarla durante las 1-2 preguntas comerciales, porque `lastSearchIds`
+  // puede no alcanzar para re-derivarla si el lead escribe algo intermedio.
+  // Se resuelve al pasar a SCHEDULING y queda huérfana sin problema si el
+  // lead abandona el flujo (nunca se lee fuera de este handler).
+  pendingPropertyId String?
 
   assignedUserId String?
   assignedUser   Person? @relation("LeadAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)

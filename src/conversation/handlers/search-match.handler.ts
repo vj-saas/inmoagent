@@ -9,8 +9,8 @@ import type {
 } from '../conversation.types';
 import { confirmsPropertyChoice, hasNewFilterData } from '../filters.util';
 import { SafeReplyService } from '../safe-reply.service';
+import { CommercialQualificationHandler } from './commercial-qualification.handler';
 import { QualificationHandler } from './qualification.handler';
-import { SchedulingHandler } from './scheduling.handler';
 
 const PROPERTY_INCLUDE = { photos: { orderBy: { position: 'asc' as const } } };
 
@@ -56,7 +56,7 @@ function describePropertyForLlm(property: PropertyWithPhotos): string {
 export class SearchMatchHandler {
   constructor(
     private readonly qualification: QualificationHandler,
-    private readonly scheduling: SchedulingHandler,
+    private readonly commercialQualification: CommercialQualificationHandler,
     private readonly prisma: PrismaService,
     private readonly safeReply: SafeReplyService,
   ) {}
@@ -116,7 +116,10 @@ export class SearchMatchHandler {
             nextState: ConversationState.SEARCH_MATCH,
           };
         }
-        return this.scheduling.enterScheduling(ctx, property);
+        // spec 09, T1.4, AC-27: antes de agendar directo, pasa por
+        // COMMERCIAL_QUALIFICATION (garantía/timeline o contado-crédito,
+        // según la operación) — nunca se agenda a ciegas apenas confirma interés.
+        return this.commercialQualification.enter(ctx, property, filters);
       }
       return {
         actions: [

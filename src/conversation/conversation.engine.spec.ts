@@ -13,6 +13,7 @@ import type { TenantsService } from '../tenants/tenants.service';
 import { ConversationEngine } from './conversation.engine';
 import type { HandlerResult } from './conversation.types';
 import { GuardrailsService } from './guardrails/guardrails.service';
+import type { CommercialQualificationHandler } from './handlers/commercial-qualification.handler';
 import type { GreetingHandler } from './handlers/greeting.handler';
 import type { QualificationHandler } from './handlers/qualification.handler';
 import type { SchedulingHandler } from './handlers/scheduling.handler';
@@ -137,6 +138,13 @@ function build(storedLead: Lead, tenant: Tenant = TENANT) {
       .fn()
       .mockResolvedValue(handlerResult(ConversationState.SEARCH_MATCH)),
   } as unknown as jest.Mocked<SearchMatchHandler>;
+  const commercialQualification = {
+    handle: jest
+      .fn()
+      .mockResolvedValue(
+        handlerResult(ConversationState.COMMERCIAL_QUALIFICATION),
+      ),
+  } as unknown as jest.Mocked<CommercialQualificationHandler>;
   const scheduling = {
     handle: jest
       .fn()
@@ -155,6 +163,7 @@ function build(storedLead: Lead, tenant: Tenant = TENANT) {
     greeting,
     qualification,
     searchMatch,
+    commercialQualification,
     scheduling,
   );
 
@@ -167,6 +176,7 @@ function build(storedLead: Lead, tenant: Tenant = TENANT) {
     greeting,
     qualification,
     searchMatch,
+    commercialQualification,
     scheduling,
   };
 }
@@ -482,5 +492,67 @@ describe('ConversationEngine — captura de nombre (T1.1)', () => {
       [{ data: Prisma.LeadUpdateInput }]
     >;
     expect(update.mock.calls[0][0].data.name).toBeUndefined();
+  });
+});
+
+// spec 09, T1.4: el estado nuevo se despacha al handler correcto y persiste
+// su `commercialUpdate` centralizadamente (nunca escribe directo a la DB).
+describe('ConversationEngine — dispatch a COMMERCIAL_QUALIFICATION (T1.4)', () => {
+  it('un lead en COMMERCIAL_QUALIFICATION despacha a ese handler, no a searchMatch ni qualification', async () => {
+    const stored = lead({ state: ConversationState.COMMERCIAL_QUALIFICATION });
+    const { engine, commercialQualification, searchMatch, qualification, prisma } =
+      build(stored);
+
+    await engine.handleTurn(TENANT.id, stored.id, 'tengo garantía propietaria');
+
+    expect(commercialQualification.handle).toHaveBeenCalledTimes(1);
+    expect(searchMatch.handle).not.toHaveBeenCalled();
+    expect(qualification.handle).not.toHaveBeenCalled();
+    expect(persistedState(prisma)).toBe(
+      ConversationState.COMMERCIAL_QUALIFICATION,
+    );
+  });
+
+  it('persiste commercialUpdate devuelto por el handler (qGuarantee, qAskedFields)', async () => {
+    const stored = lead({ state: ConversationState.COMMERCIAL_QUALIFICATION });
+    const { engine, commercialQualification, prisma } = build(stored);
+    commercialQualification.handle.mockResolvedValue({
+      actions: [],
+      nextState: ConversationState.COMMERCIAL_QUALIFICATION,
+      commercialUpdate: {
+        qGuarantee: 'propietaria',
+        qAskedFields: ['guarantee', 'timeline'],
+      },
+    });
+
+    await engine.handleTurn(TENANT.id, stored.id, 'tengo garantía propietaria');
+
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    expect(update.mock.calls[0][0].data.qGuarantee).toBe('propietaria');
+    expect(update.mock.calls[0][0].data.qAskedFields).toEqual([
+      'guarantee',
+      'timeline',
+    ]);
+  });
+
+  it('con pendingPropertyId: null en commercialUpdate, lo limpia (no queda undefined = "sin tocar")', async () => {
+    const stored = lead({ state: ConversationState.COMMERCIAL_QUALIFICATION });
+    const { engine, commercialQualification, prisma } = build(stored);
+    commercialQualification.handle.mockResolvedValue({
+      actions: [],
+      nextState: ConversationState.HUMAN_HANDOFF,
+      commercialUpdate: { pendingPropertyId: null },
+    });
+
+    await engine.handleTurn(TENANT.id, stored.id, 'listo, gracias');
+
+    const update = prisma.lead.update as unknown as jest.Mock<
+      unknown,
+      [{ data: Prisma.LeadUpdateInput }]
+    >;
+    expect(update.mock.calls[0][0].data.pendingPropertyId).toBeNull();
   });
 });

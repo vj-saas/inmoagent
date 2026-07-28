@@ -45,4 +45,17 @@ export interface HandlerResult {
   markGreeted?: boolean;
   /** Marca que se le preguntó el nombre al lead (se pregunta una sola vez, spec 09 T1.1). */
   markNameAsked?: boolean;
+  /**
+   * Calificación comercial (spec 09, T1.4): persistida centralmente por
+   * `ConversationEngine.persistLeadUpdate`, igual que `filterUpdates`, para
+   * que el handler nunca escriba directo a la DB.
+   */
+  commercialUpdate?: {
+    qGuarantee?: string | null;
+    qPaymentMethod?: string | null;
+    qTimeline?: string | null;
+    qHasPropertyToSell?: boolean | null;
+    qAskedFields?: string[];
+    pendingPropertyId?: string | null;
+  };
 }
