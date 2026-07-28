@@ -9,19 +9,55 @@ const OPERATION_LABEL: Record<string, string> = {
   TEMP_RENT: 'alquiler temporario',
 };
 
+interface FilterSummarySource {
+  fOperation: string | null;
+  fNeighborhoods: string[];
+  fMaxPrice: number | null;
+  fCurrency: string | null;
+  fMinRooms: number | null;
+}
+
+/** Base compartida por `summarizeLeadFilters` (alerta interna) y
+ * `buildUnderstandingEcho` (T2.5): arma la lista de filtros conocidos, en el
+ * mismo orden y formato, sin repetir la lógica en dos lugares. */
+function formatFiltersSummary(source: FilterSummarySource): string[] {
+  const parts: string[] = [];
+  if (source.fOperation)
+    parts.push(OPERATION_LABEL[source.fOperation] ?? source.fOperation);
+  if (source.fNeighborhoods.length > 0)
+    parts.push(`en ${source.fNeighborhoods.map(capitalize).join(', ')}`);
+  if (source.fMaxPrice)
+    parts.push(
+      `hasta ${source.fCurrency ?? ''} ${source.fMaxPrice.toLocaleString('es-AR')}`.trim(),
+    );
+  if (source.fMinRooms) parts.push(`${source.fMinRooms}+ amb.`);
+  return parts;
+}
+
 /** Resumen legible de los filtros del lead, para la notificación interna al tenant. */
 export function summarizeLeadFilters(lead: Lead): string {
-  const parts: string[] = [];
-  if (lead.fOperation)
-    parts.push(OPERATION_LABEL[lead.fOperation] ?? lead.fOperation);
-  if (lead.fNeighborhoods.length > 0)
-    parts.push(`en ${lead.fNeighborhoods.join(', ')}`);
-  if (lead.fMaxPrice)
-    parts.push(
-      `hasta ${lead.fCurrency ?? ''} ${Number(lead.fMaxPrice).toLocaleString('es-AR')}`.trim(),
-    );
-  if (lead.fMinRooms) parts.push(`${lead.fMinRooms}+ amb.`);
+  const parts = formatFiltersSummary({
+    fOperation: lead.fOperation,
+    fNeighborhoods: lead.fNeighborhoods,
+    fMaxPrice: lead.fMaxPrice ? Number(lead.fMaxPrice) : null,
+    fCurrency: lead.fCurrency,
+    fMinRooms: lead.fMinRooms,
+  });
   return parts.length > 0 ? parts.join(', ') : 'sin filtros definidos todavía';
+}
+
+/**
+ * Eco de comprensión (spec 09, T2.5): antes de mostrar las fichas de la
+ * primera búsqueda completa, resume en una línea lo que el sistema entendió.
+ * Se arma SIEMPRE de los filtros ya persistidos (`LeadFilters`), nunca del
+ * LLM (AC-13): mismo criterio que el resto del copy determinístico.
+ */
+export function buildUnderstandingEcho(source: FilterSummarySource): string {
+  const parts = formatFiltersSummary(source);
+  if (parts.length === 0) {
+    return 'Entonces, buscamos algo a tu medida. ¿Es así?';
+  }
+  return `Entonces buscamos ${parts.join(', ')}. ¿Es así?`;
 }
 
 /** Mensajes 100% deterministos (sin LLM) — docs/03-CONVERSACION.md. */

@@ -234,3 +234,118 @@ describe('QualificationHandler.triggerSearch — relajación vs. "mismas fichas"
     });
   });
 });
+
+/**
+ * Eco de comprensión (spec 09, T2.5): antes de mostrar las fichas de la
+ * PRIMERA búsqueda completa de un lead, se resume en una línea lo que el
+ * sistema entendió — armado 100% de los filtros persistidos (AC-13), nunca
+ * del LLM. Solo la primera vez (AC-12): si el lead ya había llegado antes a
+ * SEARCH_MATCH, no se repite en cada búsqueda posterior.
+ */
+describe('QualificationHandler — eco de comprensión (T2.5)', () => {
+  const tenant = { id: 'tenant-1' } as HandlerContext['tenant'];
+  const property1 = { id: 'prop-1' };
+
+  let propertySearch: {
+    zonesWithStock: jest.Mock;
+    topStockZones: jest.Mock;
+    teaserSearch: jest.Mock;
+    searchAndRecordForLead: jest.Mock;
+  };
+  let safeReply: { compose: jest.Mock };
+  let handler: QualificationHandler;
+
+  beforeEach(() => {
+    propertySearch = {
+      zonesWithStock: jest.fn().mockResolvedValue(['caballito']),
+      topStockZones: jest.fn(),
+      teaserSearch: jest.fn(),
+      searchAndRecordForLead: jest.fn().mockResolvedValue({
+        properties: [property1],
+        relaxed: null,
+      }),
+    };
+    safeReply = { compose: jest.fn() };
+    handler = new QualificationHandler(
+      propertySearch as unknown as PropertySearchService,
+      safeReply as unknown as SafeReplyService,
+    );
+  });
+
+  function ctx(state: ConversationState): HandlerContext {
+    return {
+      tenant,
+      lead: {
+        id: 'lead-1',
+        state,
+        lastSearchIds: [],
+        turnCount: 4,
+      },
+      turnText: '2 ambientes, hasta 600 mil',
+      extraction: {
+        intent: 'provide_info',
+        operation: null,
+        neighborhoods: [],
+        maxPrice: null,
+        currency: null,
+        minRooms: null,
+        wantsGarage: null,
+        wantsPetsAllowed: null,
+        roomsInferred: false,
+        priceFlexible: false,
+        extraRequirements: null,
+        interestedPropertyIndex: null,
+      },
+      recentMessages: [],
+    } as unknown as HandlerContext;
+  }
+
+  const filters: LeadFilters = {
+    fOperation: 'RENT' as LeadFilters['fOperation'],
+    fNeighborhoods: ['caballito'],
+    fMaxPrice: 600000,
+    fCurrency: 'ARS',
+    fMinRooms: 2,
+    fGarage: null,
+    fPetsAllowed: null,
+    fNotes: null,
+    fOfferedNeighborhoods: [],
+    fPriceMentionedAtTurn: 4,
+  };
+
+  it('AC-12: primera búsqueda completa (el lead nunca estuvo en SEARCH_MATCH) arranca con el eco', async () => {
+    const result = await handler.handle(
+      ctx(ConversationState.QUALIFICATION),
+      filters,
+    );
+
+    expect(result.actions[0]).toMatchObject({
+      kind: 'text',
+      text: expect.stringContaining('Entonces buscamos'),
+    });
+  });
+
+  it('AC-13: el eco se arma con los filtros persistidos (operación, zona, precio, ambientes)', async () => {
+    const result = await handler.handle(
+      ctx(ConversationState.QUALIFICATION),
+      filters,
+    );
+    const echoText = (result.actions[0] as { text: string }).text;
+
+    expect(echoText).toContain('alquiler');
+    expect(echoText).toContain('Caballito');
+    expect(echoText).toContain('600.000');
+    expect(echoText).toContain('2+ amb');
+  });
+
+  it('una búsqueda posterior (el lead ya había estado en SEARCH_MATCH) NO repite el eco', async () => {
+    const result = await handler.handle(
+      ctx(ConversationState.SEARCH_MATCH),
+      filters,
+    );
+
+    expect(result.actions[0]).not.toMatchObject({
+      text: expect.stringContaining('Entonces buscamos'),
+    });
+  });
+});

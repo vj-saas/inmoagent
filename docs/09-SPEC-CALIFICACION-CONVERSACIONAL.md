@@ -560,7 +560,7 @@ el handoff entre chats.
 | T2.2 | Pools de copy | low | ✅ hecho | SEARCH_INTRO/SAME_RESULTS_MESSAGE/REFORMULATE_REQUEST/OFF_TOPIC_REDIRECT_FALLBACK pasaron de const a función con seed; tests adaptados a pool |
 | T2.3 | Una pregunta por mensaje | low | ✅ hecho | Día de visita se separó a `buildDayPreferenceQuestion`, preguntado en `enterScheduling` solo si el lead no lo dijo ya |
 | T2.4 | Registro formal | low | ✅ hecho | `Tenant.botFormality` (migración manual, sin DB local corriendo — ver nota abajo); filtro `applyFormality` centralizado en `sendActions`, no en cada template; línea inyectada en `buildSystemPrompt`. NO se expuso en el admin DTO (fuera de alcance, ver §9) |
-| T2.5 | Eco de comprensión | low | ⬜ pendiente | |
+| T2.5 | Eco de comprensión | low | ✅ hecho | `buildUnderstandingEcho`, disparado en `triggerSearch` solo cuando `lead.state !== SEARCH_MATCH` (primera búsqueda completa) y hay resultados. **Fase 2 completa.** |
 | T1.1 | Capturar nombre | medium | ⬜ pendiente | |
 | T1.2 | Schema comercial | high | ⬜ pendiente | |
 | T1.3 | Extracción comercial | high | ⬜ pendiente | ⚠️ verificar no regresión |

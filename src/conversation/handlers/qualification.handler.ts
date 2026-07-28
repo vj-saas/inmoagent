@@ -20,6 +20,7 @@ import {
   buildSearchIntro,
   buildTeaserClosingQuestion,
   buildTeaserIntro,
+  buildUnderstandingEcho,
   buildZoneStillPendingMessage,
   buildZoneSuggestionMessage,
 } from '../templates';
@@ -350,6 +351,14 @@ export class QualificationHandler {
     }
 
     const actions: OutgoingAction[] = [];
+    // Eco de comprensión (spec 09, T2.5, AC-12): solo en la PRIMERA búsqueda
+    // completa del lead (todavía no pasó por SEARCH_MATCH) y solo si hay algo
+    // para mostrar — armado 100% de los filtros persistidos, nunca del LLM
+    // (AC-13).
+    const isFirstFullSearch = ctx.lead.state !== ConversationState.SEARCH_MATCH;
+    if (isFirstFullSearch && outcome.properties.length > 0) {
+      actions.push({ kind: 'text', text: buildUnderstandingEcho(filters) });
+    }
     if (outcome.properties.length > 0) {
       actions.push({
         kind: 'text',

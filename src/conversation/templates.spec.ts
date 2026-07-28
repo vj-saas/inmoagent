@@ -16,6 +16,7 @@ import {
   buildSearchIntro,
   buildTeaserClosingQuestion,
   buildTeaserIntro,
+  buildUnderstandingEcho,
   buildZoneStillPendingMessage,
   DEFAULT_HANDOFF_INTRO,
   DEFAULT_INTRO,
@@ -147,6 +148,37 @@ describe('buildTeaserIntro', () => {
 
   it('cae a "esa zona" sin barrios', () => {
     expect(buildTeaserIntro([], 'lead-10:0')).toContain('esa zona');
+  });
+});
+
+describe('buildUnderstandingEcho', () => {
+  it('AC-13: arma el resumen a partir de los filtros persistidos, con un solo "?"', () => {
+    const text = buildUnderstandingEcho({
+      fOperation: 'RENT',
+      fNeighborhoods: ['caballito'],
+      fMaxPrice: 600000,
+      fCurrency: 'ARS',
+      fMinRooms: 2,
+    });
+
+    expect(text).toContain('alquiler');
+    expect(text).toContain('Caballito');
+    expect(text).toContain('ARS 600.000');
+    expect(text).toContain('2+ amb');
+    expect(countQuestionMarks(text)).toBe(1);
+  });
+
+  it('sin ningún filtro conocido, cae a un genérico sin romper', () => {
+    const text = buildUnderstandingEcho({
+      fOperation: null,
+      fNeighborhoods: [],
+      fMaxPrice: null,
+      fCurrency: null,
+      fMinRooms: null,
+    });
+
+    expect(text.length).toBeGreaterThan(0);
+    expect(countQuestionMarks(text)).toBe(1);
   });
 });
 
