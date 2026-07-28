@@ -66,5 +66,7 @@ export interface HandlerResult {
     pendingPropertyId?: string | null;
     /** Señal de compra detectada este turno (spec 09, T3.1). */
     qBuyingSignalAt?: Date;
+    /** Aceptó el aviso de stock futuro (spec 09, T3.3). */
+    qWantsStockAlert?: boolean;
   };
 }

@@ -504,6 +504,33 @@ export function buildNoResultsMessage(
   return `En ${zone} no había nada exacto con esos filtros, así que amplié un poco el presupuesto y encontré esto:`;
 }
 
+/**
+ * Rescate cuando no hay stock ni relajando filtros (spec 09, T3.3, AC-47):
+ * en vez de solo decir que no hay nada, ofrece avisar cuando entre algo — y
+ * de paso pide el nombre si todavía no lo tenemos (excepción documentada a
+ * "una pregunta por mensaje", igual que el teaser: acá el lead ya está en un
+ * punto muerto, conviene resolver las dos cosas en el mismo mensaje).
+ * AC-49: nunca promete un plazo ("apenas entre algo", nunca "en X días").
+ */
+const STOCK_ALERT_OFFER_VARIANTS = [
+  'Por ahora no tengo nada que encaje con eso. ¿Querés que te avise apenas entre algo así?',
+  'No tengo stock que encaje con lo que buscás por ahora. ¿Te aviso si entra algo que matchee?',
+];
+
+export function buildStockAlertOffer(includeNameAsk: boolean, seed: string): string {
+  const base = pickVariant(STOCK_ALERT_OFFER_VARIANTS, seed);
+  return includeNameAsk ? `${base} Contame tu nombre para anotarte.` : base;
+}
+
+const STOCK_ALERT_CONFIRMATION_VARIANTS = [
+  'Listo, te aviso apenas entre algo que encaje. Mientras tanto, ¿probamos otra zona o cambiamos algún criterio?',
+  'Anotado, te aviso cuando tengamos algo así. ¿Querés que probemos otra zona mientras tanto?',
+];
+
+export function buildStockAlertConfirmation(seed: string): string {
+  return pickVariant(STOCK_ALERT_CONFIRMATION_VARIANTS, seed);
+}
+
 export const NO_RESULTS_EVEN_RELAXED =
   'Por ahora no tenemos nada disponible que se ajuste, ni relajando los criterios. Te aviso apenas entre algo que pueda interesarte.';
 

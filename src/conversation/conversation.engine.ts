@@ -446,6 +446,9 @@ export class ConversationEngine {
       if (u.qBuyingSignalAt !== undefined) {
         data.qBuyingSignalAt = u.qBuyingSignalAt;
       }
+      if (u.qWantsStockAlert !== undefined) {
+        data.qWantsStockAlert = u.qWantsStockAlert;
+      }
     }
     if (
       result.nextState === ConversationState.HUMAN_HANDOFF &&

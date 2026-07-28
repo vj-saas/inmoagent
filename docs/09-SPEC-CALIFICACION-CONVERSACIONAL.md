@@ -568,7 +568,7 @@ el handoff entre chats.
 | T1.5 | Score del lead | medium | ✅ hecho | `lead-score.util.ts` (función pura, pesos exportados); recalculado SIEMPRE al final de cada turno en `persistLeadUpdate`, sobre el lead ya con los cambios de ESE turno aplicados. `summarizeLeadFilters` (alerta interna) ahora antepone etiqueta+urgencia+capacidad de pago — resuelve la decisión pendiente del template Meta usando el mismo workaround ya usado para `preferredDay`. **Cierra la Fase 1.** |
 | T3.1 | Señales de compra | high | ✅ hecho | 🔴 **crítico — cambia cómo se clasifica off-topic vs. señal de compra en `resolveResult`.** Mismo criterio que T1.4: avanzado sin pausa por instrucción explícita, señalado para revisión. `buying-signals.util.ts` (regex) + rama nueva en `conversation.engine.ts` ANTES del redirect off-topic; dispara `LeadAlertService` y setea `qBuyingSignalAt` (ya sube el score de T1.5 en el mismo turno). Cubre el caso exacto de H4 con test dedicado (AC-43) |
 | T3.2 | Match reasoning | medium | ✅ hecho | `formatPropertyCaption` recibe `filters` opcional (via `OutgoingAction.filters`, adjuntado en `qualification.handler.ts`) y agrega UNA línea (prioridad cochera > mascotas > ambientes exactos > patio) solo si hay match real contra atributos de la propiedad — nunca del LLM |
-| T3.3 | Rescate sin stock | medium | ⬜ pendiente | |
+| T3.3 | Rescate sin stock | medium | ✅ hecho | Reutiliza `qWantsStockAlert` (ya en schema desde T1.2) y `acceptsZoneSuggestion`/`hasNewFilterData` existentes — sin campo nuevo. Ver decisión #13 en §9 sobre el trade-off de precisión al detectar "aceptación". **Cierra la Fase 3.** |
 | T4.1 | Captación | high | ⬜ pendiente | ⏸️ decidir si entra |
 
 Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecho · ⏸️ pausado · ❌ descartado
@@ -640,6 +640,17 @@ Leyenda: ⬜ pendiente · 🟨 en curso · ✅ hecho · ⏸️ pausado · ❌ de
     `lastSearchIds` no alcanza para re-derivarla de forma confiable. Mismo
     criterio que `nameAskedAt` en T1.1: se agregó porque el diseño lo
     necesitaba, no porque estuviera en la lista original.
+13. **T3.3 detecta "aceptación del aviso de stock" sin un campo de "oferta
+    pendiente" dedicado**, a diferencia de `fOfferedNeighborhoods` (§4). Se
+    reutiliza `acceptsZoneSuggestion` (palabras cortas de aceptación) +
+    `hasNewFilterData` (si el turno trae un filtro nuevo, NO es una
+    aceptación, es una búsqueda distinta) para decidir si un "dale" cuenta
+    como "sí, avisame". Trade-off aceptado para mantenerlo en alcance
+    `medium`: existe un riesgo residual bajo de falso positivo si el
+    PRIMERÍSIMO mensaje que cae en un resultado vacío empieza con una palabra
+    de aceptación y no trae filtros nuevos (poco probable en la práctica). Si
+    se observa en producción, la solución es agregar un campo de "oferta
+    pendiente" explícito, mismo patrón que `fOfferedNeighborhoods`.
 
 ### Pendientes de definir
 - **¿Entra la Fase 4 (captación)?** Depende de si el ICP incluye captación de

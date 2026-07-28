@@ -495,3 +495,152 @@ describe('QualificationHandler — pedido de nombre (T1.1)', () => {
     expect(result.markNameAsked).toBe(true);
   });
 });
+
+/**
+ * Rescate cuando no hay stock ni relajando ningún criterio (spec 09, T3.3):
+ * en vez de solo decir "no tengo nada", ofrece avisar cuando entre algo, y
+ * pide el nombre si todavía no lo tenemos (AC-47). Si el lead acepta (sin
+ * traer un filtro nuevo), setea qWantsStockAlert (AC-48). Nunca promete un
+ * plazo (AC-49).
+ */
+describe('QualificationHandler — rescate sin stock (T3.3)', () => {
+  const tenant = { id: 'tenant-1' } as HandlerContext['tenant'];
+
+  let propertySearch: {
+    zonesWithStock: jest.Mock;
+    topStockZones: jest.Mock;
+    teaserSearch: jest.Mock;
+    searchAndRecordForLead: jest.Mock;
+  };
+  let safeReply: { compose: jest.Mock };
+  let handler: QualificationHandler;
+
+  beforeEach(() => {
+    propertySearch = {
+      zonesWithStock: jest.fn().mockResolvedValue(['caballito']),
+      topStockZones: jest.fn(),
+      teaserSearch: jest.fn(),
+      searchAndRecordForLead: jest
+        .fn()
+        .mockResolvedValue({ properties: [], relaxed: null }),
+    };
+    safeReply = { compose: jest.fn() };
+    handler = new QualificationHandler(
+      propertySearch as unknown as PropertySearchService,
+      safeReply as unknown as SafeReplyService,
+    );
+  });
+
+  function ctx(
+    turnText: string,
+    leadOverrides: Partial<{
+      name: string | null;
+      nameAskedAt: Date | null;
+      qWantsStockAlert: boolean;
+    }> = {},
+    extractionOverrides: Partial<HandlerContext['extraction']> = {},
+  ): HandlerContext {
+    return {
+      tenant,
+      lead: {
+        id: 'lead-1',
+        state: ConversationState.QUALIFICATION,
+        lastSearchIds: [],
+        turnCount: 3,
+        name: null,
+        nameAskedAt: null,
+        qWantsStockAlert: false,
+        ...leadOverrides,
+      },
+      turnText,
+      extraction: {
+        intent: 'provide_info',
+        operation: null,
+        neighborhoods: [],
+        maxPrice: null,
+        currency: null,
+        minRooms: null,
+        wantsGarage: null,
+        wantsPetsAllowed: null,
+        roomsInferred: false,
+        priceFlexible: false,
+        extraRequirements: null,
+        interestedPropertyIndex: null,
+        name: null,
+        ...extractionOverrides,
+      },
+      recentMessages: [],
+    } as unknown as HandlerContext;
+  }
+
+  const filters: LeadFilters = {
+    fOperation: 'RENT' as LeadFilters['fOperation'],
+    fNeighborhoods: ['caballito'],
+    fMaxPrice: 500000,
+    fCurrency: 'ARS',
+    fMinRooms: 2,
+    fGarage: null,
+    fPetsAllowed: null,
+    fNotes: null,
+    fOfferedNeighborhoods: [],
+    fPriceMentionedAtTurn: null,
+  };
+
+  it('AC-47: sin stock ni relajando, ofrece avisar y pide el nombre (sin tenerlo)', async () => {
+    const result = await handler.handle(ctx('hay algo en caballito?'), filters);
+
+    const text = (result.actions[0] as { text: string }).text;
+    expect(text).toMatch(/avise|aviso/i);
+    expect(text).toMatch(/nombre/i);
+  });
+
+  it('AC-47: si ya tenemos el nombre, no lo vuelve a pedir en el ofrecimiento', async () => {
+    const result = await handler.handle(
+      ctx('hay algo en caballito?', { name: 'Martín' }),
+      filters,
+    );
+
+    const text = (result.actions[0] as { text: string }).text;
+    expect(text).toMatch(/avise|aviso/i);
+    expect(text).not.toMatch(/contame tu nombre/i);
+  });
+
+  it('AC-48: el lead acepta (sin traer filtro nuevo) -> setea qWantsStockAlert', async () => {
+    const result = await handler.handle(ctx('dale'), filters);
+
+    expect(result.commercialUpdate?.qWantsStockAlert).toBe(true);
+    const text = (result.actions[0] as { text: string }).text;
+    expect(text).toMatch(/anotado|listo/i);
+  });
+
+  it('un "dale" que trae un filtro nuevo NO se toma como aceptación (es una búsqueda distinta)', async () => {
+    const result = await handler.handle(
+      ctx('dale, busco en Recoleta', {}, { neighborhoods: ['recoleta'] }),
+      filters,
+    );
+
+    expect(result.commercialUpdate?.qWantsStockAlert).toBeUndefined();
+  });
+
+  it('ya había aceptado antes (qWantsStockAlert=true) -> no repite el ofrecimiento ni la confirmación', async () => {
+    const result = await handler.handle(
+      ctx('segis sin nada?', { qWantsStockAlert: true }),
+      filters,
+    );
+
+    const text = (result.actions[0] as { text: string }).text;
+    expect(text).not.toMatch(/te avise|anotado/i);
+    expect(result.commercialUpdate?.qWantsStockAlert).toBeUndefined();
+  });
+
+  // AC-49
+  it('AC-49: ninguna variante del ofrecimiento ni de la confirmación promete un plazo', async () => {
+    const offer = await handler.handle(ctx('hay algo?'), filters);
+    const offerText = (offer.actions[0] as { text: string }).text;
+    expect(offerText).not.toMatch(/\d+\s*(d[ií]as?|horas?|semanas?)/i);
+
+    const confirm = await handler.handle(ctx('dale'), filters);
+    const confirmText = (confirm.actions[0] as { text: string }).text;
+    expect(confirmText).not.toMatch(/\d+\s*(d[ií]as?|horas?|semanas?)/i);
+  });
+});

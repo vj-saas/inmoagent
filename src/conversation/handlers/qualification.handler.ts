@@ -3,9 +3,11 @@ import { ConversationState, OperationType } from '@prisma/client';
 import { PropertySearchService } from '../../properties/property-search.service';
 import { getAdjacentZones } from '../../properties/zone-adjacency';
 import {
+  acceptsZoneSuggestion,
   countFilledCoreFilters,
   delegatesZoneChoice,
   firstMissingFilter,
+  hasNewFilterData,
   isPriceStale,
 } from '../filters.util';
 import { leadSeed } from '../copy-variants.util';
@@ -19,6 +21,8 @@ import {
   buildSameResultsMessage,
   buildSearchClosingQuestion,
   buildSearchIntro,
+  buildStockAlertConfirmation,
+  buildStockAlertOffer,
   buildTeaserClosingQuestion,
   buildTeaserIntro,
   buildUnderstandingEcho,
@@ -387,7 +391,43 @@ export class QualificationHandler {
           leadSeed(ctx.lead),
         ),
       });
-    } else {
+    }
+    // Rescate cuando no hay stock ni relajando ningún criterio (spec 09,
+    // T3.3, AC-47): en vez de solo decir "no tengo nada", ofrece avisar
+    // cuando entre algo. `outcome.relaxed === null` en la rama de 0
+    // resultados es justo ese caso ('empty_zone' ya tiene su propio mensaje
+    // honesto vía buildNoResultsMessage, y no pasa por acá).
+    let nameAskedThisTurn = false;
+    let stockAlertAccepted = false;
+    if (outcome.properties.length === 0 && outcome.relaxed === null) {
+      // Acepta el ofrecimiento si usa una palabra de aceptación corta Y no
+      // trajo un filtro nuevo en el mismo mensaje (si trae zona/precio/ambientes
+      // nuevos, es un intento de búsqueda distinto, no una respuesta de sí/no).
+      const acceptsOffer =
+        !ctx.lead.qWantsStockAlert &&
+        !hasNewFilterData(ctx.extraction) &&
+        acceptsZoneSuggestion(ctx.turnText);
+
+      if (acceptsOffer) {
+        actions.push({
+          kind: 'text',
+          text: buildStockAlertConfirmation(leadSeed(ctx.lead)),
+        });
+        stockAlertAccepted = true;
+      } else if (!ctx.lead.qWantsStockAlert) {
+        const offerName = this.shouldAskName(ctx);
+        actions.push({
+          kind: 'text',
+          text: buildStockAlertOffer(offerName, leadSeed(ctx.lead)),
+        });
+        if (offerName) nameAskedThisTurn = true;
+      } else {
+        actions.push({
+          kind: 'text',
+          text: buildNoResultsMessage(outcome.relaxed, filters.fNeighborhoods),
+        });
+      }
+    } else if (outcome.properties.length === 0) {
       actions.push({
         kind: 'text',
         text: buildNoResultsMessage(outcome.relaxed, filters.fNeighborhoods),
@@ -395,20 +435,24 @@ export class QualificationHandler {
     }
 
     // Pedido de nombre (spec 09, T1.1, AC-17): solo cuando hubo algo real para
-    // mostrar, nunca antes.
-    const askName = outcome.properties.length > 0 && this.shouldAskName(ctx);
-    if (askName) {
+    // mostrar, nunca antes. (El pedido de nombre del rescate de stock, arriba,
+    // ya se contempla en `nameAskedThisTurn`.)
+    if (outcome.properties.length > 0 && this.shouldAskName(ctx)) {
       actions.push({
         kind: 'text',
         text: buildNameRequestMessage(leadSeed(ctx.lead)),
       });
+      nameAskedThisTurn = true;
     }
 
     return {
       actions,
       nextState: ConversationState.SEARCH_MATCH,
       filterUpdates: filters,
-      markNameAsked: askName,
+      markNameAsked: nameAskedThisTurn,
+      ...(stockAlertAccepted
+        ? { commercialUpdate: { qWantsStockAlert: true } }
+        : {}),
     };
   }
 
