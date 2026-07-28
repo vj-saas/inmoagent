@@ -379,7 +379,7 @@ export class ConversationEngine {
 
       const photo = action.property.photos[0];
       const caption = applyFormality(
-        formatPropertyCaption(action.property, action.index),
+        formatPropertyCaption(action.property, action.index, action.filters),
         tenant.botFormality,
       );
       if (photo) {

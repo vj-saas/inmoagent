@@ -1,5 +1,6 @@
 import type { Lead, Tenant } from '@prisma/client';
 import type { PropertyWithPhotos } from '../properties/property-search.service';
+import type { LeadFilters } from './conversation.types';
 import type { MissingFilter } from './filters.util';
 import { pickVariant } from './copy-variants.util';
 import { calculateLeadScore } from './lead-score.util';
@@ -517,17 +518,50 @@ function numberPrefix(index: number): string {
   return NUMBER_EMOJI[index] ?? `${index}.`;
 }
 
+/**
+ * Por qué esta ficha encaja con lo que el lead pidió explícitamente (spec 09,
+ * T3.2, AC-44/AC-45): comparación directa filtros persistidos vs. atributos
+ * reales de la propiedad, NUNCA una apreciación del LLM. Devuelve la PRIMERA
+ * coincidencia relevante (cochera > mascotas > ambientes > patio) para no
+ * saturar la ficha con varias líneas.
+ */
+function buildMatchReasoning(
+  property: PropertyWithPhotos,
+  filters: LeadFilters,
+): string | null {
+  if (filters.fGarage === true && property.garage === true) {
+    return '✓ Tiene la cochera que buscás';
+  }
+  if (filters.fPetsAllowed === true && property.petsAllowed === true) {
+    return '✓ Acepta mascotas';
+  }
+  if (filters.fMinRooms !== null && property.rooms === filters.fMinRooms) {
+    return `✓ Tiene justo los ${filters.fMinRooms} ambientes que buscás`;
+  }
+  if (
+    filters.fNotes &&
+    /patio/i.test(filters.fNotes) &&
+    property.features.some((feature) => /patio/i.test(feature))
+  ) {
+    return '✓ Tiene el patio que pediste';
+  }
+  return null;
+}
+
 export function formatPropertyCaption(
   property: PropertyWithPhotos,
   index: number,
+  filters?: LeadFilters,
 ): string {
   const price = Number(property.price).toLocaleString('es-AR');
   const roomsPart = property.rooms ? ` · ${property.rooms} amb.` : '';
   const feature = property.features[0];
+  const matchLine = filters ? buildMatchReasoning(property, filters) : null;
   const lines = [
     `${numberPrefix(index)} ${property.title}`,
     `${capitalize(property.neighborhood)} · ${property.currency} ${price}${roomsPart}`,
     feature ?? null,
+    matchLine,
     property.listingUrl ?? null,
   ].filter((line): line is string => Boolean(line));
   return lines.join('\n');

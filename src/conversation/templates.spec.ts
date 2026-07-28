@@ -20,9 +20,12 @@ import {
   buildZoneStillPendingMessage,
   DEFAULT_HANDOFF_INTRO,
   DEFAULT_INTRO,
+  formatPropertyCaption,
   OPERATION_QUESTION,
   summarizeLeadFilters,
 } from './templates';
+import type { LeadFilters } from './conversation.types';
+import type { PropertyWithPhotos } from '../properties/property-search.service';
 
 /** Cuenta signos de pregunta en un texto (AC-8: máx. uno por mensaje, salvo teaser). */
 function countQuestionMarks(text: string): number {
@@ -215,6 +218,134 @@ describe('summarizeLeadFilters — resumen para la alerta interna (T1.5, AC-39)'
     );
     expect(text).toContain('Caballito');
     expect(text).toMatch(/frío/i);
+  });
+});
+
+describe('formatPropertyCaption — match reasoning (T3.2)', () => {
+  function propertyFixture(
+    overrides: Partial<PropertyWithPhotos> = {},
+  ): PropertyWithPhotos {
+    return {
+      id: 'prop-1',
+      title: 'Depto en Caballito',
+      neighborhood: 'caballito',
+      price: 500000,
+      currency: 'ARS',
+      rooms: 2,
+      garage: false,
+      petsAllowed: false,
+      features: [],
+      listingUrl: null,
+      photos: [],
+      ...overrides,
+    } as unknown as PropertyWithPhotos;
+  }
+
+  function filtersFixture(overrides: Partial<LeadFilters> = {}): LeadFilters {
+    return {
+      fOperation: null,
+      fNeighborhoods: [],
+      fMaxPrice: null,
+      fCurrency: null,
+      fMinRooms: null,
+      fGarage: null,
+      fPetsAllowed: null,
+      fNotes: null,
+      fOfferedNeighborhoods: [],
+      fPriceMentionedAtTurn: null,
+      ...overrides,
+    };
+  }
+
+  // AC-46: sin filters (o sin coincidencia), la ficha queda igual que hoy.
+  it('AC-46: sin filters, no agrega ninguna línea de más', () => {
+    const withFilters = formatPropertyCaption(propertyFixture(), 1);
+    expect(withFilters).not.toContain('✓');
+  });
+
+  it('AC-46: con filters pero sin ninguna coincidencia, no agrega línea', () => {
+    const text = formatPropertyCaption(
+      propertyFixture({ garage: false }),
+      1,
+      filtersFixture({ fGarage: true }),
+    );
+    expect(text).not.toContain('✓');
+  });
+
+  // AC-44/AC-45
+  it('AC-44/45: pidió cochera y la propiedad tiene → lo señala', () => {
+    const text = formatPropertyCaption(
+      propertyFixture({ garage: true }),
+      1,
+      filtersFixture({ fGarage: true }),
+    );
+    expect(text).toMatch(/cochera/i);
+  });
+
+  it('pidió mascotas y la propiedad acepta → lo señala', () => {
+    const text = formatPropertyCaption(
+      propertyFixture({ petsAllowed: true }),
+      1,
+      filtersFixture({ fPetsAllowed: true }),
+    );
+    expect(text).toMatch(/mascotas/i);
+  });
+
+  it('pidió mascotas pero la propiedad NO acepta → no lo señala (no miente)', () => {
+    const text = formatPropertyCaption(
+      propertyFixture({ petsAllowed: false }),
+      1,
+      filtersFixture({ fPetsAllowed: true }),
+    );
+    expect(text).not.toMatch(/mascotas/i);
+  });
+
+  it('pidió exactamente N ambientes y la propiedad los tiene → lo señala', () => {
+    const text = formatPropertyCaption(
+      propertyFixture({ rooms: 3 }),
+      1,
+      filtersFixture({ fMinRooms: 3 }),
+    );
+    expect(text).toMatch(/3 ambientes/i);
+  });
+
+  it('la propiedad tiene MÁS ambientes de los pedidos → no lo señala (no es "justo" lo pedido)', () => {
+    const text = formatPropertyCaption(
+      propertyFixture({ rooms: 4 }),
+      1,
+      filtersFixture({ fMinRooms: 2 }),
+    );
+    expect(text).not.toMatch(/ambientes que buscás/i);
+  });
+
+  it('pidió patio en extraRequirements y la propiedad lo tiene en features → lo señala', () => {
+    const text = formatPropertyCaption(
+      propertyFixture({ features: ['con patio'] }),
+      1,
+      filtersFixture({ fNotes: 'con patio' }),
+    );
+    expect(text).toMatch(/patio/i);
+  });
+
+  it('AC-45: se deriva 100% de comparar filtros vs. atributos reales, no del texto libre del lead', () => {
+    // Un mismo filtro persistido produce siempre el mismo resultado,
+    // sin importar qué texto haya escrito el lead en el turno.
+    const filters = filtersFixture({ fGarage: true });
+    const property = propertyFixture({ garage: true });
+    expect(formatPropertyCaption(property, 1, filters)).toBe(
+      formatPropertyCaption(property, 1, filters),
+    );
+  });
+
+  it('prioriza cochera sobre ambientes si ambos matchean (una sola línea, no satura)', () => {
+    const text = formatPropertyCaption(
+      propertyFixture({ garage: true, rooms: 2 }),
+      1,
+      filtersFixture({ fGarage: true, fMinRooms: 2 }),
+    );
+    const matchLines = text.split('\n').filter((line) => line.includes('✓'));
+    expect(matchLines).toHaveLength(1);
+    expect(matchLines[0]).toMatch(/cochera/i);
   });
 });
 

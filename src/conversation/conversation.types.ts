@@ -33,7 +33,14 @@ export interface HandlerContext {
 
 export type OutgoingAction =
   | { kind: 'text'; text: string }
-  | { kind: 'property'; property: PropertyWithPhotos; index: number };
+  | {
+      kind: 'property';
+      property: PropertyWithPhotos;
+      index: number;
+      /** Filtros vigentes al momento de mostrar la ficha (spec 09, T3.2):
+       * permite resaltar por qué esta propiedad encaja, sin depender del LLM. */
+      filters?: LeadFilters;
+    };
 
 export interface HandlerResult {
   actions: OutgoingAction[];

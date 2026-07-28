@@ -348,6 +348,18 @@ describe('QualificationHandler — eco de comprensión (T2.5)', () => {
       text: expect.stringContaining('Entonces buscamos'),
     });
   });
+
+  // spec 09, T3.2: la ficha se manda con los filtros vigentes adjuntos, para
+  // que formatPropertyCaption pueda resaltar por qué encaja (match reasoning).
+  it('T3.2: la acción "property" lleva los filtros vigentes adjuntos', async () => {
+    const result = await handler.handle(
+      ctx(ConversationState.QUALIFICATION),
+      filters,
+    );
+
+    const propertyAction = result.actions.find((a) => a.kind === 'property');
+    expect(propertyAction).toMatchObject({ filters });
+  });
 });
 
 /**

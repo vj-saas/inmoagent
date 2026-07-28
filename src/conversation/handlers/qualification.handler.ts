@@ -225,7 +225,7 @@ export class QualificationHandler {
       },
     ];
     outcome.properties.forEach((property, i) => {
-      actions.push({ kind: 'property', property, index: i + 1 });
+      actions.push({ kind: 'property', property, index: i + 1, filters });
     });
     actions.push({
       kind: 'text',
@@ -378,7 +378,7 @@ export class QualificationHandler {
           : buildSearchIntro(leadSeed(ctx.lead)),
       });
       outcome.properties.forEach((property, i) => {
-        actions.push({ kind: 'property', property, index: i + 1 });
+        actions.push({ kind: 'property', property, index: i + 1, filters });
       });
       actions.push({
         kind: 'text',
