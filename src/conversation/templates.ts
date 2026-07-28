@@ -1,6 +1,7 @@
 import type { Lead, Tenant } from '@prisma/client';
 import type { PropertyWithPhotos } from '../properties/property-search.service';
 import type { MissingFilter } from './filters.util';
+import { pickVariant } from './copy-variants.util';
 
 const OPERATION_LABEL: Record<string, string> = {
   SALE: 'compra',
@@ -98,18 +99,41 @@ export function buildSchedulingHandoffMessage(tenant: Tenant): string {
 export const HANDOFF_TIMEOUT_APOLOGY =
   'Perdón la demora en retomar, seguimos por acá. ¿En qué te puedo ayudar?';
 
-export const REFORMULATE_REQUEST =
-  'Perdón, no te terminé de entender. ¿Me lo podés contar de otra forma?';
+/** Pools de variantes (spec 09, T2.2): mismo `seed` → mismo texto, pero nunca
+ * el mismo turno tras turno para el mismo lead (ver `pickVariant`). */
+const REFORMULATE_REQUEST_VARIANTS = [
+  'Perdón, no te terminé de entender. ¿Me lo podés contar de otra forma?',
+  'Disculpá, no me quedó claro. ¿Me lo explicás de otra manera?',
+  'Perdón, no entendí bien eso. ¿Podés decírmelo con otras palabras?',
+];
 
-export const SEARCH_INTRO = 'Encontré estas opciones para vos:';
+export function buildReformulateRequest(seed: string): string {
+  return pickVariant(REFORMULATE_REQUEST_VARIANTS, seed);
+}
+
+const SEARCH_INTRO_VARIANTS = [
+  'Encontré estas opciones para vos:',
+  'Mirá lo que tengo para mostrarte:',
+  'Estas son las opciones que encontré:',
+  'Te paso lo que hay disponible:',
+];
+
+export function buildSearchIntro(seed: string): string {
+  return pickVariant(SEARCH_INTRO_VARIANTS, seed);
+}
 
 /** "Mirá, en Palermo tengo estas opciones para que te des una idea:" (§3, búsqueda teaser). */
-export function buildTeaserIntro(neighborhoods: string[]): string {
+export function buildTeaserIntro(neighborhoods: string[], seed: string): string {
   const zone =
     neighborhoods.length > 0
       ? neighborhoods.map(capitalize).join(' y ')
       : 'esa zona';
-  return `Mirá, en ${zone} tengo estas opciones para que te des una idea:`;
+  const variants = [
+    `Mirá, en ${zone} tengo estas opciones para que te des una idea:`,
+    `Estas son algunas opciones que encontré en ${zone}:`,
+    `En ${zone} tengo esto para mostrarte:`,
+  ];
+  return pickVariant(variants, seed);
 }
 
 /** Excepción a "una pregunta por mensaje": el lead ya vio valor (§3, punto 4). */
@@ -119,11 +143,22 @@ export function buildTeaserClosingQuestion(count: number): string {
   return `${opener} Para afinarte la búsqueda decime hasta cuánto es tu presupuesto y cuántos ambientes necesitás.`;
 }
 
-export function buildSearchClosingQuestion(count: number): string {
-  if (count === 1) {
-    return '¿Te interesa? Te coordino una visita — ¿te queda mejor *entre semana* o el *sábado*?';
-  }
-  return '¿Cuál te gustó más? Decime el número y te coordino una visita — ¿te queda mejor *entre semana* o el *sábado*?';
+const SEARCH_CLOSING_SINGLE_VARIANTS = [
+  '¿Te interesa? Te coordino una visita — ¿te queda mejor *entre semana* o el *sábado*?',
+  '¿Te copó esta opción? Coordinamos la visita — ¿te queda mejor *entre semana* o el *sábado*?',
+  '¿Te cierra esta? Te ayudo a coordinar la visita — ¿te queda mejor *entre semana* o el *sábado*?',
+];
+
+const SEARCH_CLOSING_MULTI_VARIANTS = [
+  '¿Cuál te gustó más? Decime el número y te coordino una visita — ¿te queda mejor *entre semana* o el *sábado*?',
+  '¿Alguna te cerró? Decime el número y arreglamos la visita — ¿te queda mejor *entre semana* o el *sábado*?',
+  '¿Cuál te gusta más? Pasame el número y coordinamos la visita — ¿te queda mejor *entre semana* o el *sábado*?',
+];
+
+export function buildSearchClosingQuestion(count: number, seed: string): string {
+  const variants =
+    count === 1 ? SEARCH_CLOSING_SINGLE_VARIANTS : SEARCH_CLOSING_MULTI_VARIANTS;
+  return pickVariant(variants, seed);
 }
 
 /**
@@ -140,30 +175,55 @@ export function buildDelegatedZoneMessage(suggestions: string[]): string {
 }
 
 /** El resultado repite exactamente el último enviado: no re-mandar las mismas fichas. */
-export const SAME_RESULTS_MESSAGE =
-  'Esas que te mostré recién son todas las opciones que tengo hoy con esos filtros 🙂 ¿Te interesa alguna? Decime el número, o si querés cambiamos algo (zona, presupuesto o ambientes).';
+const SAME_RESULTS_VARIANTS = [
+  'Esas que te mostré recién son todas las opciones que tengo hoy con esos filtros 🙂 ¿Te interesa alguna? Decime el número, o si querés cambiamos algo (zona, presupuesto o ambientes).',
+  'Con esos filtros, lo que te mostré es todo lo que tengo por ahora. ¿Alguna te interesó? Si no, cambiamos zona, presupuesto o ambientes.',
+  'Eso que viste es todo el stock disponible con esos filtros. Decime el número si te interesa alguna, o ajustamos algún criterio.',
+];
+
+export function buildSameResultsMessage(seed: string): string {
+  return pickVariant(SAME_RESULTS_VARIANTS, seed);
+}
+
+const MISSING_FILTER_VARIANTS: Record<MissingFilter, (zone: string) => string[]> = {
+  neighborhood: () => [
+    '¡Buenísimo! Para arrancar, ¿por qué zona o barrio te gustaría buscar? Puede ser más de uno.',
+    'Perfecto. ¿En qué zona o barrio te gustaría buscar? Podés nombrar más de uno.',
+    'Genial, para arrancar contame en qué barrio o zona buscás (puede ser más de uno).',
+  ],
+  rooms: (zone) => [
+    `Perfecto, ${zone} 👌 ¿Y cuántos ambientes necesitás como mínimo? (mono, 2, 3...)`,
+    `Buenísimo, ${zone}. ¿Cuántos ambientes como mínimo necesitás? (mono, 2, 3...)`,
+    `Dale, ${zone}. ¿Con cuántos ambientes mínimo buscás? (mono, 2, 3...)`,
+  ],
+  price: () => [
+    'Última y te muestro opciones: ¿hasta cuánto es tu presupuesto? Un número aproximado me sirve.',
+    'Ya casi: ¿hasta cuánto tenés pensado gastar? Con un número aproximado alcanza.',
+    'Para terminar, ¿cuál es tu presupuesto máximo? No hace falta que sea exacto.',
+  ],
+};
 
 export function buildMissingFilterFallback(
   missing: MissingFilter,
-  neighborhoods: string[] = [],
+  neighborhoods: string[],
+  seed: string,
 ): string {
-  switch (missing) {
-    case 'neighborhood':
-      return '¡Buenísimo! Para arrancar, ¿por qué zona o barrio te gustaría buscar? Puede ser más de uno.';
-    case 'rooms': {
-      const zone =
-        neighborhoods.length > 0
-          ? neighborhoods.map(capitalize).join(', ')
-          : 'esa zona';
-      return `Perfecto, ${zone} 👌 ¿Y cuántos ambientes necesitás como mínimo? (mono, 2, 3...)`;
-    }
-    case 'price':
-      return 'Última y te muestro opciones: ¿hasta cuánto es tu presupuesto? Un número aproximado me sirve.';
-  }
+  const zone =
+    neighborhoods.length > 0
+      ? neighborhoods.map(capitalize).join(', ')
+      : 'esa zona';
+  return pickVariant(MISSING_FILTER_VARIANTS[missing](zone), seed);
 }
 
-export const OFF_TOPIC_REDIRECT_FALLBACK =
-  '¡Jaja, me encantaría, pero de eso no sé nada! Lo mío son las propiedades 🙂 ¿Seguimos con tu búsqueda?';
+const OFF_TOPIC_REDIRECT_VARIANTS = [
+  '¡Jaja, me encantaría, pero de eso no sé nada! Lo mío son las propiedades 🙂 ¿Seguimos con tu búsqueda?',
+  'Uy, de eso no tengo idea 😅 Lo mío son las propiedades. ¿Seguimos con tu búsqueda?',
+  'Eso no lo manejo yo, disculpá. ¿Retomamos la búsqueda de tu propiedad?',
+];
+
+export function buildOffTopicRedirectFallback(seed: string): string {
+  return pickVariant(OFF_TOPIC_REDIRECT_VARIANTS, seed);
+}
 
 /** "En Bernal no tenemos nada disponible por ahora 😕 ¿Te interesa que busque en otra zona?" */
 export function buildEmptyZoneMessage(neighborhoods: string[]): string {

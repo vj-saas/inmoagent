@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import type { Lead } from '@prisma/client';
 
 /**
  * Selección determinística de una variante de copy. `seed` tiene que tener la
@@ -30,4 +31,9 @@ export function pickVariant(variants: string[], seed: string): string {
 
   const index = (leadOffset + turnOffset) % variants.length;
   return variants[index];
+}
+
+/** Seed canónico para `pickVariant`: mismo lead + mismo turno → mismo texto. */
+export function leadSeed(lead: Pick<Lead, 'id' | 'turnCount'>): string {
+  return `${lead.id}:${lead.turnCount}`;
 }

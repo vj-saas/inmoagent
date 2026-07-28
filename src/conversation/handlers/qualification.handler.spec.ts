@@ -228,7 +228,9 @@ describe('QualificationHandler.triggerSearch — relajación vs. "mismas fichas"
 
     expect(result.actions[0]).toMatchObject({
       kind: 'text',
-      text: expect.stringContaining('todas las opciones que tengo hoy'),
+      // Copy variado (spec 09, T2.2): las 3 variantes coinciden en decir que
+      // ya se mostró TODO el stock disponible con esos filtros.
+      text: expect.stringMatching(/todo|todas/i),
     });
   });
 });

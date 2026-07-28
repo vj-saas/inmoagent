@@ -27,6 +27,7 @@ import {
   mergeFilters,
   normalizeKeycapDigits,
 } from './filters.util';
+import { leadSeed } from './copy-variants.util';
 import { GreetingHandler } from './handlers/greeting.handler';
 import { QualificationHandler } from './handlers/qualification.handler';
 import { SchedulingHandler } from './handlers/scheduling.handler';
@@ -39,11 +40,11 @@ import { resolveReleaseState } from './release-state.util';
 import { SafeReplyService } from './safe-reply.service';
 import {
   buildHandoffFarewell,
+  buildOffTopicRedirectFallback,
+  buildReformulateRequest,
   formatPropertyCaption,
   HANDOFF_TIMEOUT_APOLOGY,
-  OFF_TOPIC_REDIRECT_FALLBACK,
   OPT_OUT_CONFIRMATION,
-  REFORMULATE_REQUEST,
 } from './templates';
 
 const RECENT_MESSAGES_LIMIT = 12;
@@ -132,7 +133,7 @@ export class ConversationEngine {
     if (!extraction) {
       await this.sendTexts(tenant, effectiveLead, [
         ...guardrailOutcome.replies,
-        REFORMULATE_REQUEST,
+        buildReformulateRequest(leadSeed({ id: lead.id, turnCount })),
       ]);
       await this.prisma.lead.update({
         where: { id: lead.id },
@@ -227,7 +228,7 @@ export class ConversationEngine {
           recentMessages,
           instruction: `El lead escribió algo que no tiene que ver con la búsqueda de propiedades ("${ctx.turnText}"). Respondé con simpatía, sin opinar del tema, y retomá la conversación invitándolo a seguir con la búsqueda.`,
         },
-        OFF_TOPIC_REDIRECT_FALLBACK,
+        buildOffTopicRedirectFallback(leadSeed(ctx.lead)),
       );
       return {
         actions: [{ kind: 'text', text: reply }],

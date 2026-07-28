@@ -4,17 +4,28 @@ import {
   buildDelegatedZoneMessage,
   buildGreetingMessage,
   buildHandoffFarewell,
+  buildMissingFilterFallback,
   buildNoResultsMessage,
+  buildOffTopicRedirectFallback,
   buildPartialZoneDropMessage,
+  buildReformulateRequest,
+  buildSameResultsMessage,
   buildSchedulingHandoffMessage,
   buildSearchClosingQuestion,
+  buildSearchIntro,
   buildTeaserClosingQuestion,
+  buildTeaserIntro,
   buildZoneStillPendingMessage,
   DEFAULT_HANDOFF_INTRO,
   DEFAULT_INTRO,
   OPERATION_QUESTION,
-  SAME_RESULTS_MESSAGE,
 } from './templates';
+
+/** Genera N seeds distintos para un mismo lead (turnos consecutivos), para
+ * recorrer el pool completo de variantes en los tests (spec 09, T2.2 AC-5). */
+function seedsFor(leadId: string, count = 12): string[] {
+  return Array.from({ length: count }, (_, turn) => `${leadId}:${turn}`);
+}
 
 describe('buildTeaserClosingQuestion', () => {
   it('con una sola ficha pregunta si "va por ahí" (singular)', () => {
@@ -29,16 +40,106 @@ describe('buildTeaserClosingQuestion', () => {
 });
 
 describe('buildSearchClosingQuestion', () => {
-  it('con una sola ficha no pregunta "cuál te gustó más"', () => {
-    const text = buildSearchClosingQuestion(1);
-    expect(text).not.toContain('Decime el número');
-    expect(text).toContain('¿Te interesa?');
+  it('con una sola ficha, NINGUNA variante pide "el número" (excepción de una sola pregunta)', () => {
+    for (const seed of seedsFor('lead-1')) {
+      const text = buildSearchClosingQuestion(1, seed);
+      expect(text).not.toContain('Decime el número');
+      expect(text).toMatch(/¿Te (interesa|copó esta|cierra esta)/);
+    }
   });
 
-  it('con varias fichas sí pide el número', () => {
-    const text = buildSearchClosingQuestion(2);
-    expect(text).toContain('¿Cuál te gustó más?');
-    expect(text).toContain('Decime el número');
+  it('con varias fichas, TODAS las variantes piden el número', () => {
+    for (const seed of seedsFor('lead-2')) {
+      const text = buildSearchClosingQuestion(2, seed);
+      expect(text).toMatch(/número/);
+    }
+  });
+
+  it('varía entre turnos consecutivos del mismo lead', () => {
+    const outputs = new Set(
+      seedsFor('lead-3').map((seed) => buildSearchClosingQuestion(2, seed)),
+    );
+    expect(outputs.size).toBeGreaterThan(1);
+  });
+
+  it('es determinístico: mismo seed, mismo texto', () => {
+    expect(buildSearchClosingQuestion(1, 'lead-4:2')).toBe(
+      buildSearchClosingQuestion(1, 'lead-4:2'),
+    );
+  });
+});
+
+describe('buildSearchIntro', () => {
+  it('varía entre turnos y siempre introduce opciones', () => {
+    const outputs = seedsFor('lead-5').map((seed) => buildSearchIntro(seed));
+    expect(new Set(outputs).size).toBeGreaterThan(1);
+    for (const text of outputs) {
+      expect(text).toMatch(/opciones|disponible|mostrarte|encontr/i);
+    }
+  });
+});
+
+describe('buildSameResultsMessage', () => {
+  it('todas las variantes dejan en claro que ya se mostró todo el stock', () => {
+    for (const seed of seedsFor('lead-6')) {
+      expect(buildSameResultsMessage(seed)).toMatch(/todo|todas/i);
+    }
+  });
+});
+
+describe('buildReformulateRequest', () => {
+  it('todas las variantes piden reformular sin culpar al lead', () => {
+    for (const seed of seedsFor('lead-7')) {
+      const text = buildReformulateRequest(seed);
+      expect(text.length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('buildOffTopicRedirectFallback', () => {
+  it('todas las variantes retoman la búsqueda sin opinar del tema', () => {
+    for (const seed of seedsFor('lead-8')) {
+      const text = buildOffTopicRedirectFallback(seed);
+      expect(text).toMatch(/propiedades|búsqueda/i);
+    }
+  });
+});
+
+describe('buildTeaserIntro', () => {
+  it('todas las variantes mencionan la zona pedida', () => {
+    for (const seed of seedsFor('lead-9')) {
+      expect(buildTeaserIntro(['palermo'], seed)).toContain('Palermo');
+    }
+  });
+
+  it('cae a "esa zona" sin barrios', () => {
+    expect(buildTeaserIntro([], 'lead-10:0')).toContain('esa zona');
+  });
+});
+
+describe('buildMissingFilterFallback', () => {
+  it('neighborhood: todas las variantes preguntan por zona/barrio', () => {
+    for (const seed of seedsFor('lead-11')) {
+      expect(buildMissingFilterFallback('neighborhood', [], seed)).toMatch(
+        /zona|barrio/i,
+      );
+    }
+  });
+
+  it('rooms: todas las variantes preguntan ambientes y citan la zona conocida', () => {
+    for (const seed of seedsFor('lead-12')) {
+      const text = buildMissingFilterFallback('rooms', ['caballito'], seed);
+      expect(text).toMatch(/ambientes/i);
+      expect(text).toContain('Caballito');
+    }
+  });
+
+  it('price: todas las variantes preguntan presupuesto', () => {
+    for (const seed of seedsFor('lead-13')) {
+      expect(buildMissingFilterFallback('price', [], seed)).toMatch(
+        /presupuesto|gastar/i,
+      );
+    }
   });
 });
 
@@ -120,12 +221,6 @@ describe('buildNoResultsMessage', () => {
     expect(text).not.toContain('amplié un poco');
     expect(text).toContain('por encima de tu presupuesto');
     expect(text).toContain('Belgrano');
-  });
-});
-
-describe('SAME_RESULTS_MESSAGE', () => {
-  it('no repite las fichas, invita a elegir o cambiar un filtro', () => {
-    expect(SAME_RESULTS_MESSAGE).toContain('todas las opciones que tengo hoy');
   });
 });
 

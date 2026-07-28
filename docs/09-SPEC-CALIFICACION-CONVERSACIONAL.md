@@ -556,8 +556,8 @@ el handoff entre chats.
 
 | # | Tarea | Dif. | Estado | Notas |
 |---|---|---|---|---|
-| T2.1 | Util de variantes | low | ⬜ pendiente | |
-| T2.2 | Pools de copy | low | ⬜ pendiente | |
+| T2.1 | Util de variantes | low | ✅ hecho | `copy-variants.util.ts`, offset por hash de leadId + turnCount, sin repetir turno a turno |
+| T2.2 | Pools de copy | low | ✅ hecho | SEARCH_INTRO/SAME_RESULTS_MESSAGE/REFORMULATE_REQUEST/OFF_TOPIC_REDIRECT_FALLBACK pasaron de const a función con seed; tests adaptados a pool |
 | T2.3 | Una pregunta por mensaje | low | ⬜ pendiente | |
 | T2.4 | Registro formal | low | ⬜ pendiente | |
 | T2.5 | Eco de comprensión | low | ⬜ pendiente | |

@@ -8,19 +8,20 @@ import {
   firstMissingFilter,
   isPriceStale,
 } from '../filters.util';
+import { leadSeed } from '../copy-variants.util';
 import { SafeReplyService } from '../safe-reply.service';
 import {
   buildDelegatedZoneMessage,
   buildMissingFilterFallback,
   buildNoResultsMessage,
   buildPartialZoneDropMessage,
+  buildSameResultsMessage,
   buildSearchClosingQuestion,
+  buildSearchIntro,
   buildTeaserClosingQuestion,
   buildTeaserIntro,
   buildZoneStillPendingMessage,
   buildZoneSuggestionMessage,
-  SAME_RESULTS_MESSAGE,
-  SEARCH_INTRO,
 } from '../templates';
 import type {
   HandlerContext,
@@ -179,7 +180,11 @@ export class QualificationHandler {
         recentMessages: ctx.recentMessages,
         instruction: this.buildFollowUpInstruction(filters, missing),
       },
-      buildMissingFilterFallback(missing, filters.fNeighborhoods),
+      buildMissingFilterFallback(
+        missing,
+        filters.fNeighborhoods,
+        leadSeed(ctx.lead),
+      ),
     );
 
     return {
@@ -212,7 +217,10 @@ export class QualificationHandler {
     }
 
     const actions: OutgoingAction[] = [
-      { kind: 'text', text: buildTeaserIntro(filters.fNeighborhoods) },
+      {
+        kind: 'text',
+        text: buildTeaserIntro(filters.fNeighborhoods, leadSeed(ctx.lead)),
+      },
     ];
     outcome.properties.forEach((property, i) => {
       actions.push({ kind: 'property', property, index: i + 1 });
@@ -333,7 +341,9 @@ export class QualificationHandler {
       outcome.properties.every((p, i) => p.id === previousSearchIds[i]);
     if (sameAsBefore) {
       return {
-        actions: [{ kind: 'text', text: SAME_RESULTS_MESSAGE }],
+        actions: [
+          { kind: 'text', text: buildSameResultsMessage(leadSeed(ctx.lead)) },
+        ],
         nextState: ConversationState.SEARCH_MATCH,
         filterUpdates: filters,
       };
@@ -345,14 +355,17 @@ export class QualificationHandler {
         kind: 'text',
         text: outcome.relaxed
           ? buildNoResultsMessage(outcome.relaxed, filters.fNeighborhoods)
-          : SEARCH_INTRO,
+          : buildSearchIntro(leadSeed(ctx.lead)),
       });
       outcome.properties.forEach((property, i) => {
         actions.push({ kind: 'property', property, index: i + 1 });
       });
       actions.push({
         kind: 'text',
-        text: buildSearchClosingQuestion(outcome.properties.length),
+        text: buildSearchClosingQuestion(
+          outcome.properties.length,
+          leadSeed(ctx.lead),
+        ),
       });
     } else {
       actions.push({
