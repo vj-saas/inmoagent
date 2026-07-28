@@ -102,19 +102,7 @@ export class SearchMatchHandler {
           // Contestamos la pregunta con los datos reales de ESA propiedad
           // (nunca inventados) y recién ahí ofrecemos coordinar la visita, en
           // vez de agendar de una y silenciar al bot sin haber respondido.
-          const reply = await this.safeReply.compose(
-            {
-              tenant: ctx.tenant,
-              lead,
-              recentMessages: ctx.recentMessages,
-              instruction: `El lead mostró interés en esta propiedad y además preguntó algo sobre ella en el mismo mensaje ("${ctx.turnText}"). Respondé su pregunta usando SOLO estos datos reales de la propiedad (si el dato no está, decí honestamente que no lo tenés a mano y que lo confirma el asesor en la visita):\n${describePropertyForLlm(property)}\n\nDespués de responder, preguntale si querés que le coordines la visita.`,
-            },
-            '¡Buena pregunta! Eso te lo confirma el asesor en la visita. ¿Querés que te coordine para verla?',
-          );
-          return {
-            actions: [{ kind: 'text', text: reply }],
-            nextState: ConversationState.SEARCH_MATCH,
-          };
+          return this.answerQuestionAboutProperty(ctx, property);
         }
         // spec 09, T1.4, AC-27: antes de agendar directo, pasa por
         // COMMERCIAL_QUALIFICATION (garantía/timeline o contado-crédito,
@@ -132,9 +120,43 @@ export class SearchMatchHandler {
       };
     }
 
+    // QA real (2026-07-28): "cuánto tiene de expensas?" sin decir "el 1"/"el
+    // segundo" caía derecho a `qualification.handle`, que la ignoraba en
+    // silencio y preguntaba el siguiente filtro (ambientes/presupuesto). Si
+    // solo se mostró UNA propiedad (`lastSearchIds.length === 1`), no hay
+    // ambigüedad sobre a cuál se refiere: la contestamos igual que en el caso
+    // de arriba. Con más de una ficha mostrada seguimos sin poder adivinar a
+    // cuál se refiere, así que cae al flujo normal (sin empeorar lo que ya
+    // había).
+    if (hasUnansweredQuestion(ctx) && lead.lastSearchIds.length === 1) {
+      const property = await this.resolveChosenProperty(lead.lastSearchIds, 1);
+      if (property) {
+        return this.answerQuestionAboutProperty(ctx, property);
+      }
+    }
+
     // Cambio de criterios (o cualquier info nueva) vuelve a QUALIFICATION, actualizando filtros
     // sin arrancar de cero (docs/03-CONVERSACION.md §SEARCH_MATCH).
     return this.qualification.handle(ctx, filters);
+  }
+
+  private async answerQuestionAboutProperty(
+    ctx: HandlerContext,
+    property: PropertyWithPhotos,
+  ): Promise<HandlerResult> {
+    const reply = await this.safeReply.compose(
+      {
+        tenant: ctx.tenant,
+        lead: ctx.lead,
+        recentMessages: ctx.recentMessages,
+        instruction: `El lead preguntó algo sobre esta propiedad ("${ctx.turnText}"). Respondé su pregunta usando SOLO estos datos reales de la propiedad (si el dato no está, decí honestamente que no lo tenés a mano y que lo confirma el asesor en la visita):\n${describePropertyForLlm(property)}\n\nDespués de responder, preguntale si querés que le coordines la visita.`,
+      },
+      '¡Buena pregunta! Eso te lo confirma el asesor en la visita. ¿Querés que te coordine para verla?',
+    );
+    return {
+      actions: [{ kind: 'text', text: reply }],
+      nextState: ConversationState.SEARCH_MATCH,
+    };
   }
 
   private async resolveChosenProperty(

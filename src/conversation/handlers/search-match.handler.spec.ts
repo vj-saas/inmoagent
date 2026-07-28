@@ -140,3 +140,111 @@ describe('SearchMatchHandler — pregunta + interés en la misma propiedad', () 
     expect(result.nextState).toBe(ConversationState.SEARCH_MATCH);
   });
 });
+
+/**
+ * QA real (2026-07-28): "cuánto tiene de expensas?" sin decir explícitamente
+ * "el 1"/"el segundo" (interestedPropertyIndex null) caía derecho a
+ * `qualification.handle`, que ignoraba la pregunta en silencio y preguntaba
+ * el siguiente filtro. Si el teaser mostró UNA sola propiedad no hay
+ * ambigüedad sobre a cuál se refiere: se contesta igual que cuando el lead
+ * la elige explícitamente.
+ */
+describe('SearchMatchHandler — pregunta sin elegir ficha explícitamente', () => {
+  const tenant = { id: 'tenant-1' } as HandlerContext['tenant'];
+  const property = {
+    id: 'prop-1',
+    title: 'Departamento con balcón en Villa Urquiza',
+    operation: 'RENT',
+    propertyType: 'departamento',
+    price: 420000,
+    currency: 'ARS',
+    expenses: 45000,
+    neighborhood: 'villa urquiza',
+    rooms: 2,
+    bedrooms: null,
+    bathrooms: null,
+    areaM2: null,
+    garage: false,
+    petsAllowed: false,
+    features: ['balcón'],
+    description: null,
+    photos: [],
+  };
+
+  let qualification: { handle: jest.Mock };
+  let commercialQualification: { enter: jest.Mock };
+  let prisma: { property: { findUnique: jest.Mock } };
+  let safeReply: { compose: jest.Mock };
+  let handler: SearchMatchHandler;
+
+  beforeEach(() => {
+    qualification = { handle: jest.fn().mockResolvedValue({ actions: [], nextState: ConversationState.QUALIFICATION }) };
+    commercialQualification = { enter: jest.fn() };
+    prisma = { property: { findUnique: jest.fn().mockResolvedValue(property) } };
+    safeReply = {
+      compose: jest.fn().mockResolvedValue('Las expensas son ARS 45.000. ¿Querés que te coordine la visita?'),
+    };
+    handler = new SearchMatchHandler(
+      qualification as unknown as QualificationHandler,
+      commercialQualification as unknown as CommercialQualificationHandler,
+      prisma as unknown as PrismaService,
+      safeReply as unknown as SafeReplyService,
+    );
+  });
+
+  function ctx(
+    turnText: string,
+    lastSearchIds: string[],
+    intent = 'ask_question',
+  ): HandlerContext {
+    return {
+      tenant,
+      lead: { id: 'lead-1', lastSearchIds } as HandlerContext['lead'],
+      turnText,
+      extraction: {
+        intent,
+        operation: null,
+        neighborhoods: [],
+        maxPrice: null,
+        currency: null,
+        minRooms: null,
+        wantsGarage: null,
+        wantsPetsAllowed: null,
+        roomsInferred: false,
+        priceFlexible: false,
+        extraRequirements: null,
+        interestedPropertyIndex: null,
+      },
+      recentMessages: [],
+    } as HandlerContext;
+  }
+
+  const filters = {} as LeadFilters;
+
+  it('con UNA sola ficha mostrada, contesta con sus datos reales en vez de ignorar la pregunta', async () => {
+    const result = await handler.handle(
+      ctx('cuanto tiene de expensas?', ['prop-1']),
+      filters,
+    );
+
+    expect(qualification.handle).not.toHaveBeenCalled();
+    expect(safeReply.compose).toHaveBeenCalledTimes(1);
+    const [[input]] = safeReply.compose.mock.calls;
+    expect(input.instruction).toContain('expensas: ARS 45.000');
+    expect(result.nextState).toBe(ConversationState.SEARCH_MATCH);
+    expect(result.actions[0]).toMatchObject({
+      kind: 'text',
+      text: expect.stringContaining('expensas'),
+    });
+  });
+
+  it('con VARIAS fichas mostradas, es ambiguo -> sigue cayendo al flujo normal (sin regresión)', async () => {
+    await handler.handle(
+      ctx('cuanto tiene de expensas?', ['prop-1', 'prop-2']),
+      filters,
+    );
+
+    expect(safeReply.compose).not.toHaveBeenCalled();
+    expect(qualification.handle).toHaveBeenCalledTimes(1);
+  });
+});
