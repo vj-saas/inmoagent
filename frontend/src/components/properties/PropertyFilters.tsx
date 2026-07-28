@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 
 import type { ListPropertiesQuery, OperationType, PropertyStatus } from '../../api/endpoints';
-import { Card, CardBody, Input, Select } from '../ui';
+import { Input, Meta, Select, Slab, SlabBody } from '../ui';
 
 const DEBOUNCE_MS = 300;
 
@@ -103,13 +103,15 @@ export const PropertyFilters: React.FC<PropertyFiltersProps> = ({ onChange }) =>
   };
 
   return (
-    <Card className="mb-4">
-      <CardBody className="flex flex-col gap-4">
-        <h2 className="text-sm font-semibold text-text">Filtros</h2>
+    // Panel de filtros sin card: un bloque delimitado por su regla superior,
+    // con el rótulo en versalita como cualquier otra etiqueta del sistema.
+    <Slab rule="ink" tone="bare" className="border-b border-border pb-4">
+      <SlabBody className="flex flex-col gap-4 px-0 pt-4">
+        <Meta muted={false}>Filtros</Meta>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="flex flex-col gap-1 lg:col-span-2">
-            <label htmlFor="property-filter-q" className="text-sm text-text-muted">
+          <div className="flex flex-col gap-1.5 lg:col-span-2">
+            <label htmlFor="property-filter-q" className="u-meta text-text-muted">
               Buscar
             </label>
             <Input
@@ -122,8 +124,8 @@ export const PropertyFilters: React.FC<PropertyFiltersProps> = ({ onChange }) =>
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="property-filter-status" className="text-sm text-text-muted">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="property-filter-status" className="u-meta text-text-muted">
               Estado
             </label>
             <Select
@@ -141,8 +143,8 @@ export const PropertyFilters: React.FC<PropertyFiltersProps> = ({ onChange }) =>
             </Select>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="property-filter-operation" className="text-sm text-text-muted">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="property-filter-operation" className="u-meta text-text-muted">
               Operación
             </label>
             <Select
@@ -160,8 +162,8 @@ export const PropertyFilters: React.FC<PropertyFiltersProps> = ({ onChange }) =>
             </Select>
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="property-filter-neighborhood" className="text-sm text-text-muted">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="property-filter-neighborhood" className="u-meta text-text-muted">
               Barrio
             </label>
             <Input
@@ -174,8 +176,8 @@ export const PropertyFilters: React.FC<PropertyFiltersProps> = ({ onChange }) =>
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="property-filter-min-price" className="text-sm text-text-muted">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="property-filter-min-price" className="u-meta text-text-muted">
               Precio mínimo
             </label>
             <Input
@@ -188,8 +190,8 @@ export const PropertyFilters: React.FC<PropertyFiltersProps> = ({ onChange }) =>
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="property-filter-max-price" className="text-sm text-text-muted">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="property-filter-max-price" className="u-meta text-text-muted">
               Precio máximo
             </label>
             <Input
@@ -202,8 +204,8 @@ export const PropertyFilters: React.FC<PropertyFiltersProps> = ({ onChange }) =>
             />
           </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="property-filter-rooms" className="text-sm text-text-muted">
+          <div className="flex flex-col gap-1.5">
+            <label htmlFor="property-filter-rooms" className="u-meta text-text-muted">
               Ambientes
             </label>
             <Select
@@ -232,7 +234,7 @@ export const PropertyFilters: React.FC<PropertyFiltersProps> = ({ onChange }) =>
             que no tienen la cantidad de ambientes cargada.
           </p>
         </div>
-      </CardBody>
-    </Card>
+      </SlabBody>
+    </Slab>
   );
 };

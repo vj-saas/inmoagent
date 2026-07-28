@@ -50,9 +50,8 @@ import { Pagination } from '../components/Pagination';
 import {
   AsyncSection,
   Button,
-  Card,
-  CardBody,
   Modal,
+  SectionHead,
   Skeleton,
   Table,
   TableScroll,
@@ -209,23 +208,23 @@ export function PropertiesPage(): JSX.Element {
   const properties: Property[] = data?.items ?? [];
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-5">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text">Propiedades</h1>
-          <p className="text-xs text-text-muted mt-1">
-            Cargá, editá y gestioná el estado del inventario de tu inmobiliaria.
-          </p>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          <Button type="button" onClick={handleOpenCreate}>
-            Cargar propiedad
-          </Button>
-          <Button type="button" variant="secondary" onClick={handleOpenCsv}>
-            Importar CSV
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-8">
+      <SectionHead
+        index="05"
+        title="Propiedades"
+        kicker={data ? `${data.total} en catálogo` : 'Cargando'}
+        description="El stock que el agente puede ofrecer. Solo se muestran en WhatsApp las propiedades activas."
+        actions={
+          <>
+            <Button type="button" onClick={handleOpenCreate}>
+              Cargar propiedad
+            </Button>
+            <Button type="button" variant="secondary" onClick={handleOpenCsv}>
+              Importar CSV
+            </Button>
+          </>
+        }
+      />
 
       <PropertyFilters onChange={handleFiltersChange} />
 
@@ -240,22 +239,22 @@ export function PropertiesPage(): JSX.Element {
         emptyMessage="Cargá la primera propiedad o importá un CSV con tu stock."
       >
         {data && properties.length > 0 && (
-          <Card>
-            <CardBody className="flex flex-col gap-4">
-              <PropertiesList
-                items={properties}
-                onEdit={handleEdit}
-                onChangeStatus={handleChangeStatus}
-                onDelete={handleDelete}
-              />
-              <Pagination
-                total={data.total}
-                page={data.page}
-                pageSize={data.pageSize}
-                onPageChange={handlePageChange}
-              />
-            </CardBody>
-          </Card>
+          // Sin card contenedora: el listado se apoya directo sobre el lienzo,
+          // delimitado por las reglas de la propia tabla.
+          <div>
+            <PropertiesList
+              items={properties}
+              onEdit={handleEdit}
+              onChangeStatus={handleChangeStatus}
+              onDelete={handleDelete}
+            />
+            <Pagination
+              total={data.total}
+              page={data.page}
+              pageSize={data.pageSize}
+              onPageChange={handlePageChange}
+            />
+          </div>
         )}
       </AsyncSection>
 

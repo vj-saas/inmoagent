@@ -54,34 +54,24 @@ function formatPrice(property: Property): string {
   return `${property.currency} ${formatted}`;
 }
 
-/** Ícono de placeholder cuando la propiedad no tiene ninguna foto cargada. */
+/**
+ * Placeholder cuando la propiedad no tiene foto: un cuadrado rayado, el mismo
+ * recurso que usa `EmptyState` para decir "acá no hay nada cargado".
+ */
 function PhotoPlaceholder(): JSX.Element {
-  return (
-    <div
-      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-card bg-bg text-text-muted"
-      aria-hidden="true"
-    >
-      <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-        <path
-          d="M4 6.5A1.5 1.5 0 0 1 5.5 5h13A1.5 1.5 0 0 1 20 6.5v11a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5v-11Z"
-          stroke="currentColor"
-          strokeWidth="1.5"
-        />
-        <path d="m4 16 4.5-4.5a1.5 1.5 0 0 1 2.12 0L14 14.9l1.4-1.4a1.5 1.5 0 0 1 2.12 0L20 16" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-        <circle cx="8.5" cy="9" r="1.25" stroke="currentColor" strokeWidth="1.5" />
-      </svg>
-    </div>
-  );
+  return <div className="u-hatch h-10 w-10 shrink-0 border border-border" aria-hidden="true" />;
 }
 
 /** Celda con rótulo de columna visible solo en mobile (`md:hidden`), valor siempre en un nodo propio para no romper `getByText` exacto. */
 function MobileLabel({ children }: { children: string }): JSX.Element {
-  return <span className="mr-2 shrink-0 text-xs font-medium text-text-muted md:hidden">{children}</span>;
+  return <span className="u-meta mr-2 shrink-0 text-text-faint md:hidden">{children}</span>;
 }
 
+// Mobile: bloque separado por hairline, sin tarjeta ni sombra.
+// Desktop (`md:`): vuelve a ser una fila de tabla. Mismo DOM en ambos.
 const rowClassName =
-  'flex flex-col gap-3 rounded-xl border border-border/80 bg-surface p-4.5 shadow-xs mb-3 transition-all duration-200 hover:shadow-md hover:border-text/10 ' +
-  'md:table-row md:flex-none md:gap-0 md:rounded-none md:border-0 md:border-b md:border-border/60 md:bg-transparent md:p-0 md:shadow-none md:mb-0 md:hover:bg-bg';
+  'flex flex-col gap-2 border-b border-border py-4 transition-colors ' +
+  'md:table-row md:flex-none md:gap-0 md:border-b md:border-border md:py-0 md:hover:bg-surface';
 
 const cellClassName = 'flex items-center justify-between gap-2 py-0.5 md:table-cell md:justify-start md:px-4 md:py-3.5';
 
@@ -105,7 +95,7 @@ export function PropertiesList({
             <Th>Acciones</Th>
           </Tr>
         </THead>
-        <TBody className="flex flex-col gap-3 md:table-row-group md:flex md:table-row-group md:flex-col md:gap-0 md:divide-y md:divide-border">
+        <TBody className="flex flex-col md:table-row-group md:divide-y md:divide-border">
           {items.map((property) => {
             // Ordenado defensivo: el backend ya devuelve `photos` por `position asc`
             // (property-search.service.ts, properties-admin.service.ts), pero no
@@ -116,15 +106,13 @@ export function PropertiesList({
                 <Td className={cellClassName}>
                   <div className="flex min-w-0 items-center gap-3">
                     {photoUrl ? (
-                      <img
-                        src={photoUrl}
-                        alt=""
-                        className="h-10 w-10 shrink-0 rounded-card object-cover"
-                      />
+                      <img src={photoUrl} alt="" className="h-10 w-10 shrink-0 object-cover" />
                     ) : (
                       <PhotoPlaceholder />
                     )}
-                    <span className="min-w-0 truncate font-medium text-text">{property.title}</span>
+                    <span className="min-w-0 truncate font-semibold tracking-tight text-text">
+                      {property.title}
+                    </span>
                   </div>
                 </Td>
                 <Td className={cellClassName}>
@@ -133,7 +121,10 @@ export function PropertiesList({
                 </Td>
                 <Td className={cellClassName}>
                   <MobileLabel>Precio</MobileLabel>
-                  <span className="font-medium text-text">{formatPrice(property)}</span>
+                  {/* El precio es el dato que se compara entre filas: mono y tabular. */}
+                  <span className="u-num whitespace-nowrap font-mono font-medium text-text">
+                    {formatPrice(property)}
+                  </span>
                 </Td>
                 <Td className={cellClassName}>
                   <MobileLabel>Barrio</MobileLabel>
@@ -147,7 +138,7 @@ export function PropertiesList({
                 </Td>
                 <Td className={cellClassName}>
                   <MobileLabel>Ambientes</MobileLabel>
-                  <span>{property.rooms ?? '—'}</span>
+                  <span className="u-num font-mono">{property.rooms ?? '—'}</span>
                 </Td>
                 <Td className="flex flex-col gap-2 pt-1 md:table-cell md:px-4 md:py-3.5">
                   <div className="flex flex-wrap gap-2">

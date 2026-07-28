@@ -108,12 +108,21 @@ export const AppointmentRow: React.FC<AppointmentRowProps> = ({
 
   return (
     <Tr data-testid="appointment-row">
-      <Td data-testid="appointment-row-scheduled-at">{formattedDate}</Td>
-      <Td data-testid="appointment-row-lead">{appointment.leadId}</Td>
+      {/* Fecha, lead y asesor son datos tabulares: van en monoespaciada para
+          que las columnas alineen y la próxima visita se lea de un vistazo. */}
+      <Td
+        data-testid="appointment-row-scheduled-at"
+        className="u-num whitespace-nowrap font-mono font-medium text-text"
+      >
+        {formattedDate}
+      </Td>
+      <Td data-testid="appointment-row-lead" className="font-mono text-xs text-text-muted">
+        {appointment.leadId}
+      </Td>
       <Td>
         <AppointmentStatusBadge status={appointment.status} />
       </Td>
-      <Td data-testid="appointment-row-assignee">
+      <Td data-testid="appointment-row-assignee" className="font-mono text-xs text-text-muted">
         {appointment.assignedUserId ?? 'Sin asignar'}
       </Td>
       <Td>

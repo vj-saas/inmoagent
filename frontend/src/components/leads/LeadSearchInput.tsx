@@ -71,8 +71,8 @@ export const LeadSearchInput: React.FC<LeadSearchInputProps> = ({
 
   return (
     <div className="relative w-full sm:flex-1">
-      <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-text-muted/65 pointer-events-none">
-        <Search className="h-4 w-4" />
+      <span className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-text-faint">
+        <Search className="h-3.5 w-3.5" />
       </span>
       <Input
         type="text"
@@ -80,7 +80,7 @@ export const LeadSearchInput: React.FC<LeadSearchInputProps> = ({
         onChange={handleChange}
         placeholder={placeholder}
         data-testid="lead-search-input"
-        className="pl-9 w-full"
+        className="w-full pl-9"
       />
     </div>
   );

@@ -29,7 +29,7 @@ import {
 } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { useApi } from '../hooks/useApi';
-import { AsyncSection } from '../components/ui';
+import { AsyncSection, SectionHead } from '../components/ui';
 import { DateRangePicker } from '../components/dashboard/DateRangePicker';
 import { AppointmentStatusFilter } from '../components/agenda/AppointmentStatusFilter';
 import { AppointmentsList } from '../components/agenda/AppointmentsList';
@@ -90,27 +90,26 @@ export function AgendaPage(): JSX.Element {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-5">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-text">Agenda</h1>
-          <p className="text-xs text-text-muted mt-1">
-            Visualizá y gestioná las citas agendadas por tus clientes.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-end gap-4">
-        <DateRangePicker
-          initialFrom={initialRange.from}
-          initialTo={initialRange.to}
-          onChange={handleRangeChange}
-        />
-        <div className="mb-4 flex flex-col gap-1 text-sm font-medium text-text sm:w-56 w-full">
-          Estado
-          <AppointmentStatusFilter onChange={handleStatusChange} />
-        </div>
-      </div>
+    <div className="space-y-8">
+      <SectionHead
+        index="03"
+        title="Agenda"
+        kicker={`${appointments.length} en el rango`}
+        description="Las visitas que el agente propuso y las que ya están confirmadas, ordenadas por la más próxima."
+        actions={
+          <>
+            <DateRangePicker
+              initialFrom={initialRange.from}
+              initialTo={initialRange.to}
+              onChange={handleRangeChange}
+            />
+            <label className="u-meta flex w-full flex-col gap-1.5 text-text-muted sm:w-56">
+              Estado
+              <AppointmentStatusFilter onChange={handleStatusChange} />
+            </label>
+          </>
+        }
+      />
 
       <AsyncSection
         loading={loading}

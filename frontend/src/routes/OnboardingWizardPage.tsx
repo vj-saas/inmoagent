@@ -141,10 +141,15 @@ export function OnboardingWizardPage(): JSX.Element {
   }, [step, tenantId, sessionToken]);
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 p-4">
-      <div className="border-b border-border/80 pb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-text">Alta de Inmobiliaria</h1>
-        <p className="text-xs text-text-muted mt-1">Configurá el sistema para tu agencia en 3 simples pasos</p>
+    <div className="mx-auto flex max-w-3xl flex-col gap-8 p-4 py-10">
+      <div className="border-b-2 border-border-strong pb-5">
+        <span className="u-meta text-accent">Alta de tenant</span>
+        <h1 className="u-display mt-2 text-[clamp(2rem,5vw,3rem)] text-text">
+          Alta de inmobiliaria
+        </h1>
+        <p className="mt-2 text-sm text-text-muted">
+          Configurá el sistema para tu agencia en tres pasos.
+        </p>
       </div>
 
       <WizardStepper currentStep={step} />

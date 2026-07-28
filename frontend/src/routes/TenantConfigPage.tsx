@@ -30,6 +30,7 @@ import { type TenantConfigResponse } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { TenantConfigForm } from '../components/onboarding/TenantConfigForm';
 import { WebhookStatusCard } from '../components/onboarding/WebhookStatusCard';
+import { SectionHead } from '../components/ui';
 
 export function TenantConfigPage(): JSX.Element {
   const { person, token } = useAuth();
@@ -38,13 +39,13 @@ export function TenantConfigPage(): JSX.Element {
   const [savedConfig, setSavedConfig] = useState<TenantConfigResponse | null>(null);
 
   return (
-    <div>
-      <div className="mb-6 border-b border-border pb-5">
-        <h1 className="text-2xl font-bold tracking-tight text-text">Configuración</h1>
-        <p className="mt-1 text-xs text-text-muted">
-          Datos del tenant, credenciales de Meta y estado del webhook.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <SectionHead
+        index="07"
+        title="Configuración"
+        kicker="Administración"
+        description="Datos del tenant, credenciales de Meta y estado del webhook de WhatsApp."
+      />
 
       <div className="flex flex-col gap-6">
         <TenantConfigForm

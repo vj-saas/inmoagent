@@ -17,7 +17,7 @@ import { useEffect, useState } from 'react';
 import { listLeads, type ConversationState, type Lead, type ListLeadsResponse } from '../api/endpoints';
 import { useAuth } from '../auth/AuthContext';
 import { useApi } from '../hooks/useApi';
-import { AsyncSection } from '../components/ui';
+import { AsyncSection, SectionHead } from '../components/ui';
 import { LeadStateFilter } from '../components/leads/LeadStateFilter';
 import { LeadSearchInput } from '../components/leads/LeadSearchInput';
 import { LeadsList } from '../components/leads/LeadsList';
@@ -67,15 +67,16 @@ export function LeadsPage(): JSX.Element {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="border-b border-border/80 pb-5">
-        <h1 className="text-2xl font-bold tracking-tight text-text">Bandeja de Leads</h1>
-        <p className="text-xs text-text-muted mt-1">
-          Gestioná y contactá a los leads interesados en propiedades en tiempo real.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <SectionHead
+        index="04"
+        title="Bandeja de leads"
+        kicker={data ? `${data.total} en total` : 'Cargando'}
+        description="Todos los leads del tenant, con los filtros que el agente ya capturó en la conversación."
+      />
 
-      <div className="flex flex-col items-stretch gap-3.5 sm:flex-row sm:items-center">
+      {/* Barra de controles: sin caja propia, apoyada sobre una hairline. */}
+      <div className="flex flex-col items-stretch gap-3 border-b border-border pb-4 sm:flex-row sm:items-center">
         <div className="shrink-0">
           <LeadStateFilter onChange={handleCategoryChange} />
         </div>
@@ -92,9 +93,9 @@ export function LeadsPage(): JSX.Element {
         emptyMessage="Probá con otro filtro o cambiá los términos de búsqueda."
       >
         {data && data.leads.length > 0 && (
-          <div className="space-y-4">
+          <div>
             <LeadsList leads={data.leads as Lead[]} />
-            <div className="pt-2 border-t border-border/40">
+            <div>
               <Pagination
                 total={data.total}
                 page={data.page}

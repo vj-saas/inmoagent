@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+﻿import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { Spinner } from '../components/Spinner';
@@ -40,33 +40,36 @@ export function LoginPage(): JSX.Element {
 
   return (
     <div className="flex min-h-screen w-full bg-bg">
-      {/* Panel de marca — solo desktop. Grilla Swiss: reglas finas, tipografía como protagonista. */}
-      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-primary px-16 py-14 text-white lg:flex">
+      {/*
+        Panel de marca — solo desktop. Bloque de tinta macizo con la grilla
+        de la retícula apenas insinuada (líneas de 1px, sin degradado) y el
+        titular a tamaño de tapa: es la única pantalla de la app donde la
+        tipografía puede ocupar todo el espacio que quiera.
+      */}
+      <div className="relative hidden w-1/2 flex-col justify-between overflow-hidden bg-invert px-14 py-12 text-on-invert lg:flex">
         <div
-          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
           style={{
             backgroundImage:
-              'linear-gradient(to right, white 1px, transparent 1px), linear-gradient(to bottom, white 1px, transparent 1px)',
+              'linear-gradient(to right, currentColor 1px, transparent 1px), linear-gradient(to bottom, currentColor 1px, transparent 1px)',
             backgroundSize: '48px 48px',
           }}
           aria-hidden="true"
         />
         <Logo variant="mark" className="relative" />
-        <div className="relative max-w-md">
-          <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-white/60">
-            Panel de control
-          </p>
-          <h1 className="text-4xl font-bold leading-tight tracking-tight text-white">
-            El agente que responde leads mientras vos cerrás operaciones.
+
+        <div className="relative max-w-xl">
+          <span className="u-meta text-accent-loud">Agente comercial 24/7</span>
+          <h1 className="u-display mt-5 text-[clamp(2.5rem,4.2vw,3.75rem)]">
+            Responde leads mientras vos cerrás operaciones.
           </h1>
-          <p className="mt-4 text-sm leading-relaxed text-white/70">
-            Calificación, búsqueda de propiedades y agenda de visitas, 24/7,
+          <p className="mt-6 max-w-md border-l-2 border-accent-loud pl-4 text-sm leading-relaxed opacity-75">
+            Calificación, búsqueda de propiedades y agenda de visitas, todos los días,
             en el WhatsApp de tu inmobiliaria.
           </p>
         </div>
-        <p className="relative text-xs text-white/40">
-          © {new Date().getFullYear()} InmoAgent
-        </p>
+
+        <p className="u-meta relative opacity-50">© {new Date().getFullYear()} InmoAgent</p>
       </div>
 
       {/* Formulario */}
@@ -76,9 +79,11 @@ export function LoginPage(): JSX.Element {
             <Logo />
           </div>
 
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight text-text">Iniciar sesión</h2>
-            <p className="mt-1 text-sm text-text-muted">
+          <div className="border-b-2 border-border-strong pb-4">
+            <h2 className="u-display text-[clamp(1.75rem,4vw,2.25rem)] text-text">
+              Iniciar sesión
+            </h2>
+            <p className="mt-2 text-sm text-text-muted">
               Ingresá tus credenciales para acceder al panel.
             </p>
           </div>
@@ -89,7 +94,7 @@ export function LoginPage(): JSX.Element {
             <div className="space-y-1.5">
               <label
                 htmlFor="login-email"
-                className="block text-xs font-semibold uppercase tracking-wide text-text-muted"
+                className="u-meta block text-text-muted"
               >
                 Email
               </label>
@@ -115,7 +120,7 @@ export function LoginPage(): JSX.Element {
             <div className="space-y-1.5">
               <label
                 htmlFor="login-password"
-                className="block text-xs font-semibold uppercase tracking-wide text-text-muted"
+                className="u-meta block text-text-muted"
               >
                 Contraseña
               </label>

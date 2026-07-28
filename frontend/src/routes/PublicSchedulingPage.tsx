@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getPublicAppointmentDetails, getPublicAvailableSlots, confirmPublicAppointment, type PublicAppointmentDetails } from '../api/endpoints';
 import { Spinner } from '../components/Spinner';
@@ -88,12 +88,12 @@ export function PublicSchedulingPage(): JSX.Element {
   if (success) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg px-4">
-        <Card className="w-full max-w-md shadow-lg border border-success/20">
+        <Card className="w-full max-w-md border-2 border-border-strong shadow-[var(--shadow-hard)]">
           <CardBody className="flex flex-col items-center text-center p-8 space-y-4">
-            <div className="h-16 w-16 bg-success/10 rounded-full flex items-center justify-center text-success text-2xl font-bold">
+            <div className="flex h-16 w-16 items-center justify-center bg-success text-2xl font-bold text-white">
               ✓
             </div>
-            <h1 className="text-2xl font-bold text-text">¡Visita Confirmada!</h1>
+            <h1 className="u-display text-3xl text-text">¡Visita confirmada!</h1>
             <p className="text-sm text-text-muted">
               Reservamos tu turno de visita de forma exitosa. Un asesor de <strong className="text-text font-semibold">{details?.tenantName}</strong> se pondrá en contacto pronto si es necesario.
             </p>
@@ -123,15 +123,15 @@ export function PublicSchedulingPage(): JSX.Element {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-bg px-4 py-8">
-      <Card className="w-full max-w-lg shadow-lg border border-border">
+      <Card className="w-full max-w-lg border-2 border-border-strong shadow-[var(--shadow-hard)]">
         <CardHeader className="border-b border-border/80 p-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-accent">Agendar Visita</p>
-          <h1 className="text-xl font-bold text-text mt-1">{details?.tenantName}</h1>
+          <p className="u-meta text-accent">Agendar Visita</p>
+          <h1 className="u-display mt-2 text-2xl text-text">{details?.tenantName}</h1>
           <p className="text-xs text-text-muted mt-1">Hola {details?.leadName}, seleccioná tu horario para coordinar la visita a la propiedad.</p>
         </CardHeader>
         <CardBody className="p-6 space-y-6">
           <div className="space-y-2">
-            <label className="block text-xs font-bold uppercase tracking-wide text-text-muted">
+            <label className="u-meta block text-text-muted">
               1. Seleccioná el día
             </label>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -140,9 +140,9 @@ export function PublicSchedulingPage(): JSX.Element {
                   key={day.value}
                   type="button"
                   onClick={() => handleDateChange(day.value)}
-                  className={`rounded-md border p-3 text-center text-xs font-medium transition-all duration-200 ${
+                  className={`border p-3 text-center text-xs font-medium transition-colors duration-150 ${
                     selectedDate === day.value
-                      ? 'border-accent bg-accent/5 text-accent font-semibold ring-1 ring-accent'
+                      ? 'border-accent-loud bg-accent-loud font-semibold text-on-accent'
                       : 'border-border bg-surface text-text hover:border-text-muted'
                   }`}
                 >
@@ -154,7 +154,7 @@ export function PublicSchedulingPage(): JSX.Element {
 
           {selectedDate && (
             <div className="space-y-2">
-              <label className="block text-xs font-bold uppercase tracking-wide text-text-muted">
+              <label className="u-meta block text-text-muted">
                 2. Horarios disponibles
               </label>
               {loadingSlots ? (
@@ -174,7 +174,7 @@ export function PublicSchedulingPage(): JSX.Element {
                       onClick={() => setSelectedSlot(slot)}
                       className={`rounded-md border p-2 text-center text-sm transition-all duration-200 ${
                         selectedSlot === slot
-                          ? 'border-accent bg-accent/5 text-accent font-semibold ring-1 ring-accent'
+                          ? 'border-accent-loud bg-accent-loud font-semibold text-on-accent'
                           : 'border-border bg-surface text-text hover:border-text-muted'
                       }`}
                     >

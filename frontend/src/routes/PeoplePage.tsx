@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Gestión de personas del tenant (solo OWNER, ver AppLayout).
  *
  * - Lista las personas del tenant vía `endpoints.listPeople(tenantId)` usando
@@ -38,14 +38,15 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import {
   AsyncSection,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
+  Slab,
+  SlabBody,
+  SlabHead,
   Input,
   Modal,
   Select,
   Skeleton,
   Table,
+  SectionHead,
   TableScroll,
   TBody,
   Td,
@@ -194,15 +195,15 @@ export function PeoplePage(): JSX.Element {
   const people: PersonResponse[] = data?.people ?? [];
 
   return (
-    <div>
-      <div className="mb-6 border-b border-border pb-5">
-        <h1 className="text-2xl font-bold tracking-tight text-text">Gestión de personas</h1>
-        <p className="mt-1 text-xs text-text-muted">
-          Usuarios con acceso al panel de este tenant.
-        </p>
-      </div>
+    <div className="space-y-8">
+      <SectionHead
+        index="06"
+        title="Gestión de personas"
+        kicker={`${data?.people.length ?? 0} con acceso`}
+        description="Usuarios que pueden entrar al panel de este tenant y atender leads."
+      />
 
-      <div className="mb-6">
+      <div>
         <AsyncSection
           loading={loading}
           skeleton={<PeopleTableSkeleton />}
@@ -224,9 +225,13 @@ export function PeoplePage(): JSX.Element {
               <TBody>
                 {people.map((p) => (
                   <Tr key={p.id}>
-                    <Td>{p.email}</Td>
-                    <Td>{p.role}</Td>
-                    <Td>{p.active ? 'Sí' : 'No'}</Td>
+                    <Td className="font-mono text-sm text-text">{p.email}</Td>
+                    <Td>
+                      <span className="u-meta border border-border px-2 py-1 text-text-muted">
+                        {p.role}
+                      </span>
+                    </Td>
+                    <Td className="u-meta text-text-muted">{p.active ? 'Sí' : 'No'}</Td>
                     <Td>
                       <div className="flex flex-wrap gap-2">
                         <Button
@@ -258,11 +263,11 @@ export function PeoplePage(): JSX.Element {
 
       {actionError && <ErrorBanner message={actionError} />}
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold text-text">Crear persona</h2>
-        </CardHeader>
-        <CardBody>
+      <Slab rule="ink">
+        <SlabHead>
+          <h2 className="u-meta text-text">Crear persona</h2>
+        </SlabHead>
+        <SlabBody>
           {createError && (
             <div className="mb-3">
               <ErrorBanner message={createError} />
@@ -270,7 +275,7 @@ export function PeoplePage(): JSX.Element {
           )}
           <form onSubmit={handleCreate} className="flex flex-col gap-3">
             <div className="flex flex-col gap-1">
-              <label htmlFor="person-email" className="text-sm font-medium text-text">
+              <label htmlFor="person-email" className="u-meta text-text-muted">
                 Email
               </label>
               <Input
@@ -284,7 +289,7 @@ export function PeoplePage(): JSX.Element {
               />
             </div>
             <div className="flex flex-col gap-1">
-              <label htmlFor="person-role" className="text-sm font-medium text-text">
+              <label htmlFor="person-role" className="u-meta text-text-muted">
                 Rol
               </label>
               <Select
@@ -304,8 +309,8 @@ export function PeoplePage(): JSX.Element {
               </Button>
             </div>
           </form>
-        </CardBody>
-      </Card>
+        </SlabBody>
+      </Slab>
 
       <Modal
         open={Boolean(temporaryPasswordModal)}
@@ -316,7 +321,7 @@ export function PeoplePage(): JSX.Element {
         <p className="mb-2 text-sm text-text">
           Contraseña temporal (guardala ahora, no se volverá a mostrar):
         </p>
-        <code className="mb-3 block rounded bg-bg px-2 py-1 text-sm">{temporaryPasswordModal}</code>
+        <code className="mb-3 block border border-border bg-bg px-3 py-2 font-mono text-sm">{temporaryPasswordModal}</code>
         <div className="flex items-center gap-3">
           <Button type="button" variant="secondary" size="sm" onClick={handleCopy}>
             Copiar

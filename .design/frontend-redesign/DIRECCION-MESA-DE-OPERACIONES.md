@@ -68,29 +68,40 @@ no migradas.
 
 ## Estado de la migración
 
-Migradas a la dirección nueva:
+La app entera está migrada:
 
 - Tokens y utilidades (`styles/theme.css`, `index.css`), fuentes (`index.html`),
   logo e `favicon.svg`.
-- Shell completo: `AppLayout`, `Sidebar` (rail + drawer), `CommandPalette`.
-- Primitivas: `Button`, `Badge`, `Card`, `Input`, `Select`, `EmptyState`,
-  `Spinner`, `ErrorBanner`, `ThemeToggle`.
-- Pantallas ancla: **Panel** (`DashboardPage`, `MetricCard`, `LeadsTrendChart`,
-  `DateRangePicker`), **Llamar hoy** (`CallQueuePage`, `CallQueueRow`,
-  `LeadChips`) y **Ficha de lead** (`LeadDetailPage`, `MessageTimeline`).
+- Shell: `AppLayout`, `Sidebar` (rail + drawer), `CommandPalette`.
+- Primitivas: `Button`, `Badge`, `Card`, `Input`, `Select`, `Table`, `Modal`,
+  `EmptyState`, `Spinner`, `ErrorBanner`, `ThemeToggle`, `Pagination`.
+- **Panel** (`DashboardPage`, `MetricCard`, `LeadsTrendChart`,
+  `DateRangePicker`), **Llamar hoy** (`CallQueuePage`, `CallQueueRow`),
+  **Ficha de lead** (`LeadDetailPage`, `MessageTimeline`), **Leads**
+  (`LeadsPage`, `LeadsList`, `LeadRow`, `LeadChips`), **Agenda**
+  (`AgendaPage`, `AppointmentRow`), **Propiedades** (`PropertiesPage`,
+  `PropertiesList`, `PropertyFilters`), **Personas**, **Configuración** y
+  **Login**.
+- Onboarding: las clases `@layer components` (`.onboarding-*`,
+  `.webhook-status-*`) se reescribieron en el lenguaje del sistema
+  conservando sus nombres, que son contrato con los tests de estado
+  (`WizardStepper`, `ReadinessChecklist`, `WebhookStatusCard`).
 
-Pendientes (heredan tokens y primitivas, falta el pase de layout):
+Dos criterios de layout que conviven a propósito:
 
-- `LeadsPage` / `LeadsList` / `LeadRow` → pasar a `Ledger`.
-- `AgendaPage` y `components/agenda/*` → `Ledger` + señal por estado de cita.
-- `PropertiesPage` y `components/properties/*` → preservar el patrón
-  "single DOM reorder" ya cubierto por `responsive-guardrails.test.tsx`.
-- `PeoplePage`, `TenantConfigPage`, `LoginPage`.
-- Onboarding: migrar las clases `@layer components` (`.onboarding-*`,
-  `.webhook-status-*`) de `index.css` a `Slab`/`Meta`/`Button`.
-- `/conversaciones` (ver `docs/09-CONVERSACIONES-HANDOFF.md`): nace directo con
-  esta dirección — tres columnas separadas por hairlines y burbujas como
-  bloques rectos.
+- `Ledger` / `LedgerRow` donde la fila entera es accionable y navega
+  (Leads, Llamar hoy): densa, con barra de señal e inversión al hover.
+- `Table` real donde la fila contiene varios controles (Agenda, Personas,
+  Propiedades): mismo lenguaje visual, pero sin inversión —los botones de
+  adentro perderían contraste— y con semántica de tabla para lectores de
+  pantalla.
+
+Pendiente, fuera del alcance visual:
+
+- `/conversaciones` (ver `docs/09-CONVERSACIONES-HANDOFF.md`): es una feature
+  nueva con backend propio (endpoint, `Lead.lastViewedAt`, `Lead.handoffAt`),
+  no un rediseño. Cuando se construya, nace directo con esta dirección: tres
+  columnas separadas por hairlines y burbujas como bloques rectos.
 
 ## Guardrails que no se negocian
 

@@ -66,25 +66,32 @@ export const Modal = forwardRef<HTMLDivElement, ModalProps>(
 
     return (
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-overlay p-4"
         onClick={handleOverlayClick}
         data-testid="modal-overlay"
       >
+        {/*
+          La única "sombra" del sistema: dura, sin blur y desplazada
+          (`shadow-[var(--shadow-hard)]`). No simula elevación física — marca
+          que el bloque está impreso encima del resto.
+        */}
         <div
           ref={setDialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={typeof title === 'string' ? title : undefined}
           className={cn(
-            'flex w-full max-w-md max-h-[90vh] flex-col rounded-card border border-border bg-surface p-4 shadow-md',
-            className
+            'flex max-h-[90vh] w-full max-w-md flex-col border-2 border-border-strong bg-surface shadow-[var(--shadow-hard)]',
+            className,
           )}
           {...props}
         >
           {title && (
-            <div className="mb-3 shrink-0 text-lg font-semibold text-text">{title}</div>
+            <div className="u-meta shrink-0 border-b-2 border-border-strong px-4 py-3 text-text">
+              {title}
+            </div>
           )}
-          <div className="overflow-y-auto">{children}</div>
+          <div className="overflow-y-auto p-4">{children}</div>
         </div>
       </div>
     );
